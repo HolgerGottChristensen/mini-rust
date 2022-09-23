@@ -6,6 +6,7 @@ mod mini_file;
 mod stmt;
 mod mini_stmt;
 mod mini_pat;
+mod mini_ident;
 
 extern crate proc_macro;
 use proc_macro::TokenStream;

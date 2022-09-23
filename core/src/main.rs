@@ -13,6 +13,12 @@ fn main() {
 
         }
 
+        trait Test: Clone + Debug {
+            fn test(self) -> () {
+
+            }
+        }
+
         /*fn main() -> () {
             let i = &"Hejsa";
 
