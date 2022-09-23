@@ -1,13 +1,13 @@
 use proc_macro2::Span;
 use syn::parse::{Parse, ParseStream};
 use syn::{Error, Token};
-use crate::{MiniEnum, MiniFn, MiniStruct};
+use crate::{MiniEnum, MiniFn, MiniImpl, MiniStruct};
 
 #[derive(PartialEq, Clone, Debug)]
 pub enum MiniItem {
     Enum(MiniEnum),
     Fn(MiniFn),
-    Impl(),
+    Impl(MiniImpl),
     Struct(MiniStruct),
     Trait(),
 }
@@ -20,6 +20,8 @@ impl Parse for MiniItem {
             return Ok(MiniItem::Enum(MiniEnum::parse(input)?))
         } else if input.peek(Token!(fn)) {
             return Ok(MiniItem::Fn(MiniFn::parse(input)?))
+        } else if input.peek(Token!(impl)) {
+            return Ok(MiniItem::Impl(MiniImpl::parse(input)?))
         }
 
         Err(Error::new(Span::call_site(), "Could not parse mini-item"))

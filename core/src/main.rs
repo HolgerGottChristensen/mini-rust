@@ -4,12 +4,16 @@ fn main() {
     println!("Hello, world!");
 
     my_macro!(
-        /*enum Option {
+        enum Option {
             Some(u32),
             None
-        }*/
+        }
 
-        fn main() -> () {
+        impl Option {
+
+        }
+
+        /*fn main() -> () {
             let i = &"Hejsa";
 
             i = "World" + -23;
@@ -23,7 +27,7 @@ fn main() {
             }
 
             return ();
-        }
+        }*/
         /*enum Test {
             Case1,
             Case2,
