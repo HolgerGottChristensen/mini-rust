@@ -1,9 +1,11 @@
+use std::fmt::{Debug, Formatter};
+use paris::formatter::colorize_string;
 use syn::{braced, ItemImpl, Path, Token, Type, TypePath};
 use syn::parse::{Parse, ParseStream};
 use syn::token::{Brace, For, Impl};
-use crate::MiniFn;
+use crate::{MiniFn, MiniType};
 
-#[derive(PartialEq, Clone, Debug)]
+#[derive(PartialEq, Clone)]
 pub struct MiniImpl {
     pub impl_token: Impl,
     //pub generics: Generics,
@@ -11,6 +13,21 @@ pub struct MiniImpl {
     pub self_ty: Box<Type>,
     pub brace_token: Brace,
     pub items: Vec<MiniFn>,
+}
+
+impl Debug for MiniImpl {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let mut s = f.debug_struct(stringify!(MiniImpl));
+
+        if let Some((path, f)) = &self.trait_ {
+            s.field("trait", path);
+        }
+
+        s.field("type", &MiniType((*self.self_ty).clone()));
+        s.field("items", &self.items);
+
+        s.finish()
+    }
 }
 
 impl Parse for MiniImpl {

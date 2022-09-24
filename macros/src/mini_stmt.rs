@@ -1,13 +1,14 @@
+use std::fmt::{Debug, Formatter};
 use proc_macro2::Ident;
 use syn::parse::{ParseBuffer, ParseStream};
 use syn::{Pat, Path, PatType, Token, token, Type};
 use syn::parse::discouraged::Speculative;
 use syn::token::{Let, Semi};
 use crate::mini_expr::MiniExpr;
-use crate::mini_pat::multi_pat_with_leading_vert;
+use crate::mini_pat::{MiniPat, multi_pat_with_leading_vert};
 use crate::MiniItem;
 
-#[derive(PartialEq, Clone, Debug)]
+#[derive(PartialEq, Clone)]
 pub enum MiniStmt {
     Local {
         let_token: Let,
@@ -19,6 +20,32 @@ pub enum MiniStmt {
     Item(MiniItem),
     Expr(MiniExpr),
     Semi(MiniExpr, Semi),
+}
+
+impl Debug for MiniStmt {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            MiniStmt::Local { let_token, pat, eq_token, expr, semi_token } => {
+                f.debug_struct("Local")
+                    .field("pat", &MiniPat(pat.clone()))
+                    .field("expr", &expr)
+                    .finish()
+            }
+            MiniStmt::Item(i) => {
+                f.debug_tuple("Item")
+                    .field(&i)
+                    .finish()
+            }
+            MiniStmt::Expr(i) => {
+                i.fmt(f)
+            }
+            MiniStmt::Semi(i, _) => {
+                f.debug_tuple("Semi")
+                    .field(&i)
+                    .finish()
+            }
+        }
+    }
 }
 
 pub fn parse_stmt(input: ParseStream, allow_nosemi: bool) -> syn::Result<MiniStmt> {

@@ -1,6 +1,19 @@
+use std::fmt::{Debug, Formatter};
+use paris::formatter::colorize_string;
+use quote::ToTokens;
 use syn::parse::ParseStream;
 use syn::{Pat, PatOr, Token};
 use syn::punctuated::Punctuated;
+use crate::PAT_COLOR;
+
+pub struct MiniPat(pub Pat);
+
+impl Debug for MiniPat {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let string = colorize_string(format!("{}{}</>", PAT_COLOR, self.0.to_token_stream().to_string()));
+        write!(f, "{}", string)
+    }
+}
 
 pub fn multi_pat(input: ParseStream) -> syn::Result<Pat> {
     multi_pat_impl(input, None)

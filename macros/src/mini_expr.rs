@@ -1,12 +1,14 @@
+use std::fmt::{Debug, Formatter};
 use std::mem;
+use paris::formatter::colorize_string;
 use proc_macro2::{Ident, Span};
 use syn::{BinOp, Error, Expr, Lit, LitFloat, Member, parenthesized, Path, PathArguments, Token, token};
 use syn::parse::{Parse, ParseBuffer, ParseStream};
 use syn::punctuated::Punctuated;
 use crate::expr::MiniLitExpr;
-use crate::{expr_ret, expr_struct_helper, MiniExprAssign, MiniExprBinary, MiniExprBlock, MiniExprBox, MiniExprCall, MiniExprField, MiniExprMatch, MiniExprMethodCall, MiniExprParen, MiniExprPath, MiniExprReference, MiniExprReturn, MiniExprStruct, MiniExprTuple, MiniExprUnary, MiniExprWhile, parse_expr_box, parse_expr_unary};
+use crate::{expr_ret, expr_struct_helper, MiniExprAssign, MiniExprBinary, MiniExprBlock, MiniExprBox, MiniExprCall, MiniExprField, MiniExprMatch, MiniExprMethodCall, MiniExprParen, MiniExprPath, MiniExprReference, MiniExprReturn, MiniExprStruct, MiniExprTuple, MiniExprUnary, MiniExprWhile, MiniIdent, parse_expr_box, parse_expr_unary};
 
-#[derive(PartialEq, Clone, Debug)]
+#[derive(PartialEq, Clone)]
 pub enum MiniExpr {
     Assign(MiniExprAssign),
     Binary(MiniExprBinary),
@@ -68,7 +70,7 @@ impl MiniPrecedence {
     }
 }
 
-#[derive(PartialEq, Clone, Debug)]
+#[derive(PartialEq, Clone)]
 pub enum MiniBinOp {
     /// The `+` operator (addition)
     Add(Token![+]),
@@ -106,6 +108,128 @@ pub enum MiniBinOp {
     Ge(Token![>=]),
     /// The `>` operator (greater than)
     Gt(Token![>]),
+}
+
+impl Debug for MiniBinOp {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            MiniBinOp::Add(_) => {
+                let s = colorize_string(format!("<bright-green>+</>"));
+                write!(f, "{}", s)
+            }
+            MiniBinOp::Sub(_) => {
+                let s = colorize_string(format!("<bright-green>-</>"));
+                write!(f, "{}", s)
+            }
+            MiniBinOp::Mul(_) => {
+                let s = colorize_string(format!("<bright-green>*</>"));
+                write!(f, "{}", s)
+            }
+            MiniBinOp::Div(_) => {
+                let s = colorize_string(format!("<bright-green>/</>"));
+                write!(f, "{}", s)
+            }
+            MiniBinOp::Rem(_) => {
+                let s = colorize_string(format!("<bright-green>%</>"));
+                write!(f, "{}", s)
+            }
+            MiniBinOp::And(_) => {
+                let s = colorize_string(format!("<bright-green>&&</>"));
+                write!(f, "{}", s)
+            }
+            MiniBinOp::Or(_) => {
+                let s = colorize_string(format!("<bright-green>||</>"));
+                write!(f, "{}", s)
+            }
+            MiniBinOp::BitXor(_) => {
+                let s = colorize_string(format!("<bright-green>^</>"));
+                write!(f, "{}", s)
+            }
+            MiniBinOp::BitAnd(_) => {
+                let s = colorize_string(format!("<bright-green>&</>"));
+                write!(f, "{}", s)
+            }
+            MiniBinOp::BitOr(_) => {
+                let s = colorize_string(format!("<bright-green>|</>"));
+                write!(f, "{}", s)
+            }
+            MiniBinOp::Shl(_) => {
+                let s = colorize_string(format!("<bright-green><<</>"));
+                write!(f, "{}", s)
+            }
+            MiniBinOp::Shr(_) => {
+                let s = colorize_string(format!("<bright-green>>></>"));
+                write!(f, "{}", s)
+            }
+            MiniBinOp::Eq(_) => {
+                let s = colorize_string(format!("<bright-green>==</>"));
+                write!(f, "{}", s)
+            }
+            MiniBinOp::Lt(_) => {
+                let s = colorize_string(format!("<bright-green><=</>"));
+                write!(f, "{}", s)
+            }
+            MiniBinOp::Le(_) => {
+                let s = colorize_string(format!("<bright-green><</>"));
+                write!(f, "{}", s)
+            }
+            MiniBinOp::Ne(_) => {
+                let s = colorize_string(format!("<bright-green>!=</>"));
+                write!(f, "{}", s)
+            }
+            MiniBinOp::Ge(_) => {
+                let s = colorize_string(format!("<bright-green>>=</>"));
+                write!(f, "{}", s)
+            }
+            MiniBinOp::Gt(_) => {
+                let s = colorize_string(format!("<bright-green>></>"));
+                write!(f, "{}", s)
+            }
+        }
+    }
+}
+
+impl Debug for MiniUnOp {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            MiniUnOp::Deref(_) => {
+                let s = colorize_string(format!("<bright-green>*</>"));
+                write!(f, "{}", s)
+            }
+            MiniUnOp::Not(_) => {
+                let s = colorize_string(format!("<bright-green>!</>"));
+                write!(f, "{}", s)
+            }
+            MiniUnOp::Neg(_) => {
+                let s = colorize_string(format!("<bright-green>-</>"));
+                write!(f, "{}", s)
+            }
+        }
+    }
+}
+
+impl Debug for MiniExpr {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            MiniExpr::Assign(s) => s.fmt(f),
+            MiniExpr::Binary(s) => s.fmt(f),
+            MiniExpr::Block(s) => s.fmt(f),
+            MiniExpr::Box(s) => s.fmt(f),
+            MiniExpr::Call(s) => s.fmt(f),
+            MiniExpr::Field(s) => s.fmt(f),
+            MiniExpr::Lit(s) => s.fmt(f),
+            MiniExpr::Match(s) => s.fmt(f),
+            MiniExpr::MethodCall(s) => s.fmt(f),
+            MiniExpr::Paren(s) => s.fmt(f),
+            MiniExpr::Path(s) => s.fmt(f),
+            MiniExpr::Reference(s) => s.fmt(f),
+            MiniExpr::Return(s) => s.fmt(f),
+            MiniExpr::Struct(s) => s.fmt(f),
+            MiniExpr::Tuple(s) => s.fmt(f),
+            MiniExpr::Unary(s) => s.fmt(f),
+            MiniExpr::While(s) => s.fmt(f),
+        }
+    }
 }
 
 impl Parse for MiniBinOp {
@@ -156,7 +280,7 @@ fn parse_binop(input: ParseStream) -> syn::Result<MiniBinOp> {
     }
 }
 
-#[derive(PartialEq, Clone, Debug)]
+#[derive(PartialEq, Clone)]
 pub enum MiniUnOp {
     /// The `*` operator for dereferencing
     Deref(Token![*]),
@@ -366,7 +490,7 @@ impl MiniExpr {
                         e = MiniExpr::MethodCall(MiniExprMethodCall {
                             receiver: Box::new(e),
                             dot_token,
-                            method,
+                            method: MiniIdent(method),
                             paren_token: parenthesized!(content in input),
                             args: content.parse_terminated(MiniExpr::parse)?,
                         });

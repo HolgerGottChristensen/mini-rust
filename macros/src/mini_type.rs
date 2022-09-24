@@ -1,21 +1,22 @@
 use std::fmt::{Debug, Formatter};
 use paris::formatter::colorize_string;
-use proc_macro2::Ident;
+use quote::ToTokens;
 use syn::parse::{Parse, ParseStream};
-use crate::IDENT_COLOR;
+use syn::Type;
+use crate::TYPE_COLOR;
 
 #[derive(PartialEq, Clone)]
-pub struct MiniIdent(pub Ident);
+pub struct MiniType(pub Type);
 
-impl Parse for MiniIdent {
+impl Parse for MiniType {
     fn parse(input: ParseStream) -> syn::Result<Self> {
-        Ok(MiniIdent(Ident::parse(input)?))
+        Ok(MiniType(Type::parse(input)?))
     }
 }
 
-impl Debug for MiniIdent {
+impl Debug for MiniType {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        let string = colorize_string(format!("{}{}</>", IDENT_COLOR, self.0.to_string()));
+        let string = colorize_string(format!("{}{}</>", TYPE_COLOR, self.0.to_token_stream().to_string()));
         write!(f, "{}", string)
     }
 }

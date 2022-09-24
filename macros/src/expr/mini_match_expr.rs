@@ -1,9 +1,10 @@
+use std::fmt::{Debug, Formatter};
 use syn::{braced, Pat, Token, token};
 use syn::parse::{Parse, ParseStream};
 use crate::mini_expr::MiniExpr;
-use crate::mini_pat::multi_pat_with_leading_vert;
+use crate::mini_pat::{MiniPat, multi_pat_with_leading_vert};
 
-#[derive(PartialEq, Clone, Debug)]
+#[derive(PartialEq, Clone)]
 pub struct MiniExprMatch {
     pub match_token: Token![match],
     pub expr: Box<MiniExpr>,
@@ -11,12 +12,21 @@ pub struct MiniExprMatch {
     pub arms: Vec<MiniArm>,
 }
 
-#[derive(PartialEq, Clone, Debug)]
+#[derive(PartialEq, Clone)]
 pub struct MiniArm {
     pub pat: Pat,
     pub fat_arrow_token: Token![=>],
     pub body: Box<MiniExpr>,
     pub comma: Option<Token![,]>,
+}
+
+impl Debug for MiniExprMatch {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("MiniExprMatch")
+            .field("expr", &self.expr)
+            .field("arms", &self.arms)
+            .finish()
+    }
 }
 
 impl Parse for MiniExprMatch {
@@ -38,6 +48,15 @@ impl Parse for MiniExprMatch {
             brace_token,
             arms,
         })
+    }
+}
+
+impl Debug for MiniArm {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("MiniArm")
+            .field("pat", &MiniPat(self.pat.clone()))
+            .field("body", &self.body)
+            .finish()
     }
 }
 

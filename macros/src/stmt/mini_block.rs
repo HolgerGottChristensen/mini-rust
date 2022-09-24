@@ -1,12 +1,21 @@
+use std::fmt::{Debug, Formatter};
 use syn::{braced, Stmt, token, Token};
 use syn::parse::{Parse, ParseStream};
 use crate::{MiniStmt, parse_stmt};
 
-#[derive(PartialEq, Clone, Debug)]
+#[derive(PartialEq, Clone)]
 pub struct MiniBlock {
     pub brace_token: token::Brace,
     /// Statements in a block
     pub stmts: Vec<MiniStmt>,
+}
+
+impl Debug for MiniBlock {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("MiniBlock")
+            .field("stmts", &self.stmts)
+            .finish()
+    }
 }
 
 impl Parse for MiniBlock {

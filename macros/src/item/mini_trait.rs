@@ -1,14 +1,16 @@
+use std::fmt::{Debug, Formatter};
 use proc_macro2::Ident;
 use syn::punctuated::Punctuated;
 use syn::{braced, ItemTrait, Path, token, Token};
 use syn::parse::{Parse, ParseStream};
 use syn::token::{Add, Brace, Colon, Trait};
-use crate::MiniFn;
+use crate::{MiniFn, MiniIdent};
+use crate::mini_path::MiniPath;
 
-#[derive(PartialEq, Clone, Debug)]
+#[derive(PartialEq, Clone)]
 pub struct MiniTrait {
     pub trait_token: Trait,
-    pub ident: Ident,
+    pub ident: MiniIdent,
     //pub generics: Generics,
     pub colon_token: Option<Colon>,
     pub super_traits: Punctuated<TraitBound, Add>,
@@ -16,16 +18,32 @@ pub struct MiniTrait {
     pub items: Vec<MiniFn>,
 }
 
-#[derive(PartialEq, Clone, Debug)]
+#[derive(PartialEq, Clone)]
 pub struct TraitBound {
     pub paren_token: Option<token::Paren>,
     pub path: Path,
 }
 
+impl Debug for MiniTrait {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let mut s = f.debug_struct("MiniTrait");
+
+        s.field("ident", &self.ident);
+
+        if self.super_traits.len() > 0 {
+            s.field("super_traits", &self.super_traits.iter().collect::<Vec<_>>());
+        }
+
+        s.field("items", &self.items);
+
+        s.finish()
+    }
+}
+
 impl Parse for MiniTrait {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         let trait_token: Token![trait] = input.parse()?;
-        let ident: Ident = input.parse()?;
+        let ident: MiniIdent = input.parse()?;
         //let generics: Generics = input.parse()?;
         parse_rest_of_trait(
             input,
@@ -39,7 +57,7 @@ impl Parse for MiniTrait {
 fn parse_rest_of_trait(
     input: ParseStream,
     trait_token: Token![trait],
-    ident: Ident,
+    ident: MiniIdent,
     //mut generics: Generics,
 ) -> syn::Result<MiniTrait> {
     let colon_token: Option<Token![:]> = input.parse()?;
@@ -76,6 +94,12 @@ fn parse_rest_of_trait(
         brace_token,
         items,
     })
+}
+
+impl Debug for TraitBound {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        MiniPath(self.path.clone()).fmt(f)
+    }
 }
 
 impl Parse for TraitBound {

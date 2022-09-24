@@ -1,16 +1,19 @@
+use std::fmt::{Debug, Formatter};
+use paris::formatter::colorize_string;
 use proc_macro2::{Ident, Span};
 use syn::punctuated::Punctuated;
 use syn::{Error, ItemFn, parenthesized, Pat, PatOr, token, Token, Type};
 use syn::parse::{Parse, ParseBuffer, ParseStream};
 use syn::parse::discouraged::Speculative;
 use syn::token::{And, Colon, Comma, Mut, Paren, RArrow, SelfValue};
-use crate::mini_pat::multi_pat;
+use crate::mini_pat::{MiniPat, multi_pat};
+use crate::{MiniIdent, MiniType};
 use crate::stmt::MiniBlock;
 
-#[derive(PartialEq, Clone, Debug)]
+#[derive(PartialEq, Clone)]
 pub struct MiniFn {
     pub fn_token: token::Fn,
-    pub ident: Ident,
+    pub ident: MiniIdent,
     // pub generics: Generics,
     pub paren_token: Paren,
     pub inputs: Punctuated<MiniFnArg, Comma>,
@@ -19,8 +22,7 @@ pub struct MiniFn {
     pub block: Box<MiniBlock>,
 }
 
-
-#[derive(PartialEq, Clone, Debug)]
+#[derive(PartialEq, Clone)]
 pub enum MiniFnArg {
     Receiver {
         reference: Option<And>,
@@ -73,10 +75,25 @@ impl MiniFn {
     }
 }
 
+impl Debug for MiniFn {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let mut s = f.debug_struct("MiniFn");
+
+        s.field("ident", &self.ident);
+        s.field("inputs", &self.inputs.iter().collect::<Vec<_>>());
+
+        s.field("return", &MiniType(*self.return_type.clone()));
+
+        s.field("block", &self.block);
+
+        s.finish()
+    }
+}
+
 impl Parse for MiniFn {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         let fn_token: Token![fn] = input.parse()?;
-        let ident: Ident = input.parse()?;
+        let ident: MiniIdent = input.parse()?;
         //let mut generics: Generics = input.parse()?;
 
         let content;
@@ -96,6 +113,27 @@ impl Parse for MiniFn {
             return_type: Box::new(output_ty),
             block: Box::new(input.parse()?)
         })
+    }
+}
+
+impl Debug for MiniFnArg {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            MiniFnArg::Receiver { reference, mutability, self_token } => {
+                let reference = reference.map(|a| "&").unwrap_or("");
+                let mutability = mutability.map(|a| "mut").unwrap_or("");
+
+                let s = format!("<yellow><b>{}{}self</>", reference, mutability);
+
+                write!(f, "{}", colorize_string(s))
+            }
+            MiniFnArg::Typed { pat, colon_token, ty } => {
+                f.debug_struct("Typed")
+                    .field("pat", &MiniPat(*pat.clone()))
+                    .field("ty", &MiniType(*ty.clone()))
+                    .finish()
+            }
+        }
     }
 }
 

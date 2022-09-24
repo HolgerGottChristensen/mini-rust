@@ -7,6 +7,8 @@ mod stmt;
 mod mini_stmt;
 mod mini_pat;
 mod mini_ident;
+mod mini_type;
+mod mini_path;
 
 extern crate proc_macro;
 use proc_macro::TokenStream;
@@ -18,6 +20,13 @@ use crate::item::*;
 use mini_item::*;
 use mini_file::*;
 use mini_stmt::*;
+use mini_ident::*;
+use mini_type::*;
+
+pub(crate) const IDENT_COLOR: &'static str = "<magenta><i>";
+pub(crate) const TYPE_COLOR: &'static str = "<blue><b>";
+pub(crate) const PAT_COLOR: &'static str = "<cyan>";
+pub(crate) const PATH_COLOR: &'static str = "<bright-yellow>";
 
 /// Example of [function-like procedural macro][1].
 ///
@@ -25,6 +34,7 @@ use mini_stmt::*;
 #[proc_macro]
 pub fn my_macro(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as MiniFile);
+
 
     panic!("\n{:#?}", &input);
     let tokens = quote! {};

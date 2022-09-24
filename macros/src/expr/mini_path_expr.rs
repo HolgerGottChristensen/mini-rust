@@ -1,13 +1,28 @@
+use std::fmt::{Debug, Formatter};
 use proc_macro2::Ident;
 use syn::{Path, PathArguments, PathSegment, QSelf, Token, token, Type};
 use syn::ext::IdentExt;
 use syn::parse::{Parse, ParseStream};
 use syn::punctuated::Punctuated;
+use crate::mini_path::MiniPath;
 
-#[derive(PartialEq, Clone, Debug)]
+#[derive(PartialEq, Clone)]
 pub struct MiniExprPath {
     pub qself: Option<QSelf>,
     pub path: Path,
+}
+
+impl Debug for MiniExprPath {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let mut s = f.debug_struct("MiniExprPath");
+
+        if let Some(se) = &self.qself {
+            s.field("self", se);
+        }
+
+        s.field("path", &MiniPath(self.path.clone()));
+        s.finish()
+    }
 }
 
 impl Parse for MiniExprPath {

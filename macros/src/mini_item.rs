@@ -1,15 +1,28 @@
+use std::fmt::{Debug, Formatter};
 use proc_macro2::Span;
 use syn::parse::{Parse, ParseStream};
 use syn::{Error, Token};
 use crate::{MiniEnum, MiniFn, MiniImpl, MiniStruct, MiniTrait};
 
-#[derive(PartialEq, Clone, Debug)]
+#[derive(PartialEq, Clone)]
 pub enum MiniItem {
     Enum(MiniEnum),
     Fn(MiniFn),
     Impl(MiniImpl),
     Struct(MiniStruct),
     Trait(MiniTrait),
+}
+
+impl Debug for MiniItem {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            MiniItem::Enum(s) => s.fmt(f),
+            MiniItem::Fn(s) => s.fmt(f),
+            MiniItem::Impl(s) => s.fmt(f),
+            MiniItem::Struct(s) => s.fmt(f),
+            MiniItem::Trait(s) => s.fmt(f),
+        }
+    }
 }
 
 impl Parse for MiniItem {

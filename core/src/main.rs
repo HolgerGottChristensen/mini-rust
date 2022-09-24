@@ -1,7 +1,7 @@
 use macros::my_macro;
 
 fn main() {
-    println!("Hello, world!");
+    println!("{}", "Hello, world!");
 
     my_macro!(
         enum Option {
@@ -10,16 +10,21 @@ fn main() {
         }
 
         impl Option {
-
+            fn map(self, f: fn(u32) -> i32) -> Self {
+                match self {
+                    Some(n) => Some(f(n)),
+                    None => None
+                }
+            }
         }
 
-        trait Test: Clone + Debug {
+        /*trait Test: Clone + Debug {
             fn test(self) -> () {
 
             }
         }
 
-        /*fn main() -> () {
+        fn main() -> () {
             let i = &"Hejsa";
 
             i = "World" + -23;
@@ -33,11 +38,8 @@ fn main() {
             }
 
             return ();
-        }*/
-        /*enum Test {
-            Case1,
-            Case2,
         }
+
 
         struct Hejsa {
             field1: u32,
