@@ -4,14 +4,14 @@ use syn::punctuated::Punctuated;
 use syn::{braced, ItemTrait, Path, token, Token};
 use syn::parse::{Parse, ParseStream};
 use syn::token::{Add, Brace, Colon, Trait};
-use crate::{MiniFn, MiniIdent};
+use crate::{MiniFn, MiniGenerics, MiniIdent};
 use crate::mini_path::MiniPath;
 
 #[derive(PartialEq, Clone)]
 pub struct MiniTrait {
     pub trait_token: Trait,
     pub ident: MiniIdent,
-    //pub generics: Generics,
+    pub generics: MiniGenerics,
     pub colon_token: Option<Colon>,
     pub super_traits: Punctuated<TraitBound, Add>,
     pub brace_token: Brace,
@@ -29,6 +29,7 @@ impl Debug for MiniTrait {
         let mut s = f.debug_struct("MiniTrait");
 
         s.field("ident", &self.ident);
+        s.field("generics", &self.generics);
 
         if self.super_traits.len() > 0 {
             s.field("super_traits", &self.super_traits.iter().collect::<Vec<_>>());
@@ -44,12 +45,12 @@ impl Parse for MiniTrait {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         let trait_token: Token![trait] = input.parse()?;
         let ident: MiniIdent = input.parse()?;
-        //let generics: Generics = input.parse()?;
+        let generics: MiniGenerics = input.parse()?;
         parse_rest_of_trait(
             input,
             trait_token,
             ident,
-            //generics,
+            generics,
         )
     }
 }
@@ -58,7 +59,7 @@ fn parse_rest_of_trait(
     input: ParseStream,
     trait_token: Token![trait],
     ident: MiniIdent,
-    //mut generics: Generics,
+    mut generics: MiniGenerics,
 ) -> syn::Result<MiniTrait> {
     let colon_token: Option<Token![:]> = input.parse()?;
 
@@ -76,7 +77,7 @@ fn parse_rest_of_trait(
         }
     }
 
-    //generics.where_clause = input.parse()?;
+    generics.where_clause = input.parse()?;
 
     let content;
     let brace_token = braced!(content in input);
@@ -89,6 +90,7 @@ fn parse_rest_of_trait(
     Ok(MiniTrait {
         trait_token,
         ident,
+        generics,
         colon_token,
         super_traits,
         brace_token,

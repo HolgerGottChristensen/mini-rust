@@ -4,8 +4,23 @@ fn main() {
     println!("{}", "Hello, world!");
 
     my_macro!(
-        enum Option {
-            Some(u32),
+        trait TestTrait<T>: Debug where T: Clone + Debug {
+
+        }
+
+        impl<T> TestTrait<T> for Option {
+            fn hello<U>(u: U) -> () {
+
+            }
+        }
+        /*struct Hejsa<T> where T: Debug {
+            field1: T,
+            field2: String
+        }*/
+
+        //enum Option<T: Default> where T: Widget, G: Grim {
+        /*enum Option<T: Default> {
+            Some(T),
             None
         }
 
@@ -16,7 +31,7 @@ fn main() {
                     None => None
                 }
             }
-        }
+        }*/
 
         /*trait Test: Clone + Debug {
             fn test(self) -> () {

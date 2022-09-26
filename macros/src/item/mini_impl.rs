@@ -3,12 +3,13 @@ use paris::formatter::colorize_string;
 use syn::{braced, ItemImpl, Path, Token, Type, TypePath};
 use syn::parse::{Parse, ParseStream};
 use syn::token::{Brace, For, Impl};
-use crate::{MiniFn, MiniType};
+use crate::{MiniFn, MiniGenerics, MiniType};
+use crate::mini_path::MiniPath;
 
 #[derive(PartialEq, Clone)]
 pub struct MiniImpl {
     pub impl_token: Impl,
-    //pub generics: Generics,
+    pub generics: MiniGenerics,
     pub trait_: Option<(Path, For)>,
     pub self_ty: Box<Type>,
     pub brace_token: Brace,
@@ -20,8 +21,10 @@ impl Debug for MiniImpl {
         let mut s = f.debug_struct(stringify!(MiniImpl));
 
         if let Some((path, f)) = &self.trait_ {
-            s.field("trait", path);
+            s.field("trait", &MiniPath(path.clone()));
         }
+
+        s.field("generics", &self.generics);
 
         s.field("type", &MiniType((*self.self_ty).clone()));
         s.field("items", &self.items);
@@ -40,23 +43,20 @@ impl Parse for MiniImpl {
 fn parse_impl(input: ParseStream, allow_verbatim_impl: bool) -> syn::Result<Option<MiniImpl>> {
     let impl_token: Token![impl] = input.parse()?;
 
-    /*let has_generics = input.peek(Token![<])
+    let has_generics = input.peek(Token![<])
         && (input.peek2(Token![>])
         || input.peek2(Token![#])
-        || (input.peek2(Ident) || input.peek2(Lifetime))
+        || input.peek2(syn::Ident)
         && (input.peek3(Token![:])
         || input.peek3(Token![,])
-        || input.peek3(Token![>])
-        || input.peek3(Token![=]))
-        || input.peek2(Token![const]));
+        || input.peek3(Token![>]))
+    );
 
-    let mut generics: Generics = if has_generics {
+    let mut generics: MiniGenerics = if has_generics {
         input.parse()?
     } else {
-        Generics::default()
-    };*/
-
-    let begin = input.fork();
+        MiniGenerics::default()
+    };
 
     let first_ty_span = input.span();
     let mut first_ty: Type = input.parse()?;
@@ -90,7 +90,7 @@ fn parse_impl(input: ParseStream, allow_verbatim_impl: bool) -> syn::Result<Opti
         self_ty = first_ty;
     }
 
-    //generics.where_clause = input.parse()?;
+    generics.where_clause = input.parse()?;
 
     let content;
     let brace_token = braced!(content in input);
@@ -105,6 +105,7 @@ fn parse_impl(input: ParseStream, allow_verbatim_impl: bool) -> syn::Result<Opti
     } else {
         Ok(Some(MiniImpl {
             impl_token,
+            generics,
             trait_,
             self_ty: Box::new(self_ty),
             brace_token,

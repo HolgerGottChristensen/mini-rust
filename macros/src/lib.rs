@@ -9,6 +9,7 @@ mod mini_pat;
 mod mini_ident;
 mod mini_type;
 mod mini_path;
+mod mini_generics;
 
 extern crate proc_macro;
 use proc_macro::TokenStream;
@@ -22,6 +23,7 @@ use mini_file::*;
 use mini_stmt::*;
 use mini_ident::*;
 use mini_type::*;
+use mini_generics::*;
 
 pub(crate) const IDENT_COLOR: &'static str = "<magenta><i>";
 pub(crate) const TYPE_COLOR: &'static str = "<blue><b>";

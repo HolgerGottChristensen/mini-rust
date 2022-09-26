@@ -7,14 +7,14 @@ use syn::parse::{Parse, ParseBuffer, ParseStream};
 use syn::parse::discouraged::Speculative;
 use syn::token::{And, Colon, Comma, Mut, Paren, RArrow, SelfValue};
 use crate::mini_pat::{MiniPat, multi_pat};
-use crate::{MiniIdent, MiniType};
+use crate::{MiniGenerics, MiniIdent, MiniType};
 use crate::stmt::MiniBlock;
 
 #[derive(PartialEq, Clone)]
 pub struct MiniFn {
     pub fn_token: token::Fn,
     pub ident: MiniIdent,
-    // pub generics: Generics,
+    pub generics: MiniGenerics,
     pub paren_token: Paren,
     pub inputs: Punctuated<MiniFnArg, Comma>,
     pub arrow_token: RArrow,
@@ -80,6 +80,7 @@ impl Debug for MiniFn {
         let mut s = f.debug_struct("MiniFn");
 
         s.field("ident", &self.ident);
+        s.field("generics", &self.generics);
         s.field("inputs", &self.inputs.iter().collect::<Vec<_>>());
 
         s.field("return", &MiniType(*self.return_type.clone()));
@@ -94,7 +95,7 @@ impl Parse for MiniFn {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         let fn_token: Token![fn] = input.parse()?;
         let ident: MiniIdent = input.parse()?;
-        //let mut generics: Generics = input.parse()?;
+        let mut generics: MiniGenerics = input.parse()?;
 
         let content;
         let paren_token = parenthesized!(content in input);
@@ -102,11 +103,12 @@ impl Parse for MiniFn {
 
         let arrow_token = RArrow::parse(input)?;
         let output_ty = Type::parse(input)?;
-        //generics.where_clause = input.parse()?;
+        generics.where_clause = input.parse()?;
 
         Ok(MiniFn {
             fn_token,
             ident,
+            generics,
             paren_token,
             inputs,
             arrow_token,
