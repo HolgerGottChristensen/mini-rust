@@ -1,6 +1,6 @@
 use std::collections::VecDeque;
 use std::fmt::{Display, Formatter};
-use crate::{index_to_name, pick_fresh_name};
+use crate::{Context, pick_fresh_name};
 use paris::formatter::colorize_string;
 
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Debug)]
@@ -23,15 +23,12 @@ impl Display for Kind {
     }
 }
 
+
+
 #[derive(Clone, Debug)]
 pub enum Type {
     /// X, Y, Z
-    TypeVar(
-        /// specifies the distance to the variable’s binder
-        i64,
-        /// specifies the expected total size of the context
-        i64
-    ),
+    TypeVar(String),
     /// Type -> Type
     TypeArrow(Box<Type>, Box<Type>),
     /// lambda X::Kind. Type
@@ -40,6 +37,10 @@ pub enum Type {
     TypeApp(Box<Type>, Box<Type>),
     /// ∀ X::Kind. Type
     TypeAll(String, Kind, Box<Type>),
+    /// Bool
+    Bool,
+    /// Int
+    Int,
 }
 
 impl Display for Type {
@@ -86,13 +87,11 @@ impl Type {
 
     fn to_string_atomic(&self, context: &Context) -> String {
         match self {
-            Type::TypeVar(x, n) => {
-                if context.len() == *n as usize {
-                    format!("{}", index_to_name(context, *x as usize))
-                } else {
-                    "OutOfBounds".to_string()
-                }
+            Type::TypeVar(x) => {
+                format!("{}", x)
             }
+            Type::Bool => "Bool".to_string(),
+            Type::Int => "Int".to_string(),
             t => format!("({})", t.to_string_type(context))
         }
     }
@@ -101,7 +100,7 @@ impl Type {
 #[derive(Clone)]
 pub enum Term {
     /// x, y, z ...
-    TermVar(i64, i64),
+    TermVar(String),
     /// lambda x:Type. Term
     TermAbs(String, Type, Box<Term>),
     /// Term Term
@@ -110,6 +109,14 @@ pub enum Term {
     TermTypeAbs(String, Kind, Box<Term>),
     /// Term \[Type\]
     TermTypeApp(Box<Term>, Type),
+    /// true
+    True,
+    /// false
+    False,
+    /// 0, 1, 2 ...
+    Integer(i64),
+    /// If Term then Term else Term
+    If(Box<Term>, Box<Term>, Box<Term>)
 }
 
 impl Display for Term {
@@ -121,13 +128,13 @@ impl Display for Term {
 impl Term {
     fn to_string_atomic(&self, context: &Context) -> String {
         match self {
-            Term::TermVar(i, n) => {
-                if context.len() == *n as usize {
-                    format!("{}", index_to_name(context, *i as usize))
-                } else {
-                    "OutOfBounds".to_string()
-                }
+            Term::TermVar(x) => {
+                format!("{}", x)
             },
+            Term::True => "true".to_string(),
+            Term::False => "false".to_string(),
+            Term::Integer(i) => format!("{}", i),
+            Term::If(t1, t2, t3) => format!("if {} then {} else {}", t1.to_string_term(context), t2.to_string_term(context), t3.to_string_term(context)),
             t => format!("({})", t.to_string_term(context))
         }
     }
@@ -163,9 +170,17 @@ impl Term {
 
 #[derive(Clone, Debug)]
 pub enum Binding {
-    NameBinding,
-    VarBinding(Type),
-    TyVarBinding(Kind)
+    NameBinding(String),
+    VarBinding(String, Type),
+    TyVarBinding(String, Kind)
 }
 
-pub type Context = VecDeque<(String, Binding)>;
+impl PartialEq<Binding> for &String{
+    fn eq(&self, other: &Binding) -> bool {
+        match other {
+            Binding::NameBinding(s) |
+            Binding::VarBinding(s, _) |
+            Binding::TyVarBinding(s, _) => s == *self,
+        }
+    }
+}

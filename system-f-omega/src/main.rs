@@ -32,16 +32,29 @@ fn main() {
 
     let context = Context::new();
 
-    let term = TermTypeAbs(
+    /*let term = TermTypeAbs(
         "X".to_string(),
         KindStar,
         Box::new(
             Term::TermAbs(
                 "x".to_string(),
-                Type::TypeVar(0, 1),
-                Box::new(Term::TermVar(1, 2))
+                Type::TypeVar("X".to_string()),
+                Box::new(Term::TermVar("x".to_string()))
             )
         )
+    );
+
+    println!("Term: {}", term);
+    println!("Type: {}", type_of(&context, term));*/
+
+    let term = Term::TermAbs(
+        "x".to_string(),
+        Type::Bool,
+        Box::new(Term::If(
+            Box::new(Term::TermVar("x".to_string())),
+            Box::new(Term::Integer(42)),
+            Box::new(Term::Integer(420)),
+        ))
     );
 
     println!("Term: {}", term);

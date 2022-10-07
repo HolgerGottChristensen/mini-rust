@@ -1,4 +1,4 @@
-use crate::{add_binding, add_name, Binding, Context, get_binding, get_type_from_context, Kind, Term, term_substitution_top, Type, type_shift, type_substitution, type_substitution_top, type_term_substitution_top};
+use crate::{add_binding, add_name, Binding, Context, get_binding, get_kind, get_type, Kind, Term, Type, type_substitution};
 use crate::Type::{TypeAll, TypeArrow};
 
 pub fn is_val(context: &Context, term: Term) -> bool {
@@ -9,6 +9,7 @@ pub fn is_val(context: &Context, term: Term) -> bool {
     }
 }
 
+/*
 pub fn eval1(context: &Context, term: Term) -> Result<Term, Term> {
     match term {
         Term::TermApp(t1, t2) => {
@@ -56,7 +57,7 @@ pub fn eval(context: &Context, term: Term) -> Term {
         Err(t) => t,
     }
 }
-
+*/
 
 // KINDING
 
@@ -64,8 +65,8 @@ pub fn compute_type(context: &Context, tyt: Type) -> Result<Type, Type> {
     match tyt.clone() {
         Type::TypeApp(tyT1, tyT2) => {
             match *tyT1 {
-                Type::TypeAbs(_, _, tyT12) => {
-                    return Ok(type_substitution_top(*tyT2, *tyT12))
+                Type::TypeAbs(name, _, tyT12) => {
+                    return Ok(type_substitution(&name, *tyT2, *tyT12))
                 }
                 _ => ()
             }
@@ -97,7 +98,7 @@ pub fn type_equivalence(context: &Context, tys: Type, tyt: Type) -> bool {
         (Type::TypeArrow(tyS1,tyS2), Type::TypeArrow(tyT1,tyT2)) => {
             type_equivalence(context, *tyS1, *tyT1) && type_equivalence(context, *tyS2, *tyT2)
         }
-        (Type::TypeVar(i, _), Type::TypeVar(j, _)) => i == j,
+        (Type::TypeVar(i), Type::TypeVar(j)) => i == j, // Todo: Maybe this is not the correct equivalence?
         (Type::TypeAbs(tyX1,knKS1,tyS2), Type::TypeAbs(_,knKT1,tyT2)) => {
             let new_context = add_name(context, tyX1);
 
@@ -111,14 +112,9 @@ pub fn type_equivalence(context: &Context, tys: Type, tyt: Type) -> bool {
 
             knK1 == knK2 && type_equivalence(&new_context, *tyS2, *tyT2)
         }
+        (Type::Bool, Type::Bool) => true,
+        (Type::Int, Type::Int) => true,
         _ => false
-    }
-}
-
-pub fn get_kind(context: &Context, i: i64) -> Kind {
-    match get_binding(context, i) {
-        Binding::TyVarBinding(kNk) => kNk,
-        _ => panic!("Binding at position {} is not a TyVarBinding: {:?}", i, context)
     }
 }
 
@@ -137,11 +133,11 @@ pub fn kind_of(context: &Context, t: Type) -> Kind {
 
             Kind::KindStar
         }
-        Type::TypeVar(i, _) => {
-            get_kind(context, i)
+        Type::TypeVar(i) => {
+            get_kind(context, &i)
         }
         Type::TypeAbs(x, k1, k2) => {
-            let new_context = add_binding(context, x, Binding::TyVarBinding(k1.clone()));
+            let new_context = add_binding(context, Binding::TyVarBinding(x, k1.clone()));
 
             let k2 = kind_of(&new_context, *k2);
             Kind::KindArrow(Box::new(k1), Box::new(k2))
@@ -162,7 +158,7 @@ pub fn kind_of(context: &Context, t: Type) -> Kind {
             }
         }
         Type::TypeAll(x, k1, t2) => {
-            let new_context = add_binding(context, x, Binding::TyVarBinding(k1.clone()));
+            let new_context = add_binding(context, Binding::TyVarBinding(x, k1.clone()));
 
             if kind_of(&new_context, *t2) != Kind::KindStar {
                 panic!("Kind * expected")
@@ -170,6 +166,7 @@ pub fn kind_of(context: &Context, t: Type) -> Kind {
 
             Kind::KindStar
         }
+        Type::Int | Type::Bool => Kind::KindStar,
     }
 }
 
@@ -184,27 +181,17 @@ pub fn check_kind_star(context: &Context, tyt: Type) {
 pub fn type_of(context: &Context, term: Term) -> Type {
     match term {
         // T-Var
-        Term::TermVar(i,_) => {
-            get_type_from_context(context, i)
+        Term::TermVar(name) => {
+            get_type(context, &name)
         },
         // T-Abs
         Term::TermAbs(x, t1, term2) => {
             check_kind_star(context, t1.clone());
 
-            let new_context = add_binding(context, x, Binding::VarBinding(t1.clone()));
+            let new_context = add_binding(context, Binding::VarBinding(x, t1.clone()));
 
             let t2 = type_of(&new_context, *term2);
-            //println!("{:?}", &tyt2);
-            //println!("{:?}", &context);
-            //println!("{:?}", &new_context);
-
-            dbg!(&t2);
-            let t2 = type_shift(-1, t2);
-            //let t2 = type_shift(-1, t2);
-            dbg!(&t2);
-
-            TypeArrow(Box::new(t1), Box::new(t2)) // Original
-            //TypeArrow(Box::new(tyT1), Box::new(type_shift(0, tyt2)))
+            TypeArrow(Box::new(t1), Box::new(t2))
         }
         // T-App
         Term::TermApp(t1,t2) => {
@@ -224,7 +211,7 @@ pub fn type_of(context: &Context, term: Term) -> Type {
         }
         // T-TAbs
         Term::TermTypeAbs(tyX,knK1,t2) => {
-            let new_context = add_binding(context, tyX.clone(), Binding::TyVarBinding(knK1.clone()));
+            let new_context = add_binding(context, Binding::TyVarBinding(tyX.clone(), knK1.clone()));
 
             let tyT2 = type_of(&new_context, *t2);
 
@@ -235,15 +222,37 @@ pub fn type_of(context: &Context, term: Term) -> Type {
             let knKT2 = kind_of(context, tyT2.clone());
             let tyT1 = type_of(context, *t1);
             match simplify_type(context, tyT1) {
-                TypeAll(_,knK11,tyT12) => {
+                TypeAll(name, knK11,tyT12) => {
                     if knK11 != knKT2 {
                         panic!("Type argument has wrong kind")
                     } else {
-                        type_substitution_top(tyT2, *tyT12)
+                        type_substitution(&name, tyT2, *tyT12)
                     }
                 }
                 _ => panic!("universal type expected")
             }
+        }
+        Term::True | Term::False => Type::Bool,
+        Term::Integer(_) => Type::Int,
+        Term::If(term1, term2, term3) => {
+            let t1 = type_of(context, *term1);
+            let t1 = simplify_type(context, t1);
+
+            if !type_equivalence(context, t1, Type::Bool) {
+                panic!("The type of the guard needs to be a Bool");
+            }
+
+            let t2 = type_of(context, *term2);
+            let t2 = simplify_type(context, t2);
+
+            let t3 = type_of(context, *term3);
+            let t3 = simplify_type(context, t3);
+
+            if !type_equivalence(context, t2.clone(), t3) {
+                panic!("The type of the terms of the branches do not match");
+            }
+
+            t2
         }
     }
 }
