@@ -3,5 +3,7 @@ resolver = "2"
 
 members = [
     "core",
-    "macros"
+    "macros",
+    "system-f-omega",
+    "system-f-omega-macros"
 ]
