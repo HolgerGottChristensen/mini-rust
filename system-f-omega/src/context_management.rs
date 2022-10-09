@@ -1,4 +1,4 @@
-use std::collections::VecDeque;
+use std::collections::{HashMap, VecDeque};
 use std::rc::Rc;
 use crate::{Binding, Kind, Term, Type};
 use crate::LinkedList::{Cons, Nil};
@@ -113,8 +113,27 @@ pub fn type_map(on_var: &dyn Fn(String) -> Type, ty: Type) -> Type {
             knK1,
             Box::new(type_map(on_var, *tyT2))
         ),
-        Type::Bool => Type::Bool,
-        Type::Int => Type::Int,
+        Type::Base(b) => Type::Base(b),
+        Type::Reference(t) => {
+            Type::Reference(Box::new(type_map(on_var, *t)))
+        }
+        Type::Tuple(types) => {
+            Type::Tuple(types.into_iter().map(|ty| type_map(on_var, ty)).collect::<Vec<_>>())
+        }
+        Type::Record(types) => {
+            Type::Record(HashMap::from_iter(types.into_iter().map(|(label, ty)| (label, type_map(on_var, ty)))))
+        }
+        Type::Variants(types) => {
+            Type::Variants(HashMap::from_iter(types.into_iter().map(|(label, ty)| (label, type_map(on_var, ty)))))
+        }
+        Type::Recursive(x, kind, ty) => {
+            Type::Recursive(x, kind, Box::new(type_map(on_var, *ty)))
+        }
+        Type::Existential(tyX, knK1, tyT2) => Type::Existential(
+            tyX,
+            knK1,
+            Box::new(type_map(on_var, *tyT2))
+        ),
     }
 }
 

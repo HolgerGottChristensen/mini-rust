@@ -1,5 +1,5 @@
-use std::collections::VecDeque;
-use std::fmt::{Display, Formatter};
+use std::collections::{HashMap, VecDeque};
+use std::fmt::{Debug, Display, Formatter};
 use crate::{Context, pick_fresh_name};
 use paris::formatter::colorize_string;
 
@@ -23,7 +23,24 @@ impl Display for Kind {
     }
 }
 
+#[derive(Clone, Ord, PartialOrd, Eq, PartialEq)]
+pub enum BaseType {
+    Int,
+    Bool,
+    Unit,
+    Float,
+}
 
+impl Debug for BaseType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            BaseType::Int => write!(f, "Int"),
+            BaseType::Bool => write!(f, "Bool"),
+            BaseType::Unit => write!(f, "Unit"),
+            BaseType::Float => write!(f, "Float"),
+        }
+    }
+}
 
 #[derive(Clone, Debug)]
 pub enum Type {
@@ -31,16 +48,26 @@ pub enum Type {
     TypeVar(String),
     /// Type -> Type
     TypeArrow(Box<Type>, Box<Type>),
-    /// lambda X::Kind. Type
+    /// λ X::Kind. Type
     TypeAbs(String, Kind, Box<Type>),
     /// Type Type
     TypeApp(Box<Type>, Box<Type>),
     /// ∀ X::Kind. Type
     TypeAll(String, Kind, Box<Type>),
-    /// Bool
-    Bool,
-    /// Int
-    Int,
+    /// Bool, Int, ...
+    Base(BaseType),
+    /// & Type
+    Reference(Box<Type>),
+    /// {Type, Type, ...}
+    Tuple(Vec<Type>),
+    /// {l1=Type, l2=Type, ...}
+    Record(HashMap<String, Type>),
+    /// <l1=Type, l2=Type, ...>
+    Variants(HashMap<String, Type>),
+    /// μ X::Kind. Type
+    Recursive(String, Kind, Box<Type>),
+    /// {∃X::Kind,Type}
+    Existential(String, Kind, Box<Type>),
 }
 
 impl Display for Type {
@@ -54,6 +81,7 @@ impl Type {
     fn to_string_type(&self, context: &Context) -> String {
         match self {
             Type::TypeAbs(tyX,knK1,tyT2) => {
+                // Todo: Fix will not work with pick fresh name. We already require unique names for everything.
                 let (new_context, name) = pick_fresh_name(context, tyX.clone());
 
                 format!("λ{}::{}. {}", name, knK1, tyT2.to_string_type(&new_context))
@@ -62,6 +90,16 @@ impl Type {
                 let (new_context, name) = pick_fresh_name(context, tyX.clone());
 
                 format!("∀{}::{}. {}", name, knK1, tyT2.to_string_type(&new_context))
+            }
+            Type::Recursive(tyX, knK1, tyT2) => {
+                let (new_context, name) = pick_fresh_name(context, tyX.clone());
+
+                format!("μ{}::{}. {}", name, knK1, tyT2.to_string_type(&new_context))
+            }
+            Type::Existential(x, knK1, tyT2) => {
+                let (new_context, name) = pick_fresh_name(context, x.clone());
+
+                format!("{{∃{}::{}, {}}}", name, knK1, tyT2.to_string_type(&new_context))
             }
             t => t.to_string_arrow(context),
         }
@@ -90,8 +128,29 @@ impl Type {
             Type::TypeVar(x) => {
                 format!("{}", x)
             }
-            Type::Bool => "Bool".to_string(),
-            Type::Int => "Int".to_string(),
+            Type::Tuple(types) => {
+                let mut r = types.iter().map(|a| a.to_string_type(context)).collect::<Vec<_>>().join(", ");
+                format!("{{{}}}", r)
+            }
+            Type::Record(terms) => {
+                let mut r = terms.iter().map(|(name, term)| {
+                    let mut s = name.clone();
+                    s.push_str(": ");
+                    s.push_str(&term.to_string_type(context));
+                    s
+                }).collect::<Vec<_>>().join(", ");
+                format!("{{{}}}", r)
+            },
+            Type::Variants(terms) => {
+                let mut r = terms.iter().map(|(name, term)| {
+                    let mut s = name.clone();
+                    s.push_str(" = ");
+                    s.push_str(&term.to_string_type(context));
+                    s
+                }).collect::<Vec<_>>().join(", ");
+                format!("<{}>", r)
+            },
+            Type::Base(b) => format!("{:?}", b),
             t => format!("({})", t.to_string_type(context))
         }
     }
@@ -115,8 +174,36 @@ pub enum Term {
     False,
     /// 0, 1, 2 ...
     Integer(i64),
+    /// 0.121312, 3.14 ...
+    Float(f64),
+    /// unit
+    Unit,
+    /// & Term
+    Reference(Box<Term>),
     /// If Term then Term else Term
-    If(Box<Term>, Box<Term>, Box<Term>)
+    If(Box<Term>, Box<Term>, Box<Term>),
+    /// let x = Term in Term
+    Let(String, Box<Term>, Box<Term>),
+    /// {Term, Term, ...}
+    Tuple(Vec<Term>),
+    /// Term.i
+    TupleProjection(Box<Term>, usize),
+    /// {l1=Term, l2=Term, ...}
+    Record(HashMap<String, Term>),
+    /// Term.l
+    RecordProjection(Box<Term>, String),
+    /// <l=Term> as Type
+    Tagging(String, Box<Term>, Type),
+    /// case Term of <label=x> => Term | <label=x> => Term | ...
+    Case(Box<Term>, HashMap<String, (String, Term)>),
+    /// fold \[Type\]
+    Fold(Type),
+    /// unfold \[Type\]
+    UnFold(Type),
+    /// {* Type,Term} as Type
+    Pack(Type, Box<Term>, Type),
+    /// let {X, x} = Term in Term
+    UnPack(String, String, Box<Term>, Box<Term>),
 }
 
 impl Display for Term {
@@ -133,8 +220,48 @@ impl Term {
             },
             Term::True => "true".to_string(),
             Term::False => "false".to_string(),
+            Term::Unit => "unit".to_string(),
+            Term::Fold(t) => format!("fold [{}]", t.to_string_type(context)),
+            Term::UnFold(t) => format!("unfold [{}]", t.to_string_type(context)),
+            Term::Pack(t1, term1, t2) =>
+                format!("({{* {}, {}}} as {})", t1.to_string_type(context), term1.to_string_term(context), t2.to_string_type(context)),
+            Term::UnPack(x1, x2, term1, term2) =>
+                format!("let {{ {}, {} }} = {} in {}", x1, x2, term1.to_string_term(context), term2.to_string_term(context)),
+            Term::Float(f) => format!("{:?}", f),
             Term::Integer(i) => format!("{}", i),
-            Term::If(t1, t2, t3) => format!("if {} then {} else {}", t1.to_string_term(context), t2.to_string_term(context), t3.to_string_term(context)),
+            Term::If(t1, t2, t3) =>
+                format!("if {} then {} else {}", t1.to_string_term(context), t2.to_string_term(context), t3.to_string_term(context)),
+            Term::Let(x, t1, t2) =>
+                format!("let {} = {} in {}", x, t1.to_string_term(context), t2.to_string_term(context)),
+            Term::Tuple(terms) => {
+                let mut r = terms.iter().map(|a| a.to_string_term(context)).collect::<Vec<_>>().join(", ");
+                format!("{{{}}}", r)
+            },
+            Term::Record(terms) => {
+                let mut r = terms.iter().map(|(name, term)| {
+                    let mut s = name.clone();
+                    s.push_str(" = ");
+                    s.push_str(&term.to_string_term(context));
+                    s
+                }).collect::<Vec<_>>().join(", ");
+                format!("{{{}}}", r)
+            },
+            Term::TupleProjection(t1, index) => {
+                format!("{}.{}", t1.to_string_term(context), index)
+            }
+            Term::RecordProjection(t1, label) => {
+                format!("{}.{}", t1.to_string_term(context), label)
+            }
+            Term::Tagging(label, term, t1) => {
+                format!("<{}={}> as {}", label, term.to_string_term(context), t1.to_string_type(context))
+            }
+            Term::Case(term, cases) => {
+                let cases_string = cases.iter().map(|(label, (x, term2))| {
+                    format!("<{}={}> => {}", label, x, term2.to_string_term(context))
+                }).collect::<Vec<_>>().join(" | ");
+
+                format!("case ({}) of {}", term.to_string_term(context), cases_string)
+            }
             t => format!("({})", t.to_string_term(context))
         }
     }
