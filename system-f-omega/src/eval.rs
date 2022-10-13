@@ -69,6 +69,12 @@ pub fn compute_type(context: &Context, tyt: Type) -> Result<Type, Type> {
                 Type::TypeAbs(name, _, tyT12) => {
                     return Ok(type_substitution(&name, *tyT2, *tyT12))
                 }
+                Type::TypeVar(name) => {
+                    match get_type_safe(context, &name) {
+                        Ok(t) => return compute_type(context, Type::TypeApp(Box::new(t), tyT2)),
+                        Err(_) => return Err(Type::TypeApp(Box::new(Type::TypeVar(name)), tyT2))
+                    }
+                }
                 _ => ()
             }
         }
@@ -94,6 +100,8 @@ pub fn simplify_type(context: &Context, tyt: Type) -> Type {
 pub fn type_equivalence(context: &Context, tys: Type, tyt: Type) -> bool {
     let simple_tys = simplify_type(context, tys);
     let simple_tyt = simplify_type(context, tyt);
+
+    //println!("Test equivalence between: {} and {} with context: {:?}", simple_tyt.to_string_type(context, 0), simple_tys.to_string_type(context, 0), context);
 
     match (simple_tys, simple_tyt) {
         (Type::TypeArrow(s1, s2), Type::TypeArrow(t1, t2)) => {

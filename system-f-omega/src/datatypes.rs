@@ -116,7 +116,7 @@ impl Type {
     fn to_string_app_type(&self, context: &Context, color: u32) -> String {
         match self {
             Type::TypeApp(tyT1,tyT2) => {
-                format!("{} {}", tyT1.to_string_app_type(context, color), tyT2.to_string_atomic(context, color))
+                format!("{} [{}]", tyT1.to_string_app_type(context, color), tyT2.to_string_atomic(context, color))
             }
             t => t.to_string_atomic(context, color),
         }
@@ -268,7 +268,7 @@ impl Term {
             Term::If(t1, t2, t3) =>
                 format!("if {} then {} else {}", t1.to_string_term(context, color), t2.to_string_term(context, color), t3.to_string_term(context, color)),
             Term::Let(x, t1, t2) =>
-                format!("let {} = {} in {}", x, t1.to_string_term(context, color), t2.to_string_term(context, color)),
+                format!("let {} = {}{}{} in {}{}{}", x, get_color(color, "("), t1.to_string_term(context, color + 1), get_color(color, ")"),  get_color(color, "("), t2.to_string_term(context, color + 1), get_color(color, ")")),
             Term::Tuple(terms) => {
                 let mut r = terms.iter().map(|a| a.to_string_term(context, color + 1)).collect::<Vec<_>>().join(", ");
                 format!("{}{}{}", get_color(color, "{"), r, get_color(color, "}"))

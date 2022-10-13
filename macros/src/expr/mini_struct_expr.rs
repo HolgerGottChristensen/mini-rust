@@ -6,11 +6,12 @@ use syn::parse::{Parse, ParseStream};
 use syn::punctuated::Punctuated;
 use system_f_omega::{BaseType, Term, Type};
 use crate::mini_expr::MiniExpr;
-use crate::{MiniIdent, ToSystemFOmegaTerm};
+use crate::{MiniExprPath, MiniIdent, ToSystemFOmegaTerm};
+use crate::mini_path::MiniPath;
 
 #[derive(PartialEq, Clone, Debug)]
 pub struct MiniExprStruct {
-    pub path: Path,
+    pub path: MiniPath,
     pub brace_token: token::Brace,
     pub fields: Punctuated<MiniFieldValue, Token![,]>,
     pub dot2_token: Option<Token![..]>,
@@ -47,7 +48,7 @@ pub fn expr_struct_helper(input: ParseStream, path: Path) -> syn::Result<MiniExp
         if content.peek(Token![..]) {
             return Ok(MiniExprStruct {
                 brace_token,
-                path,
+                path: MiniPath(path),
                 fields,
                 dot2_token: Some(content.parse()?),
                 rest: if content.is_empty() {
@@ -68,7 +69,7 @@ pub fn expr_struct_helper(input: ParseStream, path: Path) -> syn::Result<MiniExp
 
     Ok(MiniExprStruct {
         brace_token,
-        path,
+        path: MiniPath(path),
         fields,
         dot2_token: None,
         rest: None,
@@ -83,10 +84,16 @@ impl ToSystemFOmegaTerm for MiniExprStruct {
         });
 
         let fields =
-            fields.chain(once((format!("#{}", self.path.to_token_stream().to_string()), Term::Unit)));
+            fields.chain(once((format!("#{}", self.path.as_ident()), Term::Unit)));
 
         let map = HashMap::from_iter(fields);
 
-        Term::Ascribe(Box::new(Term::Record(map)), Type::TypeVar(self.path.to_token_stream().to_string()))
+        let mut ascription = Type::TypeVar(self.path.as_ident());
+
+        for generic in self.path.generics() {
+            ascription = Type::TypeApp(Box::new(ascription), Box::new(generic));
+        }
+
+        Term::Ascribe(Box::new(Term::Record(map)), ascription)
     }
 }

@@ -5,6 +5,7 @@ use syn::{Path, PathArguments, PathSegment, QSelf, Token, token, Type};
 use syn::ext::IdentExt;
 use syn::parse::{Parse, ParseStream};
 use syn::punctuated::Punctuated;
+use syn::token::Colon2;
 use system_f_omega::Term;
 use crate::mini_path::MiniPath;
 use crate::ToSystemFOmegaTerm;
@@ -143,6 +144,7 @@ fn parse_segment_helper(input: ParseStream, expr_style: bool) -> syn::Result<Pat
 impl ToSystemFOmegaTerm for MiniExprPath {
     fn convert_term(&self) -> Term {
         // Todo: What about self?
-        Term::TermVar(self.path.to_token_stream().to_string().replace(" ", ""))
+        //Term::TermVar(self.path.to_token_stream().to_string().replace(" ", ""))
+        Term::TermVar(MiniPath(self.path.clone()).as_ident())
     }
 }

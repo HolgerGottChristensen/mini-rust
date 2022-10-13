@@ -95,7 +95,7 @@ impl ToSystemFOmegaType for MiniType {
 mod tests {
     use quote::quote;
     use syn::parse_quote;
-    use system_f_omega::{Context, kind_of, type_of, Type as FType, BaseType};
+    use system_f_omega::{Context, kind_of, type_of, Type as FType, BaseType, Type};
     use crate::{MiniType, ToSystemFOmegaType};
 
     #[test]
@@ -210,7 +210,7 @@ mod tests {
 
         // Assert
         //assert_eq!(converted, FType::Reference(Box::new(FType::Base(BaseType::Bool))));
-        assert!(false);
+        assert_eq!(Type::TypeVar("T".to_string()), converted);
     }
 
     #[test]
@@ -230,7 +230,7 @@ mod tests {
 
         // Assert
         //assert_eq!(converted, FType::Reference(Box::new(FType::Base(BaseType::Bool))));
-        assert!(false);
+        assert_eq!(Type::TypeVar("Option".to_string()), converted);
     }
 
     #[test]

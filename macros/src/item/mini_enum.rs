@@ -107,8 +107,50 @@ impl Parse for MiniEnumVariant {
 // Todo: Add a field or somethings, that uniquely identifies an enum
 impl ToSystemFOmegaTerm for MiniEnum {
     fn convert_term(&self) -> Term {
-        Term::Define(self.ident.0.to_string(), self.convert_type(), Box::new(Term::Unit))
+        let variants = self.convert_type();
+        let mut body = Term::Unit;
         // Todo: We probably also need to for all cases in the enum define a "let" function that takes the correct params and creates an enum case.
+
+        for field in &self.fields {
+            match &field.items {
+                None => {
+                    body = Term::Let(
+                        format!("{}::{}", self.ident.0.to_string(), field.ident.0.to_string()),
+                        Box::new(Term::Unit),
+                        Box::new(body)
+                    );
+                }
+                Some(fields) => {
+
+                    let mut tups = vec![];
+
+                    for (index, ty) in fields.iter().enumerate() {
+                        tups.push(Term::TermVar(format!("arg{}", index)));
+                    }
+
+                    let tup = Term::Tuple(tups);
+
+                    let mut function = Term::Tagging(field.ident.0.to_string(), Box::new(tup), variants.clone());
+
+                    for (index, ty) in fields.iter().enumerate().rev() {
+                        function = Term::TermAbs(format!("arg{}", index), MiniType(ty.clone()).convert_type(), Box::new(function))
+                    }
+
+                    function = Term::TermAbs("#default".to_string(), FType::Base(BaseType::Unit), Box::new(function));
+
+                    body = Term::Let(
+                        format!("{}::{}", self.ident.0.to_string(), field.ident.0.to_string()),
+                        Box::new(function),
+                        Box::new(body)
+                    );
+                }
+            }
+
+        }
+
+        body = Term::Define(self.ident.0.to_string(), self.convert_type(), Box::new(body));
+
+        body
     }
 }
 
@@ -181,6 +223,66 @@ mod tests {
                 Test::Case1
             }
 
+        );
+
+        println!("\n{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+        println!("Lambda: {}", &converted);
+
+        let converted_type = type_of(&Context::new(), converted.clone());
+        println!("Type: {}", &converted_type);
+
+        let converted_kind = kind_of(&Context::new(), converted_type.clone());
+        println!("Kind: {}", &converted_kind);
+
+
+        // Assert
+        //assert_eq!(converted, Term::Reference(Box::new(Term::Integer(0))))
+    }
+
+    #[test]
+    fn parse_single_non_unit_case_enum_with_construction() {
+        // Arrange
+        let mini: MiniBlock = parse_quote!(
+            {
+                enum Test {
+                    Case1(i64)
+                }
+
+                Test::Case1(2)
+            }
+        );
+
+        println!("\n{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+        println!("Lambda: {}", &converted);
+
+        let converted_type = type_of(&Context::new(), converted.clone());
+        println!("Type: {}", &converted_type);
+
+        let converted_kind = kind_of(&Context::new(), converted_type.clone());
+        println!("Kind: {}", &converted_kind);
+
+
+        // Assert
+        //assert_eq!(converted, Term::Reference(Box::new(Term::Integer(0))))
+    }
+
+    #[test]
+    fn parse_single_non_unit_case_enum_with_construction2() {
+        // Arrange
+        let mini: MiniBlock = parse_quote!(
+            {
+                enum Test {
+                    Case1(i64, bool)
+                }
+
+                Test::Case1(2, true)
+            }
         );
 
         println!("\n{:#?}", &mini);
@@ -309,6 +411,40 @@ mod tests {
 
         let converted_kind = kind_of(&Context::new(), converted.clone());
         println!("Kind: {}", &converted_kind);
+
+        // Assert
+        //assert_eq!(converted, Term::Reference(Box::new(Term::Integer(0))))
+    }
+
+    #[test]
+    fn parse_option_enum_construction() {
+        // Arrange
+        let mini: MiniBlock = parse_quote!(
+            {
+                enum Option {
+                    Some(i64),
+                    None
+                }
+
+                let x = Option::None;
+                let y = Option::Some(3);
+
+                y
+            }
+        );
+
+        println!("\n{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+        println!("Lambda: {}", &converted);
+
+        let converted_type = type_of(&Context::new(), converted.clone());
+        println!("Type: {}", &converted_type);
+
+        let converted_kind = kind_of(&Context::new(), converted_type.clone());
+        println!("Kind: {}", &converted_kind);
+
 
         // Assert
         //assert_eq!(converted, Term::Reference(Box::new(Term::Integer(0))))

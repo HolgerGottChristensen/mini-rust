@@ -1312,7 +1312,7 @@ mod tests {
                     test: T
                 }
 
-                let x = Test::<T>{test: 2};
+                let x = Test::<i64>{test: 2};
                 x.test
             }
         );
