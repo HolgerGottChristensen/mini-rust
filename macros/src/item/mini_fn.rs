@@ -6,9 +6,12 @@ use syn::{Error, ItemFn, parenthesized, Pat, PatOr, token, Token, Type};
 use syn::parse::{Parse, ParseBuffer, ParseStream};
 use syn::parse::discouraged::Speculative;
 use syn::token::{And, Colon, Comma, Mut, Paren, RArrow, SelfValue};
+use system_f_omega::{BaseType, Context, Kind, Term, type_of};
 use crate::mini_pat::{MiniPat, multi_pat};
-use crate::{MiniGenerics, MiniIdent, MiniType};
+use crate::{MiniGenerics, MiniIdent, MiniType, ToSystemFOmegaTerm, ToSystemFOmegaType};
 use crate::stmt::MiniBlock;
+use system_f_omega::Type as FType;
+use system_f_omega::Type::TypeVar;
 
 #[derive(PartialEq, Clone)]
 pub struct MiniFn {
@@ -17,8 +20,7 @@ pub struct MiniFn {
     pub generics: MiniGenerics,
     pub paren_token: Paren,
     pub inputs: Punctuated<MiniFnArg, Comma>,
-    pub arrow_token: RArrow,
-    pub return_type: Box<Type>,
+    pub return_type: Option<(RArrow, Box<MiniType>)>,
     pub block: Box<MiniBlock>,
 }
 
@@ -30,7 +32,7 @@ pub enum MiniFnArg {
         self_token: SelfValue,
     },
     Typed {
-        pat: Box<Pat>,
+        pat: MiniIdent,
         colon_token: Colon,
         ty: Box<Type>,
     }
@@ -83,7 +85,7 @@ impl Debug for MiniFn {
         s.field("generics", &self.generics);
         s.field("inputs", &self.inputs.iter().collect::<Vec<_>>());
 
-        s.field("return", &MiniType(*self.return_type.clone()));
+        s.field("return", &self.return_type.clone());
 
         s.field("block", &self.block);
 
@@ -101,8 +103,12 @@ impl Parse for MiniFn {
         let paren_token = parenthesized!(content in input);
         let mut inputs = MiniFn::parse_fn_args(&content)?;
 
-        let arrow_token = RArrow::parse(input)?;
-        let output_ty = Type::parse(input)?;
+        let output_ty = if input.peek(RArrow) {
+            Some((RArrow::parse(input)?, Box::new(MiniType::parse(input)?)))
+        } else {
+            None
+        };
+
         generics.where_clause = input.parse()?;
 
         Ok(MiniFn {
@@ -111,8 +117,7 @@ impl Parse for MiniFn {
             generics,
             paren_token,
             inputs,
-            arrow_token,
-            return_type: Box::new(output_ty),
+            return_type: output_ty,
             block: Box::new(input.parse()?)
         })
     }
@@ -131,7 +136,7 @@ impl Debug for MiniFnArg {
             }
             MiniFnArg::Typed { pat, colon_token, ty } => {
                 f.debug_struct("Typed")
-                    .field("pat", &MiniPat(*pat.clone()))
+                    .field("pat", &pat)
                     .field("ty", &MiniType(*ty.clone()))
                     .finish()
             }
@@ -150,8 +155,8 @@ impl Parse for MiniFnArg {
             Ok((and, mutability, self_token))
         }
 
-        fn parse_typed(input: ParseStream) -> syn::Result<(Pat, Colon, Type)> {
-            let pat = multi_pat(input)?;
+        fn parse_typed(input: ParseStream) -> syn::Result<(MiniIdent, Colon, Type)> {
+            let pat = MiniIdent::parse(input)?;//multi_pat(input)?;
             let colon_token: Colon = input.parse()?;
             let ty: Type = input.parse()?;
 
@@ -171,9 +176,367 @@ impl Parse for MiniFnArg {
 
         let (pat, colon, ty) = input.call(parse_typed)?;
         Ok(MiniFnArg::Typed {
-            pat: Box::new(pat),
+            pat,
             colon_token: colon,
             ty: Box::new(ty)
         })
+    }
+}
+
+impl ToSystemFOmegaType for MiniFn {
+    fn convert_type(&self) -> FType {
+        type_of(&Context::new(), ToSystemFOmegaTerm::convert_term(self))
+    }
+}
+
+impl ToSystemFOmegaTerm for MiniFn {
+    fn convert_term(&self) -> Term {
+        let mut body = self.block.convert_term();
+
+        let return_type = match &self.return_type {
+            None => {
+                FType::Base(BaseType::Unit)
+            }
+            Some((_, return_type)) => {
+                return_type.convert_type()
+            }
+        };
+
+        // Todo: Add a define for all returns that uses a unique symbol
+        // Ascribe with the return type
+        body = Term::Ascribe(
+            Box::new(body),
+            TypeVar("#Return".to_string())
+        );
+
+        body = Term::Define("#Return".to_string(), return_type, Box::new(body));
+
+
+
+        for param in self.inputs.iter().rev() {
+            match param {
+                MiniFnArg::Receiver { .. } => {
+                    todo!() // Todo: How do we know the receiver?
+                }
+                MiniFnArg::Typed { pat, colon_token, ty } => {
+                    body = Term::TermAbs(
+                        pat.0.to_string(),
+                        MiniType(*ty.clone()).convert_type(),
+                        Box::new(body)
+                    )
+                }
+            }
+        }
+
+        // By default we add a one parameter abstraction, to make functions with 0 arguments to valid abstractions.
+        body = Term::TermAbs(
+            "arg0".to_string(),
+            FType::Base(BaseType::Unit),
+            Box::new(body)
+        );
+
+        // Todo: How will we handle generic bounds?
+        // Add generics as TypeAbs
+        for generic in self.generics.params.iter().rev() {
+            body = Term::TermTypeAbs(generic.ident.0.to_string(), Kind::KindStar, Box::new(body));
+        }
+
+        body
+    }
+}
+
+mod tests {
+    use quote::quote;
+    use syn::parse_quote;
+    use system_f_omega::{Context, type_of};
+    use crate::{MiniFn, ToSystemFOmegaTerm};
+
+    #[test]
+    fn parse_fn_simple_0_arg() {
+        // Arrange
+        let mini: MiniFn = parse_quote!(
+            fn hello() {}
+        );
+
+        println!("\n{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+
+        println!("\nLambda:\n{}", &converted);
+        println!("\nType:\n{}", type_of(&Context::new(), converted));
+
+        // Assert
+        //assert!(matches!(actual, CarbideExpr::Lit(LitExpr {lit: Lit::Int(_)})))
+    }
+
+    #[test]
+    fn parse_fn_simple_0_arg_with_return() {
+        // Arrange
+        let mini: MiniFn = parse_quote!(
+            fn hello() -> i64 {
+                0
+            }
+        );
+
+        println!("\n{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+
+        println!("\nLambda:\n{}", &converted);
+        println!("\nType:\n{}", type_of(&Context::new(), converted));
+
+        // Assert
+        //assert!(matches!(actual, CarbideExpr::Lit(LitExpr {lit: Lit::Int(_)})))
+    }
+
+    #[test]
+    fn parse_fn_simple_0_arg_with_explicit_return() {
+        // Arrange
+        let mini: MiniFn = parse_quote!(
+            fn hello() -> i64 {
+                return 0
+            }
+        );
+
+        println!("\n{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+
+        println!("\nLambda:\n{}", &converted);
+        println!("\nType:\n{}", type_of(&Context::new(), converted));
+
+        // Assert
+        //assert!(matches!(actual, CarbideExpr::Lit(LitExpr {lit: Lit::Int(_)})))
+    }
+
+    #[test]
+    fn parse_fn_simple_0_arg_with_multiple_explicit_return() {
+        // Arrange
+        let mini: MiniFn = parse_quote!(
+            fn hello() -> i64 {
+                return 2;
+                let x = 43;
+                x
+            }
+        );
+
+        println!("\n{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+
+        println!("\nLambda:\n{}", &converted);
+        println!("\nType:\n{}", type_of(&Context::new(), converted));
+
+        // Assert
+        //assert!(matches!(actual, CarbideExpr::Lit(LitExpr {lit: Lit::Int(_)})))
+    }
+
+    #[test]
+    fn parse_fn_nested_simple() {
+        // Arrange
+        let mini: MiniFn = parse_quote!(
+            fn hello() -> bool {
+
+                fn test() -> bool {
+                    true
+                }
+
+                test()
+            }
+        );
+
+        println!("\n{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+
+        println!("\nLambda:\n{}", &converted);
+        println!("\nType:\n{}", type_of(&Context::new(), converted));
+
+        // Assert
+        //assert!(matches!(actual, CarbideExpr::Lit(LitExpr {lit: Lit::Int(_)})))
+    }
+
+    #[test]
+    fn parse_fn_simple_1_arg() {
+        // Arrange
+        let mini: MiniFn = parse_quote!(
+             fn hello(arg1: i64) {}
+        );
+
+        println!("\n{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+
+        println!("\nLambda:\n{}", &converted);
+        println!("\nType:\n{}", type_of(&Context::new(), converted));
+
+        // Assert
+        //assert!(matches!(actual, CarbideExpr::Lit(LitExpr {lit: Lit::Int(_)})))
+    }
+
+    #[test]
+    fn parse_fn_simple_multiple_arg() {
+        // Arrange
+        let mini: MiniFn = parse_quote!(
+             fn hello(arg1: i64, arg2: i64, arg3: i64) {}
+        );
+
+        println!("\n{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+
+        println!("\nLambda:\n{}", &converted);
+        println!("\nType:\n{}", type_of(&Context::new(), converted));
+
+        // Assert
+        //assert!(matches!(actual, CarbideExpr::Lit(LitExpr {lit: Lit::Int(_)})))
+    }
+
+    #[test]
+    fn parse_fn_simple_1_arg_generic() {
+        // Arrange
+        let mini: MiniFn = parse_quote!(
+             fn hello<T>(arg1: T) {}
+        );
+
+        println!("\n{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+
+        println!("\nLambda:\n{}", &converted);
+        println!("\nType:\n{}", type_of(&Context::new(), converted));
+
+        // Assert
+        //assert!(matches!(actual, CarbideExpr::Lit(LitExpr {lit: Lit::Int(_)})))
+    }
+
+    #[test]
+    fn parse_fn_simple_2_arg_generic_multiple() {
+        // Arrange
+        let mini: MiniFn = parse_quote!(
+            fn hello<T, U>(arg1: T, arg2: U) {}
+        );
+
+        println!("\n{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+
+        println!("\nLambda:\n{}", &converted);
+        println!("\nType:\n{}", type_of(&Context::new(), converted));
+
+        // Assert
+        //assert!(matches!(actual, CarbideExpr::Lit(LitExpr {lit: Lit::Int(_)})))
+    }
+
+    #[test]
+    fn parse_higher_order_function() {
+        // Arrange
+        let mini: MiniFn = parse_quote!(
+             fn hello(arg1: fn(i64) -> i64) {}
+        );
+
+        println!("\n{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+
+        println!("\nLambda:\n{}", &converted);
+        println!("\nType:\n{}", type_of(&Context::new(), converted));
+
+        // Assert
+        //assert!(matches!(actual, CarbideExpr::Lit(LitExpr {lit: Lit::Int(_)})))
+    }
+
+    #[test]
+    fn parse_higher_order_function_with_generics() {
+        // Arrange
+        let mini: MiniFn = parse_quote!(
+             fn hello<T>(arg1: fn(T) -> T) {}
+        );
+
+        println!("\n{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+
+        println!("\nLambda:\n{}", &converted);
+        println!("\nType:\n{}", type_of(&Context::new(), converted));
+
+        // Assert
+        //assert!(matches!(actual, CarbideExpr::Lit(LitExpr {lit: Lit::Int(_)})))
+    }
+
+    #[test]
+    fn parse_fn_with_body() {
+        // Arrange
+        let mini: MiniFn = parse_quote!(
+            fn hello() -> i64 {
+                let x = 42;
+                let y = false;
+                x
+            }
+        );
+
+        println!("\n{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+
+        println!("\nLambda:\n{}", &converted);
+        println!("\nType:\n{}", type_of(&Context::new(), converted));
+
+        // Assert
+        //assert!(matches!(actual, CarbideExpr::Lit(LitExpr {lit: Lit::Int(_)})))
+    }
+
+    #[test]
+    fn parse_fn_return_first_param() {
+        // Arrange
+        let mini: MiniFn = parse_quote!(
+            fn hello(x: i64) -> i64 {
+                x
+            }
+        );
+
+        println!("\n{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+
+        println!("\nLambda:\n{}", &converted);
+        println!("\nType:\n{}", type_of(&Context::new(), converted));
+
+        // Assert
+        //assert!(matches!(actual, CarbideExpr::Lit(LitExpr {lit: Lit::Int(_)})))
+    }
+
+    #[test]
+    fn parse_higher_order_function_applied() {
+        // Arrange
+        let mini: MiniFn = parse_quote!(
+             fn hello(arg1: fn(i64) -> i64) -> i64 {
+                arg1(3)
+            }
+        );
+
+        println!("\n{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+
+        println!("\nLambda:\n{}", &converted);
+        println!("\nType:\n{}", type_of(&Context::new(), converted));
+
+        // Assert
+        //assert!(matches!(actual, CarbideExpr::Lit(LitExpr {lit: Lit::Int(_)})))
     }
 }

@@ -1,9 +1,9 @@
-use macros::my_macro;
+use macros::mini_rust_ast;
 
 fn main() {
     println!("{}", "Hello, world!");
 
-    my_macro!(
+    mini_rust_ast!(
         trait TestTrait<T>: Debug where T: Clone + Debug {
 
         }

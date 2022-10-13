@@ -11,10 +11,10 @@ mod mini_type;
 mod mini_path;
 mod mini_generics;
 
-extern crate proc_macro;
 use proc_macro::TokenStream;
+use system_f_omega::{Context, Term, Type, type_of};
 
-use syn::{parse_macro_input, DeriveInput};
+use syn::{parse_macro_input, DeriveInput, Expr};
 use quote::quote;
 use crate::expr::*;
 use crate::item::*;
@@ -30,11 +30,9 @@ pub(crate) const TYPE_COLOR: &'static str = "<blue><b>";
 pub(crate) const PAT_COLOR: &'static str = "<cyan>";
 pub(crate) const PATH_COLOR: &'static str = "<bright-yellow>";
 
-/// Example of [function-like procedural macro][1].
-///
-/// [1]: https://doc.rust-lang.org/reference/procedural-macros.html#function-like-procedural-macros
+/// https://doc.rust-lang.org/reference/procedural-macros.html#function-like-procedural-macros
 #[proc_macro]
-pub fn my_macro(input: TokenStream) -> TokenStream {
+pub fn mini_rust_ast(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as MiniFile);
 
 
@@ -43,30 +41,20 @@ pub fn my_macro(input: TokenStream) -> TokenStream {
     tokens.into()
 }
 
-/// Example of user-defined [derive mode macro][1]
-///
-/// [1]: https://doc.rust-lang.org/reference/procedural-macros.html#derive-mode-macros
-#[proc_macro_derive(MyDerive)]
-pub fn my_derive(_input: TokenStream) -> TokenStream {
-    let tokens = quote! {
-        struct Hello;
-    };
+#[proc_macro]
+pub fn mini_rust_to_system_f_omega(input: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(input as MiniFile);
 
+
+    panic!("\n{:#?}", &input);
+    let tokens = quote! {};
     tokens.into()
 }
 
-/// Example of user-defined [procedural macro attribute][1].
-///
-/// [1]: https://doc.rust-lang.org/reference/procedural-macros.html#attribute-macros
-#[proc_macro_attribute]
-pub fn my_attribute(_args: TokenStream, input: TokenStream) -> TokenStream {
-    let input = parse_macro_input!(input as DeriveInput);
+pub(crate) trait ToSystemFOmegaTerm {
+    fn convert_term(&self) -> Term;
+}
 
-    let tokens = quote! {
-        #input
-
-        struct Hello;
-    };
-
-    tokens.into()
+pub(crate) trait ToSystemFOmegaType {
+    fn convert_type(&self) -> system_f_omega::Type;
 }

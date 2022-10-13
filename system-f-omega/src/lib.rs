@@ -6,12 +6,12 @@ use std::collections::HashMap;
 pub use datatypes::*;
 pub use context_management::*;
 pub use eval::*;
-use system_f_omega_macros::my_macro;
 use crate::BaseType::Int;
 use crate::Kind::KindStar;
 use crate::Term::{TermAbs, TermApp, TermTypeAbs, TermVar};
 use crate::Type::{Existential, TypeVar};
 
+#[test]
 fn main() {
     /*let context = Context::new();
     let context = add_binding(&context, "X".to_string(), Binding::TyVarBinding(KindStar));

@@ -1,6 +1,5 @@
 use std::collections::HashMap;
-use crate::{add_binding, add_name, BaseType, Binding, Context, get_binding, get_kind, get_type, Kind, Term, Type, type_substitution};
-use crate::Type::TypeArrow;
+use crate::{add_binding, add_name, BaseType, Binding, Context, get_binding, get_kind, get_type, get_type_safe, Kind, Term, Type, type_substitution};
 
 pub fn is_val(context: &Context, term: Term) -> bool {
     match term {
@@ -100,7 +99,17 @@ pub fn type_equivalence(context: &Context, tys: Type, tyt: Type) -> bool {
         (Type::TypeArrow(s1, s2), Type::TypeArrow(t1, t2)) => {
             type_equivalence(context, *s1, *t1) && type_equivalence(context, *s2, *t2)
         }
-        (Type::TypeVar(i), Type::TypeVar(j)) => i == j, // Todo: Maybe this is not the correct equivalence?
+        (Type::TypeVar(i), Type::TypeVar(j)) => {
+            match (get_type_safe(context, &i), get_type_safe(context, &j)) {
+                (Ok(ti), Ok(tj)) => type_equivalence(context, ti, tj),
+                (Ok(ti), Err(_)) => type_equivalence(context, ti, Type::TypeVar(j)),
+                (Err(_), Ok(tj)) => type_equivalence(context, Type::TypeVar(i), tj),
+                (Err(_), Err(_)) => i == j, // Todo: This is only correct if all binding names are unique
+            }
+        },
+        (ty, Type::TypeVar(i)) | (Type::TypeVar(i), ty) => {
+            type_equivalence(context, get_type(context, &i), ty)
+        }
         (Type::TypeAbs(tyX1,knKS1,tyS2), Type::TypeAbs(_,knKT1,tyT2)) => {
             let new_context = add_name(context, tyX1);
 
@@ -275,7 +284,7 @@ pub fn type_of(context: &Context, term: Term) -> Type {
         },
         // T-Abs
         Term::TermAbs(x, t1, term2) => {
-            check_kind_star(context, t1.clone());
+            //check_kind_star(context, t1.clone()); todo: Readd
 
             let new_context = add_binding(context, Binding::VarBinding(x, t1.clone()));
 
@@ -289,10 +298,12 @@ pub fn type_of(context: &Context, term: Term) -> Type {
 
             match simplify_type(context, t1) {
                 Type::TypeArrow(t11, t12) => {
-                    if type_equivalence(context, t2, *t11) {
+                    if type_equivalence(context, t2.clone(), *t11.clone()) {
                         *t12
                     } else {
-                        panic!("parameter type mismatch")
+                        panic!("Cannot apply: {}, to function of type: {}", t2.to_string_type(context, 0),
+                               Type::TypeArrow(t11, t12).to_string_type(context, 0)
+                        )
                     }
                 }
                 _ => panic!("arrow type expected")
@@ -394,6 +405,7 @@ pub fn type_of(context: &Context, term: Term) -> Type {
         // T-Rcd
         Term::Record(terms) => {
             let mut types = HashMap::new();
+
             for (label, term) in terms {
                 let t = simplify_type(context, type_of(context, term));
                 types.insert(label, t);
@@ -410,7 +422,7 @@ pub fn type_of(context: &Context, term: Term) -> Type {
                         Some(t) => t.clone(),
                     }
                 }
-                _ => panic!("Only records can be projected with labels")
+                t => panic!("Only records can be projected with labels, found: {:?}", t)
             }
         }
         // T-Variant
@@ -418,9 +430,12 @@ pub fn type_of(context: &Context, term: Term) -> Type {
             let t = simplify_type(context, type_of(context, *term));
 
             match simplify_type(context, t1.clone()) {
+                // We only allow tagging with a Variant type.
                 Type::Variants(variants) => {
+                    // We need to check what label the term is, and make sure it is actually one of the variants.
                     match variants.get(&tag).cloned() {
                         Some(case) => {
+                            // We need the type of the term to be the same as specified in the variants.
                             if type_equivalence(context, case, t) {
                                 t1
                             } else {
@@ -438,6 +453,7 @@ pub fn type_of(context: &Context, term: Term) -> Type {
             match simplify_type(context, type_of(context, *term)) {
                 Type::Variants(types) => {
                     let mut case_types = Vec::new();
+
                     for (label, (binding, inner_term)) in cases {
                         match types.get(&label) {
                             Some(ty) => {
@@ -450,6 +466,7 @@ pub fn type_of(context: &Context, term: Term) -> Type {
                         }
                     }
 
+                    // Check that the return type of all cases are equal
                     if let Some(first) = case_types.first() {
                         let equal = case_types.iter().cloned().all(|a| type_equivalence(context, first.clone(), a));
                         if equal {
@@ -468,7 +485,7 @@ pub fn type_of(context: &Context, term: Term) -> Type {
         Term::Fold(ty) => {
             match simplify_type(context, ty.clone()) {
                 Type::Recursive(label, kn, ty2) => {
-                    TypeArrow(Box::new(type_substitution(&label, ty.clone(), *ty2)), Box::new(ty))
+                    Type::TypeArrow(Box::new(type_substitution(&label, ty.clone(), *ty2)), Box::new(ty))
                 }
                 _ => panic!("Only recursive types can be folded")
             }
@@ -477,7 +494,7 @@ pub fn type_of(context: &Context, term: Term) -> Type {
         Term::UnFold(ty) => {
             match simplify_type(context, ty.clone()) {
                 Type::Recursive(label, kn, ty2) => {
-                    TypeArrow(Box::new(ty.clone()), Box::new(type_substitution(&label,  ty, *ty2)))
+                    Type::TypeArrow(Box::new(ty.clone()), Box::new(type_substitution(&label,  ty, *ty2)))
                 }
                 _ => panic!("Only recursive types can be folded")
             }
@@ -485,6 +502,7 @@ pub fn type_of(context: &Context, term: Term) -> Type {
         // T-Pack
         Term::Pack(tyT1,t2,tyT) => {
             check_kind_star(context, tyT.clone());
+
             match simplify_type(context, tyT.clone()) {
                 Type::Existential(tyY,k,tyT2) => {
                     if kind_of(context, tyT1.clone()) != k {
@@ -509,13 +527,40 @@ pub fn type_of(context: &Context, term: Term) -> Type {
             let tyT1 = type_of(context, *t1);
             match simplify_type(context, tyT1) {
                 Type::Existential(tyY,k,tyT11) => {
+                    // Add X
                     let context_new = add_binding(context, Binding::TyVarBinding(tyX, k));
+                    // Add x
                     let context_new = add_binding(&context_new, Binding::VarBinding(x, *tyT11));
 
                     type_of(&context_new, *t2)
                 }
                 _ => panic!("You can only pack existential types")
             }
+        }
+        // T-Ascribe
+        Term::Ascribe(t, ty) => {
+            //check_kind_star(context, ty.clone()); // Todo: We might need to re-add this, but it will fail if we try to ascribe with a defined type, because we cant check the kind of that.
+
+            let term_type = type_of(context, *t);
+
+            if type_equivalence(context, term_type.clone(), ty.clone()) {
+                term_type //ty // <- The ty was there before. The two have two different semantics.
+                // If ty then if we ascribe with a tyVar which is common, we will return a TyVar which is not fun for those
+                // checking the type like TupleProjection and friends.
+            } else {
+                // Todo: Consider extracting this to a try_get_type
+                let t = match ty {
+                    Type::TypeVar(i) => get_type(context, &i),
+                    l => l,
+                };
+                panic!("The ascription expected the type to be: {}, but it was: {}, in Context: {:?}", t.to_string_type(context, 0), term_type.to_string_type(context, 0), context)
+            }
+        }
+        // T-Define
+        Term::Define(x, ty, term) => {
+            let new_context = add_binding(context, Binding::VarBinding(x, ty));
+
+            type_of(&new_context, *term)
         }
     }
 }

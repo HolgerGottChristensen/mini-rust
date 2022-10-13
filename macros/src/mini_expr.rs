@@ -5,8 +5,9 @@ use proc_macro2::{Ident, Span};
 use syn::{BinOp, Error, Expr, Lit, LitFloat, Member, parenthesized, Path, PathArguments, Token, token};
 use syn::parse::{Parse, ParseBuffer, ParseStream};
 use syn::punctuated::Punctuated;
+use system_f_omega::Term;
 use crate::expr::MiniLitExpr;
-use crate::{expr_ret, expr_struct_helper, MiniExprAssign, MiniExprBinary, MiniExprBlock, MiniExprBox, MiniExprCall, MiniExprField, MiniExprMatch, MiniExprMethodCall, MiniExprParen, MiniExprPath, MiniExprReference, MiniExprReturn, MiniExprStruct, MiniExprTuple, MiniExprUnary, MiniExprWhile, MiniIdent, parse_expr_box, parse_expr_unary};
+use crate::{expr_ret, expr_struct_helper, MiniExprAssign, MiniExprBinary, MiniExprBlock, MiniExprBox, MiniExprCall, MiniExprField, MiniExprMatch, MiniExprMethodCall, MiniExprParen, MiniExprPath, MiniExprReference, MiniExprReturn, MiniExprStruct, MiniExprTuple, MiniExprUnary, MiniExprWhile, MiniIdent, parse_expr_box, parse_expr_unary, ToSystemFOmegaTerm};
 
 #[derive(PartialEq, Clone)]
 pub enum MiniExpr {
@@ -108,6 +109,31 @@ pub enum MiniBinOp {
     Ge(Token![>=]),
     /// The `>` operator (greater than)
     Gt(Token![>]),
+}
+
+impl MiniBinOp {
+    pub fn name(&self) -> String {
+        match self {
+            MiniBinOp::Add(_) => "add".to_string(),
+            MiniBinOp::Sub(_) => "sub".to_string(),
+            MiniBinOp::Mul(_) => "mul".to_string(),
+            MiniBinOp::Div(_) => "div".to_string(),
+            MiniBinOp::Rem(_) => "rem".to_string(),
+            MiniBinOp::And(_) => "and".to_string(),
+            MiniBinOp::Or(_) => "or".to_string(),
+            MiniBinOp::BitXor(_) => "bit_xor".to_string(),
+            MiniBinOp::BitAnd(_) => "bit_and".to_string(),
+            MiniBinOp::BitOr(_) => "bit_or".to_string(),
+            MiniBinOp::Shl(_) => "left_shift".to_string(),
+            MiniBinOp::Shr(_) => "right_shift".to_string(),
+            MiniBinOp::Eq(_) => "eq".to_string(),
+            MiniBinOp::Lt(_) => "lt".to_string(),
+            MiniBinOp::Le(_) => "le".to_string(),
+            MiniBinOp::Ne(_) => "ne".to_string(),
+            MiniBinOp::Ge(_) => "ge".to_string(),
+            MiniBinOp::Gt(_) => "gt".to_string(),
+        }
+    }
 }
 
 impl Debug for MiniBinOp {
@@ -646,3 +672,667 @@ impl MiniExpr {
     });
 }
 
+impl ToSystemFOmegaTerm for MiniExpr {
+    fn convert_term(&self) -> Term {
+        match self {
+            MiniExpr::Assign(_) => todo!(),
+            MiniExpr::Binary(l) => l.convert_term(),
+            MiniExpr::Block(l) => l.convert_term(),
+            MiniExpr::Box(_) => todo!(),
+            MiniExpr::Call(l) => l.convert_term(),
+            MiniExpr::Field(l) => l.convert_term(),
+            MiniExpr::Lit(l) => l.convert_term(),
+            MiniExpr::Match(_) => todo!(),
+            MiniExpr::MethodCall(_) => todo!(),
+            MiniExpr::Paren(_) => todo!(),
+            MiniExpr::Path(l) => l.convert_term(),
+            MiniExpr::Reference(l) => l.convert_term(),
+            MiniExpr::Return(l) => l.convert_term(),
+            MiniExpr::Struct(l) => l.convert_term(),
+            MiniExpr::Tuple(l) => l.convert_term(),
+            MiniExpr::Unary(l) => l.convert_term(),
+            MiniExpr::While(_) => todo!(),
+        }
+    }
+}
+
+mod tests {
+    use std::collections::HashMap;
+    use quote::quote;
+    use syn::parse_quote;
+    use system_f_omega::{add_binding, BaseType, Binding, Context, kind_of, Term, Type, type_of};
+    use crate::{MiniExprReference, MiniFn, MiniLitExpr, MiniStmt, ToSystemFOmegaTerm};
+    use crate::mini_expr::MiniExpr;
+
+    #[test]
+    fn parse_int_reference() {
+        // Arrange
+        let mini: MiniExpr = parse_quote!(
+            &0
+        );
+
+        println!("\n{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+        let converted_type = type_of(&Context::new(), converted.clone());
+        let converted_kind = kind_of(&Context::new(), converted_type.clone());
+
+        println!("Lambda: {}", &converted);
+        println!("Type: {}", &converted_type);
+        println!("Kind: {}", &converted_kind);
+
+        // Assert
+        assert_eq!(converted, Term::Reference(Box::new(Term::Integer(0))))
+    }
+
+    #[test]
+    fn parse_tuple_1_element() {
+        // Arrange
+        let mini: MiniExpr = parse_quote!(
+            (1, )
+        );
+
+        println!("\n{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+        let converted_type = type_of(&Context::new(), converted.clone());
+        let converted_kind = kind_of(&Context::new(), converted_type.clone());
+
+        println!("Lambda: {}", &converted);
+        println!("Type: {}", &converted_type);
+        println!("Kind: {}", &converted_kind);
+
+        // Assert
+        //assert_eq!(converted, Term::Reference(Box::new(Term::Integer(0))))
+    }
+
+    #[test]
+    fn parse_tuple_multiple() {
+        // Arrange
+        let mini: MiniExpr = parse_quote!(
+            (1, 32.2)
+        );
+
+        println!("\n{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+        let converted_type = type_of(&Context::new(), converted.clone());
+        let converted_kind = kind_of(&Context::new(), converted_type.clone());
+
+        println!("Lambda: {}", &converted);
+        println!("Type: {}", &converted_type);
+        println!("Kind: {}", &converted_kind);
+
+        // Assert
+        //assert_eq!(converted, Term::Reference(Box::new(Term::Integer(0))))
+    }
+
+    #[test]
+    fn parse_unary_neg() {
+        // Arrange
+        let mini: MiniExpr = parse_quote!(
+            -3
+        );
+
+        let context = Context::new();
+        let context = add_binding(&context, Binding::VarBinding("neg".to_string(), Type::TypeArrow(
+            Box::new(Type::Base(BaseType::Int)),
+            Box::new(Type::Base(BaseType::Int)),
+        )));
+
+        println!("\n{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+        let converted_type = type_of(&context, converted.clone());
+        let converted_kind = kind_of(&context, converted_type.clone());
+
+        println!("Lambda: {}", &converted);
+        println!("Type: {}", &converted_type);
+        println!("Kind: {}", &converted_kind);
+
+        // Assert
+        //assert_eq!(converted, Term::Reference(Box::new(Term::Integer(0))))
+    }
+
+    #[test]
+    fn parse_unary_not() {
+        // Arrange
+        let mini: MiniExpr = parse_quote!(
+            !false
+        );
+
+        let context = Context::new();
+        let context = add_binding(&context, Binding::VarBinding("not".to_string(), Type::TypeArrow(
+            Box::new(Type::Base(BaseType::Bool)),
+            Box::new(Type::Base(BaseType::Bool)),
+        )));
+
+        println!("\n{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+        let converted_type = type_of(&context, converted.clone());
+        let converted_kind = kind_of(&context, converted_type.clone());
+
+        println!("Lambda: {}", &converted);
+        println!("Type: {}", &converted_type);
+        println!("Kind: {}", &converted_kind);
+
+        // Assert
+        //assert_eq!(converted, Term::Reference(Box::new(Term::Integer(0))))
+    }
+
+    #[test]
+    fn parse_binary_add() {
+        // Arrange
+        let mini: MiniExpr = parse_quote!(
+            2 + 2
+        );
+
+        let context = Context::new();
+        let context = add_binding(&context, Binding::VarBinding("add".to_string(), Type::TypeArrow(
+            Box::new(Type::Base(BaseType::Int)),
+            Box::new(Type::TypeArrow(
+                Box::new(Type::Base(BaseType::Int)),
+                Box::new(Type::Base(BaseType::Int)),
+            )),
+        )));
+
+        println!("\n{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+        let converted_type = type_of(&context, converted.clone());
+        let converted_kind = kind_of(&context, converted_type.clone());
+
+        println!("Lambda: {}", &converted);
+        println!("Type: {}", &converted_type);
+        println!("Kind: {}", &converted_kind);
+
+        // Assert
+        //assert_eq!(converted, Term::Reference(Box::new(Term::Integer(0))))
+    }
+
+    #[test]
+    fn parse_binary_eq() {
+        // Arrange
+        let mini: MiniExpr = parse_quote!(
+            1 == 2
+        );
+
+        let context = Context::new();
+        let context = add_binding(&context, Binding::VarBinding("eq".to_string(), Type::TypeArrow(
+            Box::new(Type::Base(BaseType::Int)),
+            Box::new(Type::TypeArrow(
+                Box::new(Type::Base(BaseType::Int)),
+                Box::new(Type::Base(BaseType::Bool)),
+            )),
+        )));
+
+        println!("\n{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+        let converted_type = type_of(&context, converted.clone());
+        let converted_kind = kind_of(&context, converted_type.clone());
+
+        println!("Lambda: {}", &converted);
+        println!("Type: {}", &converted_type);
+        println!("Kind: {}", &converted_kind);
+
+        // Assert
+        //assert_eq!(converted, Term::Reference(Box::new(Term::Integer(0))))
+    }
+
+    #[test]
+    fn parse_block_simple() {
+        // Arrange
+        let mini: MiniExpr = parse_quote!(
+            {
+                2
+            }
+        );
+
+        let context = Context::new();
+
+        println!("\n{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+        let converted_type = type_of(&context, converted.clone());
+        let converted_kind = kind_of(&context, converted_type.clone());
+
+        println!("Lambda: {}", &converted);
+        println!("Type: {}", &converted_type);
+        println!("Kind: {}", &converted_kind);
+
+        // Assert
+        //assert_eq!(converted, Term::Reference(Box::new(Term::Integer(0))))
+    }
+
+    #[test]
+    fn parse_block_local_variable() {
+        // Arrange
+        let mini: MiniExpr = parse_quote!(
+            {
+                let x = 0;
+                x
+            }
+        );
+
+        let context = Context::new();
+
+        println!("\n{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+        let converted_type = type_of(&context, converted.clone());
+        let converted_kind = kind_of(&context, converted_type.clone());
+
+        println!("Lambda: {}", &converted);
+        println!("Type: {}", &converted_type);
+        println!("Kind: {}", &converted_kind);
+
+        // Assert
+        //assert_eq!(converted, Term::Reference(Box::new(Term::Integer(0))))
+    }
+
+    #[test]
+    fn parse_block_multiple_local_variables() {
+        // Arrange
+        let mini: MiniExpr = parse_quote!(
+            {
+                let x = 0;
+                let y = true;
+                let z = ();
+                let w = 42.0;
+                y
+            }
+        );
+
+        let context = Context::new();
+
+        println!("\n{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+        let converted_type = type_of(&context, converted.clone());
+        let converted_kind = kind_of(&context, converted_type.clone());
+
+        println!("Lambda: {}", &converted);
+        println!("Type: {}", &converted_type);
+        println!("Kind: {}", &converted_kind);
+
+        // Assert
+        //assert_eq!(converted, Term::Reference(Box::new(Term::Integer(0))))
+    }
+
+    #[test]
+    fn parse_block_statements() {
+        // Arrange
+        let mini: MiniExpr = parse_quote!(
+            {
+                1;
+                2;
+                true
+            }
+        );
+
+        let context = Context::new();
+
+        println!("\n{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+        let converted_type = type_of(&context, converted.clone());
+        let converted_kind = kind_of(&context, converted_type.clone());
+
+        println!("Lambda: {}", &converted);
+        println!("Type: {}", &converted_type);
+        println!("Kind: {}", &converted_kind);
+
+        // Assert
+        //assert_eq!(converted, Term::Reference(Box::new(Term::Integer(0))))
+    }
+
+    #[test]
+    fn parse_block_mixed() {
+        // Arrange
+        let mini: MiniExpr = parse_quote!(
+            {
+                let x = 1;
+                2;
+                let y = true;
+
+                x
+            }
+        );
+
+        let context = Context::new();
+
+        println!("\n{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+        let converted_type = type_of(&context, converted.clone());
+        let converted_kind = kind_of(&context, converted_type.clone());
+
+        println!("Lambda: {}", &converted);
+        println!("Type: {}", &converted_type);
+        println!("Kind: {}", &converted_kind);
+
+        // Assert
+        //assert_eq!(converted, Term::Reference(Box::new(Term::Integer(0))))
+    }
+
+    #[test]
+    fn parse_function_call_simple() {
+        // Arrange
+        let mini: MiniExpr = parse_quote!(
+            function(3)
+        );
+
+        let context = Context::new();
+        let context = add_binding(&context, Binding::VarBinding("function".to_string(), Type::TypeArrow(
+            Box::new(Type::Base(BaseType::Unit)),
+            Box::new(Type::TypeArrow(
+                Box::new(Type::Base(BaseType::Int)),
+                Box::new(Type::Base(BaseType::Bool)),
+            )),
+        )));
+
+        println!("\n{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+        let converted_type = type_of(&context, converted.clone());
+        let converted_kind = kind_of(&context, converted_type.clone());
+
+        println!("Lambda: {}", &converted);
+        println!("Type: {}", &converted_type);
+        println!("Kind: {}", &converted_kind);
+
+        // Assert
+        //assert_eq!(converted, Term::Reference(Box::new(Term::Integer(0))))
+    }
+
+    #[test]
+    fn parse_function_call_multiple_arguments() {
+        // Arrange
+        let mini: MiniExpr = parse_quote!(
+            function(3, true)
+        );
+
+        let context = Context::new();
+        let context = add_binding(&context, Binding::VarBinding("function".to_string(), Type::TypeArrow(
+            Box::new(Type::Base(BaseType::Unit)),
+            Box::new(Type::TypeArrow(
+                Box::new(Type::Base(BaseType::Int)),
+                Box::new(Type::TypeArrow(
+                    Box::new(Type::Base(BaseType::Bool)),
+                    Box::new(Type::Base(BaseType::Bool)),
+                ))
+            )),
+        )));
+
+        println!("\n{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+        let converted_type = type_of(&context, converted.clone());
+        let converted_kind = kind_of(&context, converted_type.clone());
+
+        println!("Lambda: {}", &converted);
+        println!("Type: {}", &converted_type);
+        println!("Kind: {}", &converted_kind);
+
+        // Assert
+        //assert_eq!(converted, Term::Reference(Box::new(Term::Integer(0))))
+    }
+
+    #[test]
+    fn parse_tuple_projection() {
+        // Arrange
+        let mini: MiniExpr = parse_quote!(
+            (42.0, 42, true).2
+        );
+
+        let context = Context::new();
+
+        println!("\n{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+        let converted_type = type_of(&context, converted.clone());
+        let converted_kind = kind_of(&context, converted_type.clone());
+
+        println!("Lambda: {}", &converted);
+        println!("Type: {}", &converted_type);
+        println!("Kind: {}", &converted_kind);
+
+        // Assert
+        //assert_eq!(converted, Term::Reference(Box::new(Term::Integer(0))))
+    }
+
+    #[test]
+    fn parse_tuple_projection_multiple() {
+        // Arrange
+        let mini: MiniExpr = parse_quote!(
+            (42.0, (42, 3.14), true).1.0
+        );
+
+        let context = Context::new();
+
+        println!("\n{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+        println!("Lambda: {}", &converted);
+
+        let converted_type = type_of(&context, converted.clone());
+        println!("Type: {}", &converted_type);
+
+        let converted_kind = kind_of(&context, converted_type.clone());
+        println!("Kind: {}", &converted_kind);
+
+        // Assert
+        //assert_eq!(converted, Term::Reference(Box::new(Term::Integer(0))))
+    }
+
+    #[test]
+    fn parse_struct_projection() {
+        // Arrange
+        let mini: MiniExpr = parse_quote!(
+            s.field2
+        );
+
+        let context = Context::new();
+        let context = add_binding(&context, Binding::VarBinding(
+            "s".to_string(),
+            Type::Record(HashMap::from([
+                ("field1".to_string(), Type::Base(BaseType::Int)),
+                ("field2".to_string(), Type::Base(BaseType::Float)),
+            ]))
+        ));
+
+        println!("\n{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+        println!("Lambda: {}", &converted);
+
+        let converted_type = type_of(&context, converted.clone());
+        println!("Type: {}", &converted_type);
+
+        let converted_kind = kind_of(&context, converted_type.clone());
+        println!("Kind: {}", &converted_kind);
+
+        // Assert
+        //assert_eq!(converted, Term::Reference(Box::new(Term::Integer(0))))
+    }
+
+
+    #[test]
+    fn parse_block_local_struct() {
+        // Arrange
+        let mini: MiniExpr = parse_quote!(
+            {
+                struct Test {}
+                1
+            }
+        );
+
+        let context = Context::new();
+
+        println!("\n{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+        println!("Lambda: {}", &converted);
+
+        let converted_type = type_of(&context, converted.clone());
+        println!("Type: {}", &converted_type);
+
+        let converted_kind = kind_of(&context, converted_type.clone());
+        println!("Kind: {}", &converted_kind);
+
+        // Assert
+        //assert_eq!(converted, Term::Reference(Box::new(Term::Integer(0))))
+    }
+
+    #[test]
+    fn parse_block_local_struct_with_fields() {
+        // Arrange
+        let mini: MiniExpr = parse_quote!(
+            {
+                struct Test {
+                    test: i64
+                }
+
+                1
+            }
+        );
+
+        let context = Context::new();
+
+        println!("\n{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+        println!("Lambda: {}", &converted);
+
+        let converted_type = type_of(&context, converted.clone());
+        println!("Type: {}", &converted_type);
+
+        let converted_kind = kind_of(&context, converted_type.clone());
+        println!("Kind: {}", &converted_kind);
+
+        // Assert
+        //assert_eq!(converted, Term::Reference(Box::new(Term::Integer(0))))
+    }
+
+    #[test]
+    fn parse_block_local_struct_with_generics() {
+        // Arrange
+        let mini: MiniExpr = parse_quote!(
+            {
+                struct Test<T> {
+                    test: T
+                }
+
+                1
+            }
+        );
+
+        let context = Context::new();
+
+        println!("\n{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+        println!("Lambda: {}", &converted);
+
+        let converted_type = type_of(&context, converted.clone());
+        println!("Type: {}", &converted_type);
+
+        let converted_kind = kind_of(&context, converted_type.clone());
+        println!("Kind: {}", &converted_kind);
+
+
+        // Assert
+        //assert_eq!(converted, Term::Reference(Box::new(Term::Integer(0))))
+    }
+
+    #[test]
+    fn parse_block_local_struct_with_fields_and_creation() {
+        // Arrange
+        let mini: MiniExpr = parse_quote!(
+            {
+                struct Test {
+                    test: i64
+                }
+
+                struct Test2 {
+                    test: i64
+                }
+
+                let x = Test {test: 2};
+                x.test
+            }
+        );
+
+        let context = Context::new();
+
+        println!("\n{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+        println!("Lambda: {}", &converted);
+
+        let converted_type = type_of(&context, converted.clone());
+        println!("Type: {}", &converted_type);
+
+        let converted_kind = kind_of(&context, converted_type.clone());
+        println!("Kind: {}", &converted_kind);
+
+        // Assert
+        //assert_eq!(converted, Term::Reference(Box::new(Term::Integer(0))))
+    }
+
+    #[test]
+    fn parse_block_local_struct_with_fields_and_creation_and_generics() {
+        // Arrange
+        let mini: MiniExpr = parse_quote!(
+            {
+                struct Test<T> {
+                    test: T
+                }
+
+                let x = Test::<T>{test: 2};
+                x.test
+            }
+        );
+
+        let context = Context::new();
+
+        println!("\n{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+        println!("Lambda: {}", &converted);
+
+        let converted_type = type_of(&context, converted.clone());
+        println!("Type: {}", &converted_type);
+
+        let converted_kind = kind_of(&context, converted_type.clone());
+        println!("Kind: {}", &converted_kind);
+
+        // Assert
+        //assert_eq!(converted, Term::Reference(Box::new(Term::Integer(0))))
+    }
+
+}

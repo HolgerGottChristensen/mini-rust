@@ -1,10 +1,13 @@
+use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
+use std::iter::once;
 use proc_macro2::Ident;
 use syn::punctuated::Punctuated;
 use syn::{braced, Field, Token, Type, ItemStruct, WhereClause};
 use syn::parse::{Parse, Parser, ParseStream};
 use syn::token::{Brace, Colon, Comma, Struct};
-use crate::{MiniGenerics, MiniIdent, MiniType};
+use crate::{MiniEnum, MiniGenerics, MiniIdent, MiniType, ToSystemFOmegaTerm, ToSystemFOmegaType};
+use system_f_omega::{BaseType, Kind, Term, Type as FType};
 
 #[derive(PartialEq, Clone)]
 pub struct MiniStruct {
@@ -87,5 +90,229 @@ impl Parse for MiniStructField {
             colon_token: Colon::parse(input)?,
             ty: Type::parse(input)?,
         })
+    }
+}
+
+impl ToSystemFOmegaTerm for MiniStruct {
+    fn convert_term(&self) -> Term {
+        Term::Define(self.ident.0.to_string(), self.convert_type(), Box::new(Term::Unit))
+    }
+}
+
+// Todo: Add a field that uniquely identifies a struct
+impl ToSystemFOmegaType for MiniStruct {
+    fn convert_type(&self) -> FType {
+        let map = self.fields.iter().map(|field| {
+            let case = MiniType(field.ty.clone()).convert_type();
+            (field.ident.0.to_string(), case)
+        });
+
+        let map = map.chain(once((format!("#{}", self.ident.0.to_string()), FType::Base(BaseType::Unit))));
+
+        let hash = HashMap::from_iter(map);
+        let mut body = FType::Record(hash);
+
+        // Todo: How will we handle generic bounds?
+        // Add generics as TypeAbs
+        for generic in self.generics.params.iter().rev() {
+            body = FType::TypeAbs(generic.ident.0.to_string(), Kind::KindStar, Box::new(body));
+        }
+
+        body
+    }
+}
+
+
+mod tests {
+    use std::collections::HashMap;
+    use quote::quote;
+    use syn::parse_quote;
+    use system_f_omega::{add_binding, BaseType, Binding, Context, kind_of, Term, Type, type_of};
+    use crate::{MiniEnum, MiniExprReference, MiniFn, MiniLitExpr, MiniStmt, MiniStruct, ToSystemFOmegaTerm, ToSystemFOmegaType};
+    use crate::mini_expr::MiniExpr;
+
+    #[test]
+    fn parse_zero_field() {
+        // Arrange
+        let mini: MiniStruct = parse_quote!(
+            struct Test {}
+        );
+
+        println!("\n{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_type();
+        let converted_kind = kind_of(&Context::new(), converted.clone());
+
+        println!("Type: {}", &converted);
+        println!("Kind: {}", &converted_kind);
+
+        // Assert
+        //assert_eq!(converted, Term::Reference(Box::new(Term::Integer(0))))
+    }
+
+    #[test]
+    fn parse_single_field() {
+        // Arrange
+        let mini: MiniStruct = parse_quote!(
+            struct Test {
+                field1: i64
+            }
+        );
+
+        println!("\n{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_type();
+        let converted_kind = kind_of(&Context::new(), converted.clone());
+
+        println!("Type: {}", &converted);
+        println!("Kind: {}", &converted_kind);
+
+        // Assert
+        //assert_eq!(converted, Term::Reference(Box::new(Term::Integer(0))))
+    }
+
+    #[test]
+    fn parse_multiple_fields() {
+        // Arrange
+        let mini: MiniStruct = parse_quote!(
+            struct Test {
+                field1: i64,
+                field2: (bool, bool),
+            }
+        );
+
+        println!("\n{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_type();
+        let converted_kind = kind_of(&Context::new(), converted.clone());
+
+        println!("Type: {}", &converted);
+        println!("Kind: {}", &converted_kind);
+
+        // Assert
+        //assert_eq!(converted, Term::Reference(Box::new(Term::Integer(0))))
+    }
+
+    #[test]
+    fn parse_generic_field() {
+        // Arrange
+        let mini: MiniStruct = parse_quote!(
+            struct Test<T> {
+                field1: T
+            }
+        );
+
+        println!("\n{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_type();
+        let converted_kind = kind_of(&Context::new(), converted.clone());
+
+        println!("Type: {}", &converted);
+        println!("Kind: {}", &converted_kind);
+
+        // Assert
+        //assert_eq!(converted, Term::Reference(Box::new(Term::Integer(0))))
+    }
+
+    #[test]
+    fn parse_multiple_generic_fields() {
+        // Arrange
+        let mini: MiniStruct = parse_quote!(
+            struct Test<T, U> {
+                field1: (T, U),
+            }
+        );
+
+        println!("\n{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_type();
+        let converted_kind = kind_of(&Context::new(), converted.clone());
+
+        println!("Type: {}", &converted);
+        println!("Kind: {}", &converted_kind);
+
+        // Assert
+        //assert_eq!(converted, Term::Reference(Box::new(Term::Integer(0))))
+    }
+
+    #[test]
+    #[should_panic] // See expr comments
+    fn parse_uniquely_identify_structs_failing() {
+        // Arrange
+        let mini: MiniExpr = parse_quote!(
+            {
+                struct Test {
+                    test: i64
+                }
+
+                struct Test2 {
+                    test: i64
+                }
+
+                // This should not typecheck because we expect the return type to be of type Test2
+                // but it is returning a type of Test.
+                // If it fails, we correctly differentiate between two structs with the same fields and same types.
+                fn t(x: Test) -> Test2 {
+                    x
+                }
+            }
+        );
+
+        let context = Context::new();
+
+        println!("\n{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+        let converted_type = type_of(&context, converted.clone());
+        //let converted_kind = kind_of(&context, converted_type.clone());
+
+        println!("Lambda: {}", &converted);
+        println!("Type: {}", &converted_type);
+        //println!("Kind: {}", &converted_kind);
+
+        // Assert
+        //assert_eq!(converted, Term::Reference(Box::new(Term::Integer(0))))
+    }
+
+    #[test]
+    fn parse_uniquely_identify_structs() {
+        // Arrange
+        let mini: MiniExpr = parse_quote!(
+            {
+                struct Test {
+                    test: i64
+                }
+
+                struct Test2 {
+                    test: i64
+                }
+
+                fn t(x: Test) -> Test {
+                    x
+                }
+            }
+        );
+
+        let context = Context::new();
+
+        println!("\n{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+        let converted_type = type_of(&context, converted.clone());
+        //let converted_kind = kind_of(&context, converted_type.clone());
+
+        println!("Lambda: {}", &converted);
+        println!("Type: {}", &converted_type);
+        //println!("Kind: {}", &converted_kind);
+
+        // Assert
+        //assert_eq!(converted, Term::Reference(Box::new(Term::Integer(0))))
     }
 }

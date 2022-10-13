@@ -1,7 +1,8 @@
 use std::fmt::{Debug, Formatter};
 use syn::{braced, Stmt, token, Token};
 use syn::parse::{Parse, ParseStream};
-use crate::{MiniStmt, parse_stmt};
+use system_f_omega::Term;
+use crate::{MiniStmt, parse_stmt, ToSystemFOmegaTerm};
 
 #[derive(PartialEq, Clone)]
 pub struct MiniBlock {
@@ -32,9 +33,6 @@ impl Parse for MiniBlock {
 pub fn parse_within(input: ParseStream) -> syn::Result<Vec<MiniStmt>> {
     let mut stmts = Vec::new();
     loop {
-        //while let Some(semi) = input.parse::<Option<Token![;]>>()? {
-            //stmts.push(Stmt::Semi(Expr::Verbatim(TokenStream::new()), semi));
-        //}
         if input.is_empty() {
             break;
         }
@@ -54,4 +52,43 @@ pub fn parse_within(input: ParseStream) -> syn::Result<Vec<MiniStmt>> {
         }
     }
     Ok(stmts)
+}
+
+impl ToSystemFOmegaTerm for MiniBlock {
+    fn convert_term(&self) -> Term {
+        // Check if there are any statements. If not, return unit.
+        if self.stmts.len() > 0 {
+            // Todo: Because rust is weird we should loop all Stmt::Item first and then all other. https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&gist=1892de5eee6ea0f511551a3a647366b5
+            // Todo: But not in the case where the Item is last: https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&gist=eed9e46426ec7c4a2804ba26e1d124ac
+            // Todo: Personally I think we should do the first, and note the other in the report.
+            let mut body = self.stmts[self.stmts.len() - 1].convert_term();
+
+            fn replace_inner(term: Term, with: Term) -> Term {
+                match term {
+                    Term::Define(x, ty, inner) => {
+                        Term::Define(x, ty, Box::new(replace_inner(*inner, with)))
+                    }
+                    Term::Let(a, ty, inner) => {
+                        Term::Let(a, ty, Box::new(replace_inner(*inner, with)))
+                    }
+                    Term::Unit => {
+                        with
+                    }
+                    a => panic!("Expressions need to be the last in the block")
+                }
+            }
+
+            for stmt in self.stmts.iter().rev().skip(1) {
+                body =  replace_inner(stmt.convert_term(), body);
+            }
+
+            // Todo: We need a better way of constructing the term, such that we capture returns and stuff.
+            // Todo: Check if only the last statement and returns are non-unit.
+
+            //self.stmts[self.stmts.len() - 1].convert()
+            body
+        } else {
+            Term::Unit
+        }
+    }
 }

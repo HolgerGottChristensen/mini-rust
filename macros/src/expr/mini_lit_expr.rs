@@ -3,6 +3,8 @@ use paris::formatter::colorize_string;
 use quote::ToTokens;
 use syn::{ExprLit, Lit};
 use syn::parse::{Parse, ParseStream};
+use system_f_omega::Term;
+use crate::ToSystemFOmegaTerm;
 
 #[derive(PartialEq, Clone)]
 pub struct MiniLitExpr {
@@ -23,5 +25,125 @@ impl Parse for MiniLitExpr {
         Ok(MiniLitExpr {
             lit
         })
+    }
+}
+
+impl ToSystemFOmegaTerm for MiniLitExpr {
+    fn convert_term(&self) -> Term {
+        match &self.lit {
+            Lit::Str(_) => todo!(),
+            Lit::ByteStr(_) => todo!(),
+            Lit::Byte(_) => todo!(),
+            Lit::Char(_) => todo!(),
+            Lit::Int(i) => {
+                Term::Integer(i.base10_parse::<i64>().unwrap())
+            }
+            Lit::Float(f) => {
+                Term::Float(f.base10_parse::<f64>().unwrap())
+            }
+            Lit::Bool(b) => {
+                if b.value {
+                    Term::True
+                } else {
+                    Term::False
+                }
+            }
+            Lit::Verbatim(_) => todo!(),
+        }
+    }
+}
+
+mod tests {
+    use quote::quote;
+    use syn::parse_quote;
+    use system_f_omega::{Context, kind_of, Term, type_of};
+    use crate::{MiniFn, MiniLitExpr, MiniStmt, ToSystemFOmegaTerm};
+
+    #[test]
+    fn parse_lit_int() {
+        // Arrange
+        let mini: MiniLitExpr = parse_quote!(
+            0
+        );
+
+        println!("\n{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+        let converted_type = type_of(&Context::new(), converted.clone());
+        let converted_kind = kind_of(&Context::new(), converted_type.clone());
+
+        println!("Lambda: {}", &converted);
+        println!("Type: {}", &converted_type);
+        println!("Kind: {}", &converted_kind);
+
+        // Assert
+        assert_eq!(converted, Term::Integer(0))
+    }
+
+    #[test]
+    fn parse_lit_float() {
+        // Arrange
+        let mini: MiniLitExpr = parse_quote!(
+            3.141592
+        );
+
+        println!("\n{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+        let converted_type = type_of(&Context::new(), converted.clone());
+        let converted_kind = kind_of(&Context::new(), converted_type.clone());
+
+        println!("Lambda: {}", &converted);
+        println!("Type: {}", converted_type);
+        println!("Kind: {}", converted_kind);
+
+        // Assert
+        assert_eq!(converted, Term::Float(3.141592))
+    }
+
+    #[test]
+    fn parse_lit_bool_true() {
+        // Arrange
+        let mini: MiniLitExpr = parse_quote!(
+            true
+        );
+
+        println!("\n{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+        let converted_type = type_of(&Context::new(), converted.clone());
+        let converted_kind = kind_of(&Context::new(), converted_type.clone());
+
+        println!("Lambda: {}", &converted);
+        println!("Type: {}", converted_type);
+        println!("Kind: {}", converted_kind);
+
+        // Assert
+        assert_eq!(converted, Term::True)
+    }
+
+    #[test]
+    fn parse_lit_bool_false() {
+        // Arrange
+        let mini: MiniLitExpr = parse_quote!(
+            false
+        );
+
+        println!("\n{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+        let converted_type = type_of(&Context::new(), converted.clone());
+        let converted_kind = kind_of(&Context::new(), converted_type.clone());
+
+        println!("Lambda: {}", &converted);
+        println!("Type: {}", converted_type);
+        println!("Kind: {}", converted_kind);
+
+        // Assert
+        assert_eq!(converted, Term::False)
     }
 }

@@ -1,6 +1,8 @@
 use syn::braced;
 use syn::parse::{Parse, ParseStream};
+use system_f_omega::Term;
 use crate::stmt::{MiniBlock, parse_within};
+use crate::ToSystemFOmegaTerm;
 
 #[derive(PartialEq, Clone, Debug)]
 pub struct MiniExprBlock {
@@ -18,5 +20,11 @@ impl Parse for MiniExprBlock {
         Ok(MiniExprBlock {
             block: MiniBlock { brace_token, stmts },
         })
+    }
+}
+
+impl ToSystemFOmegaTerm for MiniExprBlock {
+    fn convert_term(&self) -> Term {
+        self.block.convert_term()
     }
 }

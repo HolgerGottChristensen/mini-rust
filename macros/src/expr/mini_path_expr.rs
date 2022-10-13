@@ -1,10 +1,13 @@
 use std::fmt::{Debug, Formatter};
 use proc_macro2::Ident;
+use quote::ToTokens;
 use syn::{Path, PathArguments, PathSegment, QSelf, Token, token, Type};
 use syn::ext::IdentExt;
 use syn::parse::{Parse, ParseStream};
 use syn::punctuated::Punctuated;
+use system_f_omega::Term;
 use crate::mini_path::MiniPath;
+use crate::ToSystemFOmegaTerm;
 
 #[derive(PartialEq, Clone)]
 pub struct MiniExprPath {
@@ -134,5 +137,12 @@ fn parse_segment_helper(input: ParseStream, expr_style: bool) -> syn::Result<Pat
         })
     } else {
         Ok(PathSegment::from(ident))
+    }
+}
+
+impl ToSystemFOmegaTerm for MiniExprPath {
+    fn convert_term(&self) -> Term {
+        // Todo: What about self?
+        Term::TermVar(self.path.to_token_stream().to_string().replace(" ", ""))
     }
 }

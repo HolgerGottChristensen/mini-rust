@@ -1,12 +1,14 @@
 use std::fmt::{Debug, Formatter};
 use proc_macro2::Ident;
-use syn::parse::{ParseBuffer, ParseStream};
+use quote::ToTokens;
+use syn::parse::{Parse, ParseBuffer, ParseStream};
 use syn::{Pat, Path, PatType, Token, token, Type};
 use syn::parse::discouraged::Speculative;
 use syn::token::{Let, Semi};
+use system_f_omega::{Context, kind_of, Term};
 use crate::mini_expr::MiniExpr;
 use crate::mini_pat::{MiniPat, multi_pat_with_leading_vert};
-use crate::MiniItem;
+use crate::{MiniItem, ToSystemFOmegaTerm, ToSystemFOmegaType};
 
 #[derive(PartialEq, Clone)]
 pub enum MiniStmt {
@@ -45,6 +47,12 @@ impl Debug for MiniStmt {
                     .finish()
             }
         }
+    }
+}
+
+impl Parse for MiniStmt {
+    fn parse(input: ParseStream) -> syn::Result<Self> {
+        parse_stmt(input, true)
     }
 }
 
@@ -104,5 +112,74 @@ fn stmt_expr(
         Ok(MiniStmt::Expr(e))
     } else {
         Err(input.error("expected semicolon"))
+    }
+}
+
+
+impl ToSystemFOmegaTerm for MiniStmt {
+    fn convert_term(&self) -> Term {
+        match self {
+            MiniStmt::Local { let_token, pat, eq_token, expr, semi_token } => {
+                let mut body = expr.convert_term();
+
+                // Always continue with unit, which will be replaced when having more statements in a row.
+                body = Term::Let(
+                    pat.to_token_stream().to_string(),
+                    Box::new(body),
+                    Box::new(Term::Unit)
+                );
+
+                body
+            }
+            MiniStmt::Item(i) => {
+                match i {
+                    MiniItem::Enum(e) => e.convert_term(),
+                    MiniItem::Struct(s) => s.convert_term(),
+                    MiniItem::Fn(f) => {
+                        Term::Let(f.ident.0.to_string(), Box::new(f.convert_term()), Box::new(Term::Unit))
+                    },
+                    _ => todo!()
+                }
+            },
+            MiniStmt::Expr(e) => e.convert_term(),
+            MiniStmt::Semi(expr, _) => {
+                let mut body = expr.convert_term();
+
+                // Always continue with unit, which will be replaced when having more statements in a row.
+                body = Term::Let(
+                    "_".to_string(),
+                    Box::new(body),
+                    Box::new(Term::Unit)
+                );
+
+                body
+            },
+        }
+    }
+}
+
+mod tests {
+    use quote::quote;
+    use syn::parse_quote;
+    use system_f_omega::{Context, type_of};
+    use crate::{MiniFn, MiniStmt, ToSystemFOmegaTerm};
+
+    #[test]
+    fn parse_local_simple() {
+        // Arrange
+        let mini: MiniStmt = parse_quote!(
+            let i = 0;
+        );
+
+        println!("\n{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+
+        println!("\nLambda:\n{}", &converted);
+        println!("\nType:\n{}", type_of(&Context::new(), converted));
+
+        // Assert
+        //assert!(matches!(actual, CarbideExpr::Lit(LitExpr {lit: Lit::Int(_)})))
     }
 }

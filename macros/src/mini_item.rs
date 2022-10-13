@@ -2,7 +2,8 @@ use std::fmt::{Debug, Formatter};
 use proc_macro2::Span;
 use syn::parse::{Parse, ParseStream};
 use syn::{Error, Token};
-use crate::{MiniEnum, MiniFn, MiniImpl, MiniStruct, MiniTrait};
+use system_f_omega::{Term, Type};
+use crate::{MiniEnum, MiniFn, MiniImpl, MiniStruct, MiniTrait, ToSystemFOmegaTerm, ToSystemFOmegaType};
 
 #[derive(PartialEq, Clone)]
 pub enum MiniItem {
@@ -40,5 +41,29 @@ impl Parse for MiniItem {
         }
 
         Err(Error::new(Span::call_site(), "Could not parse mini-item"))
+    }
+}
+
+impl ToSystemFOmegaType for MiniItem {
+    fn convert_type(&self) -> Type {
+        match self {
+            MiniItem::Enum(f) => f.convert_type(),
+            MiniItem::Fn(f) => f.convert_type(),
+            MiniItem::Impl(_) => todo!(),
+            MiniItem::Struct(s) => s.convert_type(),
+            MiniItem::Trait(_) => todo!(),
+        }
+    }
+}
+
+impl ToSystemFOmegaTerm for MiniItem {
+    fn convert_term(&self) -> Term {
+        match self {
+            MiniItem::Enum(f) => f.convert_term(),
+            MiniItem::Fn(f) => f.convert_term(),
+            MiniItem::Impl(_) => todo!(),
+            MiniItem::Struct(f) => f.convert_term(),
+            MiniItem::Trait(_) => todo!(),
+        }
     }
 }

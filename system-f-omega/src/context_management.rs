@@ -1,12 +1,40 @@
 use std::collections::{HashMap, VecDeque};
+use std::fmt::{Debug, Formatter};
+use std::ops::Deref;
 use std::rc::Rc;
+use paris::formatter::colorize_string;
 use crate::{Binding, Kind, Term, Type};
 use crate::LinkedList::{Cons, Nil};
 
-#[derive(Debug)]
+
+pub static COLOR_NAMES: &'static [&'static str] = &[
+    "red",
+    "bright-green",
+    "bright-yellow",
+    "blue",
+    "cyan",
+    "magenta"
+];
+
+pub fn get_color(index: u32, s: &str) -> String {
+    colorize_string(format!("<{}>{}</>", COLOR_NAMES[index as usize % COLOR_NAMES.len()], s))
+}
+
 pub enum LinkedList<T> where T: Clone {
     Cons(Rc<(T, LinkedList<T>)>),
     Nil,
+}
+
+impl<T: Debug + Clone> Debug for LinkedList<T> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Cons(r) => {
+                let (val, t) = r.deref();
+                write!(f, "{:?} :: {:?}", val, t)
+            }
+            Nil => write!(f, "Nil")
+        }
+    }
 }
 
 impl<T: Clone> Clone for LinkedList<T> {
@@ -284,13 +312,20 @@ pub fn get_binding(context: &Context, name: &String) -> Option<Binding> {
 pub fn get_type(context: &Context, name: &String) -> Type {
     match get_binding(context, name) {
         Some(Binding::VarBinding(_, ty)) => ty,
-        _ => panic!("Binding at position {} is not a VarBinding: {:?}", name, context)
+        _ => panic!("Binding with ident '{}' is not a VarBinding in the current Context: {:?}", name, context)
+    }
+}
+
+pub fn get_type_safe(context: &Context, name: &String) -> Result<Type, String> {
+    match get_binding(context, name) {
+        Some(Binding::VarBinding(_, ty)) => Ok(ty),
+        _ => Err(format!("Binding with ident '{}' is not a VarBinding in the current Context: {:?}", name, context))
     }
 }
 
 pub fn get_kind(context: &Context, name: &String) -> Kind {
     match get_binding(context, name) {
         Some(Binding::TyVarBinding(_, k)) => k,
-        _ => panic!("Binding at position {} is not a TyVarBinding: {:?}", name, context)
+        _ => panic!("Binding with ident '{}' is not a TyVarBinding in the current Context: {:?}", name, context)
     }
 }
