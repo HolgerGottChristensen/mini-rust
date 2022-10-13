@@ -1,6 +1,8 @@
 mod datatypes;
 mod context_management;
 mod eval;
+mod free_variables;
+mod dependency_graph;
 
 use std::collections::HashMap;
 pub use datatypes::*;
