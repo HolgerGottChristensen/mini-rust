@@ -74,6 +74,9 @@ impl ToSystemFOmegaTerm for MiniBlock {
                     Term::Unit => {
                         with
                     }
+                    Term::TermTypeAbs(s, k, inner) => {
+                        Term::TermTypeAbs(s, k, Box::new(replace_inner(*inner, with)))
+                    }
                     a => panic!("Expressions need to be the last in the block")
                 }
             }

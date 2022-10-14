@@ -250,6 +250,7 @@ mod tests {
     use syn::parse_quote;
     use system_f_omega::{Context, type_of};
     use crate::{MiniFn, ToSystemFOmegaTerm};
+    use crate::stmt::MiniBlock;
 
     #[test]
     fn parse_fn_simple_0_arg() {
@@ -404,6 +405,31 @@ mod tests {
         // Arrange
         let mini: MiniFn = parse_quote!(
              fn hello<T>(arg1: T) {}
+        );
+
+        println!("\n{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+
+        println!("\nLambda:\n{}", &converted);
+        println!("\nType:\n{}", type_of(&Context::new(), converted));
+
+        // Assert
+        //assert!(matches!(actual, CarbideExpr::Lit(LitExpr {lit: Lit::Int(_)})))
+    }
+
+    #[test]
+    fn parse_fn_simple_1_arg_generic_applied() {
+        // Arrange
+        let mini: MiniBlock = parse_quote!(
+             {
+                 fn hello<T>(arg1: T) -> T {
+                    arg1
+                 }
+
+                 hello::<i64>(2)
+             }
         );
 
         println!("\n{:#?}", &mini);

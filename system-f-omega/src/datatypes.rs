@@ -289,7 +289,7 @@ impl Term {
                 format!("{}.{}", t1.to_string_term(context, color), label)
             }
             Term::Tagging(label, term, t1) => {
-                format!("{}{}={}{} as {}", get_color(color, "<"), label, term.to_string_term(context, color + 1), get_color(color, ">"), t1.to_string_type(context, color))
+                format!("{}{}={}{} as {}{}{}", get_color(color, "<"), label, term.to_string_term(context, color + 1), get_color(color, ">"), get_color(color, "("), t1.to_string_type(context, color + 1), get_color(color, ")"))
             }
             Term::Case(term, cases) => {
                 let cases_string = cases.iter().map(|(label, (x, term2))| {
