@@ -279,6 +279,10 @@ fn main() {
         )
     );
 
+    let hungry = Type::Recursive("A".to_string(), Kind::KindStar, Box::new(Type::TypeArrow(Box::new(Type::Base(BaseType::Int)), Box::new(TypeVar("A".to_string())))));
+
+    let f = Term::Fix(Box::new(Term::TermAbs("f".to_string(), Type::TypeArrow(Box::new(Type::Base(BaseType::Int)), Box::new(hungry.clone())), Box::new(Term::TermVar("f".to_string())))));
+
 
     println!("NatList = {}", nat_list);
     println!("NLBody = {}", nat_list_body);
@@ -316,6 +320,13 @@ fn main() {
     println!("p4 = {}", &p4);
     println!("p4 = {}", type_of(&context, p4));
 
+    println!();
+    println!("hungry = {}", &hungry);
+    println!();
+    println!("f = {}", &f);
+    println!("f = {}", type_of(&context, f.clone()));
+    println!("f(applied) = {}", Term::TermApp(Box::new(TermApp(Box::new(f.clone()), Box::new(Term::Integer(1)))), Box::new(Term::Integer(2))));
+    println!("f(applied) = {}", type_of(&context, Term::TermApp(Box::new(TermApp(Box::new(f), Box::new(Term::Integer(1)))), Box::new(Term::Integer(2)))));
 
 
     //println!("Term: {}", term);

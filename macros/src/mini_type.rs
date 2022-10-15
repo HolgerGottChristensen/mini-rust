@@ -5,7 +5,9 @@ use syn::parse::{Parse, ParseStream};
 use syn::{ReturnType, Type};
 use system_f_omega::{BaseType, Term};
 use system_f_omega::Type as FType;
+use system_f_omega::Type::TypeApp;
 use crate::{ToSystemFOmegaTerm, ToSystemFOmegaType, TYPE_COLOR};
+use crate::mini_path::MiniPath;
 
 #[derive(PartialEq, Clone)]
 pub struct MiniType(pub Type);
@@ -58,15 +60,23 @@ impl ToSystemFOmegaType for MiniType {
                 t.convert_type()
             },
             Type::Path(p) => {
-                let t = p.to_token_stream().to_string();
+                let t = MiniPath(p.path.clone()).as_ident();
 
-                match t.as_str() {
+                let mut res = match t.as_str() {
                     "i64" => FType::Base(BaseType::Int),
                     "f64" => FType::Base(BaseType::Float),
                     "bool" => FType::Base(BaseType::Bool),
                     "()" => FType::Base(BaseType::Unit),
-                    t => FType::TypeVar(t.to_string()) // Todo: We need to lookup the type of user defined structs and more.
+                    t => {
+                        FType::TypeVar(t.to_string())
+                    } // Todo: We need to lookup the type of user defined structs and more.
+                };
+
+                for generic in MiniPath(p.path.clone()).generics() {
+                    res = TypeApp(Box::new(res), Box::new(generic));
                 }
+
+                res
             },
             Type::Reference(r) => {
                 // Todo: What if we have mutable references.

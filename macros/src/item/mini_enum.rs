@@ -113,14 +113,32 @@ impl ToSystemFOmegaTerm for MiniEnum {
 
         for field in &self.fields {
             match &field.items {
+                // Construct a function that takes zero term arguments, but type arguments, with the name of the enum case.
                 None => {
+                    let mut variants = variants.clone();
+
+                    for generic in self.generics.params.iter() {
+                        variants = FType::TypeApp(Box::new(variants), Box::new(FType::TypeVar(generic.ident.0.to_string())))
+                    }
+
+                    let mut function = Term::Tagging(field.ident.0.to_string(), Box::new(Term::Unit), variants);
+
+                    for generic in self.generics.params.iter().rev() {
+                        function = Term::TermTypeAbs(generic.ident.0.to_string(), Kind::KindStar, Box::new(function));
+                    }
+
                     body = Term::Let(
                         format!("{}::{}", self.ident.0.to_string(), field.ident.0.to_string()),
-                        Box::new(Term::Unit),
+                        Box::new(function),
                         Box::new(body)
                     );
                 }
                 Some(fields) => {
+                    let mut variants = variants.clone();
+
+                    for generic in self.generics.params.iter() {
+                        variants = FType::TypeApp(Box::new(variants), Box::new(FType::TypeVar(generic.ident.0.to_string())))
+                    }
 
                     let mut tups = vec![];
 
@@ -130,13 +148,17 @@ impl ToSystemFOmegaTerm for MiniEnum {
 
                     let tup = Term::Tuple(tups);
 
-                    let mut function = Term::Tagging(field.ident.0.to_string(), Box::new(tup), variants.clone());
+                    let mut function = Term::Tagging(field.ident.0.to_string(), Box::new(tup), variants);
 
                     for (index, ty) in fields.iter().enumerate().rev() {
                         function = Term::TermAbs(format!("arg{}", index), MiniType(ty.clone()).convert_type(), Box::new(function))
                     }
 
                     function = Term::TermAbs("#default".to_string(), FType::Base(BaseType::Unit), Box::new(function));
+
+                    for generic in self.generics.params.iter().rev() {
+                        function = Term::TermTypeAbs(generic.ident.0.to_string(), Kind::KindStar, Box::new(function));
+                    }
 
                     body = Term::Let(
                         format!("{}::{}", self.ident.0.to_string(), field.ident.0.to_string()),
@@ -417,7 +439,7 @@ mod tests {
     }
 
     #[test]
-    fn parse_option_enum_construction() {
+    fn parse_option_enum_construction_no_generics() {
         // Arrange
         let mini: MiniBlock = parse_quote!(
             {
@@ -451,6 +473,137 @@ mod tests {
     }
 
     #[test]
+    fn parse_option_enum_construction_none1() {
+        // Arrange
+        let mini: MiniBlock = parse_quote!(
+            {
+                enum Option<T> {
+                    Some(T),
+                    None
+                }
+
+                let x = Option::None;
+
+                x
+            }
+        );
+
+        println!("\n{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+        println!("Lambda: {}", &converted);
+
+        let converted_type = type_of(&Context::new(), converted.clone());
+        println!("Type: {}", &converted_type);
+
+        let converted_kind = kind_of(&Context::new(), converted_type.clone());
+        println!("Kind: {}", &converted_kind);
+
+
+        // Assert
+        //assert_eq!(converted, Term::Reference(Box::new(Term::Integer(0))))
+    }
+
+    #[test]
+    fn parse_option_enum_construction_none2() {
+        // Arrange
+        let mini: MiniBlock = parse_quote!(
+            {
+                enum Option<T> {
+                    Some(T),
+                    None
+                }
+
+                let x = Option::None::<i64>;
+
+                x
+            }
+        );
+
+        println!("\n{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+        println!("Lambda: {}", &converted);
+
+        let converted_type = type_of(&Context::new(), converted.clone());
+        println!("Type: {}", &converted_type);
+
+        let converted_kind = kind_of(&Context::new(), converted_type.clone());
+        println!("Kind: {}", &converted_kind);
+
+
+        // Assert
+        //assert_eq!(converted, Term::Reference(Box::new(Term::Integer(0))))
+    }
+
+    #[test]
+    fn parse_option_enum_construction_some() {
+        // Arrange
+        let mini: MiniBlock = parse_quote!(
+            {
+                enum Option<T> {
+                    Some(T),
+                    None
+                }
+
+                let x = Option::Some::<i64>(3);
+
+                x
+            }
+        );
+
+        println!("\n{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+        println!("Lambda: {}", &converted);
+
+        let converted_type = type_of(&Context::new(), converted.clone());
+        println!("Type: {}", &converted_type);
+
+        let converted_kind = kind_of(&Context::new(), converted_type.clone());
+        println!("Kind: {}", &converted_kind);
+
+
+        // Assert
+        //assert_eq!(converted, Term::Reference(Box::new(Term::Integer(0))))
+    }
+
+    #[test]
+    fn parse_generic_enum_construction_simple() {
+        // Arrange
+        let mini: MiniBlock = parse_quote!(
+            {
+                enum Option<T> {
+                    None
+                }
+
+                let x = Option::None::<i64>;
+
+                x
+            }
+        );
+
+        println!("\n{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+        println!("Lambda: {}", &converted);
+
+        let converted_type = type_of(&Context::new(), converted.clone());
+        println!("Type: {}", &converted_type);
+
+        let converted_kind = kind_of(&Context::new(), converted_type.clone());
+        println!("Kind: {}", &converted_kind);
+
+
+        // Assert
+        //assert_eq!(converted, Term::Reference(Box::new(Term::Integer(0))))
+    }
+
+    #[test]
     fn parse_result_enum() {
         // Arrange
         let mini: MiniEnum = parse_quote!(
@@ -463,11 +616,87 @@ mod tests {
         println!("\n{:#?}", &mini);
 
         // Act
-        let converted = mini.convert_type();
-        println!("Type: {}", &converted);
+        let converted = mini.convert_term();
+        println!("Lambda: {}", &converted);
 
-        let converted_kind = kind_of(&Context::new(), converted.clone());
+        let converted_type = type_of(&Context::new(), converted.clone());
+        println!("Type: {}", &converted_type);
+
+        let converted_kind = kind_of(&Context::new(), converted_type.clone());
         println!("Kind: {}", &converted_kind);
+
+
+        // Assert
+        //assert_eq!(converted, Term::Reference(Box::new(Term::Integer(0))))
+    }
+
+    #[test]
+    fn parse_result_enum_construction() {
+        // Arrange
+        let mini: MiniBlock = parse_quote!(
+            {
+                enum Result<T, E> {
+                    Ok(T),
+                    Err(E),
+                }
+
+                let ok = Result::Ok::<bool, i64>(true);
+                let err = Result::Err::<bool, i64>(32);
+
+                ok
+            }
+        );
+
+        println!("\n{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+        println!("Lambda: {}", &converted);
+
+        let converted_type = type_of(&Context::new(), converted.clone());
+        println!("Type: {}", &converted_type);
+
+        let converted_kind = kind_of(&Context::new(), converted_type.clone());
+        println!("Kind: {}", &converted_kind);
+
+
+        // Assert
+        //assert_eq!(converted, Term::Reference(Box::new(Term::Integer(0))))
+    }
+
+    #[test]
+    fn parse_result_enum_construction_with_nested_generic() {
+        // Arrange
+        let mini: MiniBlock = parse_quote!(
+            {
+                enum Result<T, E> {
+                    Ok(T),
+                    Err(E),
+                }
+
+                fn test<T>(t: T) -> Result<T, bool> {
+                    Result::Ok::<T, bool>(t)
+                }
+
+                let x = test::<i64>(3);
+                let y = test::<bool>(true);
+
+                x
+            }
+        );
+
+        println!("\n{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+        println!("Lambda: {}", &converted);
+
+        let converted_type = type_of(&Context::new(), converted.clone());
+        println!("Type: {}", &converted_type); // Todo: Why does this type not get simplified?
+
+        let converted_kind = kind_of(&Context::new(), converted_type.clone());
+        println!("Kind: {}", &converted_kind);
+
 
         // Assert
         //assert_eq!(converted, Term::Reference(Box::new(Term::Integer(0))))
