@@ -326,7 +326,7 @@ fn main() {
     println!("f = {}", &f);
     println!("f = {}", type_of(&context, f.clone()));
     println!("f(applied) = {}", Term::TermApp(Box::new(TermApp(Box::new(f.clone()), Box::new(Term::Integer(1)))), Box::new(Term::Integer(2))));
-    println!("f(applied) = {}", type_of(&context, Term::TermApp(Box::new(TermApp(Box::new(f), Box::new(Term::Integer(1)))), Box::new(Term::Integer(2)))));
+    //println!("f(applied) = {}", type_of(&context, Term::TermApp(Box::new(TermApp(Box::new(f), Box::new(Term::Integer(1)))), Box::new(Term::Integer(2)))));
 
 
     //println!("Term: {}", term);
