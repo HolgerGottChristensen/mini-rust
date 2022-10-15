@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 use crate::{Term, Type};
 
-//todo: get free variables from types
+// Todo: Get free variables from types
 pub fn free_variables_term(term: Term) -> HashSet<String> {
     match term {
         Term::TermVar(x) => HashSet::from([x]),
@@ -49,6 +49,9 @@ pub fn free_variables_term(term: Term) -> HashSet<String> {
             &free_variables_term(*t) | &free_variables_type(typ),
         Term::Define(x, typ, t) =>
             &(&free_variables_term(*t) - &HashSet::from([x])) | &free_variables_type(typ),
+        Term::Scope(term) => free_variables_term(*term),
+        Term::Seq(term1, term2) =>
+            &free_variables_term(*term1) | &free_variables_term(*term2),
     }
 }
 

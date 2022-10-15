@@ -675,7 +675,7 @@ impl MiniExpr {
 impl ToSystemFOmegaTerm for MiniExpr {
     fn convert_term(&self) -> Term {
         match self {
-            MiniExpr::Assign(_) => todo!(),
+            MiniExpr::Assign(l) => l.convert_term(),
             MiniExpr::Binary(l) => l.convert_term(),
             MiniExpr::Block(l) => l.convert_term(),
             MiniExpr::Box(_) => todo!(),

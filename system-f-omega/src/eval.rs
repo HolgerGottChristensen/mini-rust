@@ -570,6 +570,18 @@ pub fn type_of(context: &Context, term: Term) -> Type {
 
             type_of(&new_context, *term)
         }
+        // T-Scope
+        Term::Scope(term) => {
+            type_of(context, *term)
+        }
+        // T-Seq
+        Term::Seq(term1, term2) => {
+            let t1 = type_of(context, *term1); // Todo: If we convert to result, we need to handle that here.
+            let _ = simplify_type(context, t1);
+
+            let t2 = type_of(context, *term2);
+            simplify_type(context, t2)
+        }
     }
 }
 

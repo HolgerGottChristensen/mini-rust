@@ -115,7 +115,6 @@ impl ToSystemFOmegaTerm for MiniEnum {
             match &field.items {
                 // Construct a function that takes zero term arguments, but type arguments, with the name of the enum case.
                 None => {
-
                     let mut variants = variants.clone();
 
                     for generic in self.generics.params.iter() {

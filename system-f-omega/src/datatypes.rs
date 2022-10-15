@@ -206,6 +206,8 @@ pub enum Term {
     UnPack(String, String, Box<Term>, Box<Term>),
     /// Term as Type
     Ascribe(Box<Term>, Type),
+    /// Term; Term
+    Seq(Box<Term>, Box<Term>),
     /// The below is a bit special so I will try to explain a bit.
     /// We need some way of introducing types into the context for a scope.
     /// One way it could happen would be having TermTypeApp and TermTypeAbs
@@ -225,6 +227,14 @@ pub enum Term {
     ///
     /// define x as Type in Term
     Define(String, Type, Box<Term>),
+    /// The below is a bit special also, so I will explain a bit.
+    ///
+    /// Every time in rust there is a block we need something that creates a new scope.
+    /// It is important that within the block, no defined variables gets out again.
+    /// This can be considered sugar syntax for writing "let x = Term in x" where x is a
+    /// new unique variable that can not be accessed anywhere.
+    Scope(Box<Term>),
+
 }
 
 impl Display for Term {
@@ -234,17 +244,6 @@ impl Display for Term {
 }
 
 impl Term {
-    pub fn sequence(self, other: Term) -> Term {
-        Term::TermApp(
-            Box::new(Term::TermAbs(
-                "_".to_string(),
-                Type::Base(BaseType::Unit),
-                Box::new(other)
-            )),
-            Box::new(self),
-        )
-    }
-
     fn to_string_atomic(&self, context: &Context, color: u32) -> String {
         match self {
             Term::TermVar(x) => {
@@ -258,7 +257,11 @@ impl Term {
             Term::Integer(i) => colorize_string(format!("<green>{}</>", i)),
 
             Term::Ascribe(t, ty) => format!("{}{}{} as {}", get_color(color, "("), t.to_string_term(context, color + 1), get_color(color, ")"), ty.to_string_type(context, color)),
+
             Term::Define(x, ty, term) => format!("define {}{} = {}{} in {}", get_color(color, "("), x, ty.to_string_type(context, color + 1), get_color(color, ")"), term.to_string_term(context, color)),
+            Term::Scope(term) => format!("{}{}{}{}", get_color(color, "<b>scope"), get_color(color, "<b>("), term.to_string_term(context, color + 1), get_color(color, "<b>)")),
+            Term::Seq(term1, term2) => format!("{}; {}", term1.to_string_term(context, color), term2.to_string_term(context, color)),
+
             Term::Fold(t) => format!("fold {}{}{}", get_color(color, "["), t.to_string_type(context, color + 1), get_color(color, "]")),
             Term::UnFold(t) => format!("unfold {}{}{}", get_color(color, "["), t.to_string_type(context, color + 1), get_color(color, "]")),
             Term::Pack(t1, term1, t2) =>

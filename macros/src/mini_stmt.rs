@@ -146,8 +146,7 @@ impl ToSystemFOmegaTerm for MiniStmt {
                 let mut body = expr.convert_term();
 
                 // Always continue with unit, which will be replaced when having more statements in a row.
-                body = Term::Let(
-                    "_".to_string(),
+                body = Term::Seq(
                     Box::new(body),
                     Box::new(Term::Unit)
                 );

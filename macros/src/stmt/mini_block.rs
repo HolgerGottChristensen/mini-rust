@@ -74,6 +74,9 @@ impl ToSystemFOmegaTerm for MiniBlock {
                     Term::Unit => {
                         with
                     }
+                    Term::Seq(term1, term2) => {
+                        Term::Seq(term1, Box::new(replace_inner(*term2, with)))
+                    }
                     Term::TermTypeAbs(s, k, inner) => {
                         Term::TermTypeAbs(s, k, Box::new(replace_inner(*inner, with)))
                     }
@@ -85,11 +88,10 @@ impl ToSystemFOmegaTerm for MiniBlock {
                 body =  replace_inner(stmt.convert_term(), body);
             }
 
-            // Todo: We need a better way of constructing the term, such that we capture returns and stuff.
             // Todo: Check if only the last statement and returns are non-unit.
 
-            //self.stmts[self.stmts.len() - 1].convert()
-            body
+            // Because of scoping we need to hide all things from the body.
+            Term::Scope(Box::new(body))
         } else {
             Term::Unit
         }
