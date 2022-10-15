@@ -52,6 +52,7 @@ pub fn free_variables_term(term: Term) -> HashSet<String> {
         Term::Scope(term) => free_variables_term(*term),
         Term::Seq(term1, term2) =>
             &free_variables_term(*term1) | &free_variables_term(*term2),
+        Term::Fix(t) => free_variables_term(*t),
     }
 }
 

@@ -582,6 +582,21 @@ pub fn type_of(context: &Context, term: Term) -> Type {
             let t2 = type_of(context, *term2);
             simplify_type(context, t2)
         }
+        // T-Fix
+        Term::Fix(t) => {
+            let t1 = simplify_type(context, type_of(context, *t));
+
+            match t1 {
+                Type::TypeArrow(t11, t12) => {
+                    if type_equivalence(context, *t11, *t12.clone()) {
+                        *t12
+                    } else {
+                        panic!("The result of the body is not compatible with the domain. Expected the types to be equal.")
+                    }
+                }
+                _ => panic!("Only arrow types can be fixed.")
+            }
+        }
     }
 }
 

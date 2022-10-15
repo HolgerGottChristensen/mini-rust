@@ -206,6 +206,8 @@ pub enum Term {
     UnPack(String, String, Box<Term>, Box<Term>),
     /// Term as Type
     Ascribe(Box<Term>, Type),
+    /// fix Term
+    Fix(Box<Term>),
     /// Term; Term
     Seq(Box<Term>, Box<Term>),
     /// The below is a bit special so I will try to explain a bit.
@@ -262,6 +264,7 @@ impl Term {
             Term::Scope(term) => format!("{}{}{}{}", get_color(color, "<b>scope"), get_color(color, "<b>("), term.to_string_term(context, color + 1), get_color(color, "<b>)")),
             Term::Seq(term1, term2) => format!("{}; {}", term1.to_string_term(context, color), term2.to_string_term(context, color)),
 
+            Term::Fix(t) => format!("fix {}", t.to_string_term(context, color)),
             Term::Fold(t) => format!("fold {}{}{}", get_color(color, "["), t.to_string_type(context, color + 1), get_color(color, "]")),
             Term::UnFold(t) => format!("unfold {}{}{}", get_color(color, "["), t.to_string_type(context, color + 1), get_color(color, "]")),
             Term::Pack(t1, term1, t2) =>
