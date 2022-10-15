@@ -1,13 +1,21 @@
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 use std::iter::once;
+use chalk_integration::interner::ChalkIr;
+use chalk_integration::RawId;
+use chalk_ir::{AdtId, Binders, Scalar, Ty, TyKind, VariableKinds};
+use chalk_ir::interner::Interner;
+use chalk_solve::clauses::builder::ClauseBuilder;
+use chalk_solve::rust_ir;
+use chalk_solve::rust_ir::{AdtDatum, AdtDatumBound, AdtFlags, AdtKind, AdtVariantDatum};
 use proc_macro2::Ident;
 use syn::punctuated::Punctuated;
 use syn::{braced, Field, Token, Type, ItemStruct, WhereClause};
 use syn::parse::{Parse, Parser, ParseStream};
 use syn::token::{Brace, Colon, Comma, Struct};
-use crate::{MiniEnum, MiniGenerics, MiniIdent, MiniType, ToSystemFOmegaTerm, ToSystemFOmegaType};
+use crate::{MiniEnum, MiniGenerics, MiniIdent, MiniType, ToChalkRustIR, ToSystemFOmegaTerm, ToSystemFOmegaType};
 use system_f_omega::{BaseType, Kind, Term, Type as FType};
+use crate::util::Env;
 
 #[derive(PartialEq, Clone)]
 pub struct MiniStruct {
@@ -93,6 +101,12 @@ impl Parse for MiniStructField {
     }
 }
 
+impl MiniStructField {
+    fn convert_to_chalk(&self, env: &Env) -> Ty<ChalkIr> {
+        Ty::new(ChalkIr, TyKind::Scalar(Scalar::Bool))
+    }
+}
+
 impl ToSystemFOmegaTerm for MiniStruct {
     fn convert_term(&self) -> Term {
         Term::Define(self.ident.0.to_string(), self.convert_type(), Box::new(Term::Unit))
@@ -121,6 +135,38 @@ impl ToSystemFOmegaType for MiniStruct {
         body
     }
 }
+// Todo: impl trait, write test with simple Struct, Trait & Impl
+// Map Absyn to rust_ir
+
+impl ToChalkRustIR for MiniStruct {
+    fn convert(&self, env: &Env) -> AdtDatum<ChalkIr> {
+        let binders: Vec<_> = vec![];
+        //let binders: Vec<_> = adt_defn.all_parameters().into_iter().collect();
+        let env = env.introduce(binders.iter().cloned());
+        let binder = Binders::new(
+            VariableKinds::from_iter(ChalkIr, binders.iter().map(|v| v.kind.clone())),
+            AdtDatumBound {
+                variants: vec![AdtVariantDatum {
+                    fields: self.fields.iter().map(|f| f.convert_to_chalk(&env)).collect()
+                }],
+                where_clauses: vec![],
+            },
+        );
+
+        AdtDatum {
+            binders: binder,
+            id: AdtId(RawId{
+                index: 0
+            }),
+            flags: AdtFlags {
+                upstream: false,
+                fundamental: false,
+                phantom_data: false
+            },
+            kind: AdtKind::Struct
+        }
+    }
+}
 
 
 mod tests {
@@ -130,6 +176,65 @@ mod tests {
     use system_f_omega::{add_binding, BaseType, Binding, Context, kind_of, Term, Type, type_of};
     use crate::{MiniEnum, MiniExprReference, MiniFn, MiniLitExpr, MiniStmt, MiniStruct, ToSystemFOmegaTerm, ToSystemFOmegaType};
     use crate::mini_expr::MiniExpr;
+
+    mod chalk {
+        use std::collections::BTreeMap;
+        use chalk_integration::db::ChalkDatabase;
+        use chalk_integration::program::Program;
+        use chalk_integration::SolverChoice;
+        use chalk_solve::logging_db::LoggingRustIrDatabase;
+        use syn::parse_quote;
+        use crate::{Env, MiniStruct, ToChalkRustIR};
+
+        #[test]
+        fn convert_to_chalk_rust() {
+            // Arrange
+            let mini: MiniStruct = parse_quote!(
+                struct Test {}
+            );
+
+            println!("\n{:#?}", &mini);
+            let env = Env {
+                parameter_map: BTreeMap::new()
+            };
+
+            // Act
+            let x = mini.convert(&env);
+            println!("\n{:#?}", &x);
+
+            // Assert
+        }
+
+        #[test]
+        fn convert_to_chalk_rust_with_fields() {
+            // Arrange
+            let mini: MiniStruct = parse_quote!(
+                struct Test {
+                    x: i64,
+                    y: f64,
+                }
+            );
+
+            println!("\n{:#?}", &mini);
+            let env = Env {
+                parameter_map: BTreeMap::new()
+            };
+
+            // Act
+            let x = mini.convert(&env);
+            println!("\n{:#?}", &x);
+
+            let db = ChalkDatabase::with(
+                &program_text[1..program_text.len() - 1],
+                SolverChoice::default(),
+            );
+
+            let program = db.program_ir().unwrap();
+            let wrapped = LoggingRustIrDatabase::<_, Program, _>::new(program.clone());
+
+            // Assert
+        }
+    }
 
     #[test]
     fn parse_zero_field() {

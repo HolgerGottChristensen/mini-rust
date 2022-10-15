@@ -16,3 +16,6 @@ syn = { version = "1.0", features = ["extra-traits", "full", "visit-mut"]}
 paris = "1.5"
 system_f_omega = { path = "../system-f-omega" }
 
+chalk-solve = {rev = "8138a99", git = "https://github.com/rust-lang/chalk"}
+chalk-ir = {rev = "8138a99", git = "https://github.com/rust-lang/chalk"}
+chalk-integration = {rev = "8138a99", git = "https://github.com/rust-lang/chalk"}
