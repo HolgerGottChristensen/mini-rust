@@ -215,15 +215,26 @@ impl ToSystemFOmegaTerm for MiniFn {
 
         for param in self.inputs.iter().rev() {
             match param {
-                MiniFnArg::Receiver { .. } => {
-                    todo!() // Todo: How do we know the receiver?
+                MiniFnArg::Receiver { reference, mutability, self_token } => {
+
+                    // Todo: How do we handle mutability of the receiver?
+                    let mut ty = FType::TypeVar("#Self".to_string());
+                    if reference.is_some() {
+                        ty = FType::Reference(Box::new(ty));
+                    }
+
+                    body = Term::TermAbs(
+                        "self".to_string(),
+                        ty,
+                        Box::new(body)
+                    );
                 }
                 MiniFnArg::Typed { pat, colon_token, ty } => {
                     body = Term::TermAbs(
                         pat.0.to_string(),
                         MiniType(*ty.clone()).convert_type(),
                         Box::new(body)
-                    )
+                    );
                 }
             }
         }

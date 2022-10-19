@@ -1,15 +1,18 @@
 use std::collections::{BTreeMap, HashSet};
+use std::fmt;
 use std::sync::Arc;
-use chalk_integration::{Identifier, TypeKind};
+use chalk_integration::{Identifier, tls, TypeKind};
 use chalk_integration::error::ChalkError;
 use chalk_integration::interner::ChalkIr;
 use chalk_integration::program_environment::ProgramEnvironment;
 use chalk_integration::query::{LoweringDatabase, Upcast};
-use chalk_ir::{AdtId, AssocTypeId, Binders, CanonicalVarKinds, ClosureId, Environment, FnDefId, ForeignDefId, GeneratorId, GenericArg, ImplId, OpaqueTyId, ProgramClause, ProgramClauses, Substitution, TraitId, Ty, TyKind, UnificationDatabase, Variance};
+use chalk_ir::{AdtId, AliasTy, AssocTypeId, Binders, CanonicalVarKinds, ClosureId, Environment, FnDefId, ForeignDefId, GeneratorId, GenericArg, Goal, Goals, ImplId, Lifetime, OpaqueTy, OpaqueTyId, ProgramClause, ProgramClauseImplication, ProgramClauses, ProjectionTy, SeparatorTraitRef, Substitution, TraitId, Ty, TyKind, UnificationDatabase, Variance};
+use chalk_ir::debug::Angle;
 use chalk_solve::clauses::builder::ClauseBuilder;
 use chalk_solve::clauses::program_clauses::ToProgramClauses;
 use chalk_solve::rust_ir::{AdtDatum, AdtRepr, AdtSizeAlign, AssociatedTyDatum, AssociatedTyValue, AssociatedTyValueId, ClosureKind, FnDefDatum, FnDefInputsAndOutputDatum, GeneratorDatum, GeneratorWitnessDatum, ImplDatum, OpaqueTyDatum, TraitDatum, WellKnownTrait};
 use chalk_solve::RustIrDatabase;
+use chalk_solve::split::Split;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Program {
@@ -199,6 +202,248 @@ impl RustIrDatabase<ChalkIr> for Program {
     }
 }
 
+impl tls::DebugContext for Program {
+    fn debug_adt_id(
+        &self,
+        adt_id: AdtId<ChalkIr>,
+        fmt: &mut fmt::Formatter<'_>,
+    ) -> Result<(), fmt::Error> {
+        if let Some(k) = self.adt_kinds.get(&adt_id) {
+            write!(fmt, "{}", k.name)
+        } else {
+            fmt.debug_struct("InvalidAdtId")
+                .field("index", &adt_id.0)
+                .finish()
+        }
+    }
+
+    fn debug_trait_id(
+        &self,
+        trait_id: TraitId<ChalkIr>,
+        fmt: &mut fmt::Formatter<'_>,
+    ) -> Result<(), fmt::Error> {
+        if let Some(k) = self.trait_kinds.get(&trait_id) {
+            write!(fmt, "{}", k.name)
+        } else {
+            fmt.debug_struct("InvalidTraitId")
+                .field("index", &trait_id.0)
+                .finish()
+        }
+    }
+
+    fn debug_assoc_type_id(
+        &self,
+        assoc_type_id: AssocTypeId<ChalkIr>,
+        fmt: &mut fmt::Formatter<'_>,
+    ) -> Result<(), fmt::Error> {
+        todo!()
+    }
+
+    fn debug_opaque_ty_id(
+        &self,
+        opaque_ty_id: OpaqueTyId<ChalkIr>,
+        fmt: &mut fmt::Formatter<'_>,
+    ) -> Result<(), fmt::Error> {
+        if let Some(k) = self.opaque_ty_kinds.get(&opaque_ty_id) {
+            write!(fmt, "{}", k.name)
+        } else {
+            fmt.debug_struct("InvalidOpaqueTyId")
+                .field("index", &opaque_ty_id.0)
+                .finish()
+        }
+    }
+
+    fn debug_fn_def_id(
+        &self,
+        fn_def_id: FnDefId<ChalkIr>,
+        fmt: &mut fmt::Formatter<'_>,
+    ) -> Result<(), fmt::Error> {
+        if let Some(k) = self.fn_def_kinds.get(&fn_def_id) {
+            write!(fmt, "{}", k.name)
+        } else {
+            fmt.debug_struct("InvalidFnDefId")
+                .field("index", &fn_def_id.0)
+                .finish()
+        }
+    }
+
+    fn debug_alias(
+        &self,
+        alias_ty: &AliasTy<ChalkIr>,
+        fmt: &mut fmt::Formatter<'_>,
+    ) -> Result<(), fmt::Error> {
+        match alias_ty {
+            AliasTy::Projection(projection_ty) => self.debug_projection_ty(projection_ty, fmt),
+            AliasTy::Opaque(opaque_ty) => self.debug_opaque_ty(opaque_ty, fmt),
+        }
+    }
+
+    fn debug_projection_ty(
+        &self,
+        projection_ty: &ProjectionTy<ChalkIr>,
+        fmt: &mut fmt::Formatter<'_>,
+    ) -> Result<(), fmt::Error> {
+        let (associated_ty_data, trait_params, other_params) = self.split_projection(projection_ty);
+        write!(
+            fmt,
+            "<{:?} as {:?}{:?}>::{}{:?}",
+            &trait_params[0],
+            associated_ty_data.trait_id,
+            Angle(&trait_params[1..]),
+            associated_ty_data.name,
+            Angle(other_params)
+        )
+    }
+
+    fn debug_opaque_ty(
+        &self,
+        opaque_ty: &OpaqueTy<ChalkIr>,
+        fmt: &mut fmt::Formatter<'_>,
+    ) -> Result<(), fmt::Error> {
+        write!(fmt, "{:?}", opaque_ty.opaque_ty_id)
+    }
+
+    fn debug_ty(&self, ty: &Ty<ChalkIr>, fmt: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
+        let interner = self.interner();
+        write!(fmt, "{:?}", ty.kind(interner).debug(interner))
+    }
+
+    fn debug_lifetime(
+        &self,
+        lifetime: &Lifetime<ChalkIr>,
+        fmt: &mut fmt::Formatter<'_>,
+    ) -> Result<(), fmt::Error> {
+        let interner = self.interner();
+        write!(fmt, "{:?}", lifetime.data(interner))
+    }
+
+    fn debug_generic_arg(
+        &self,
+        generic_arg: &GenericArg<ChalkIr>,
+        fmt: &mut fmt::Formatter<'_>,
+    ) -> Result<(), fmt::Error> {
+        let interner = self.interner();
+        write!(fmt, "{:?}", generic_arg.data(interner).inner_debug())
+    }
+
+    fn debug_variable_kinds(
+        &self,
+        variable_kinds: &chalk_ir::VariableKinds<ChalkIr>,
+        fmt: &mut fmt::Formatter<'_>,
+    ) -> Result<(), fmt::Error> {
+        let interner = self.interner();
+        write!(fmt, "{:?}", variable_kinds.as_slice(interner))
+    }
+
+    fn debug_variable_kinds_with_angles(
+        &self,
+        variable_kinds: &chalk_ir::VariableKinds<ChalkIr>,
+        fmt: &mut fmt::Formatter<'_>,
+    ) -> Result<(), fmt::Error> {
+        let interner = self.interner();
+        write!(fmt, "{:?}", variable_kinds.inner_debug(interner))
+    }
+
+    fn debug_canonical_var_kinds(
+        &self,
+        variable_kinds: &chalk_ir::CanonicalVarKinds<ChalkIr>,
+        fmt: &mut fmt::Formatter<'_>,
+    ) -> Result<(), fmt::Error> {
+        let interner = self.interner();
+        write!(fmt, "{:?}", variable_kinds.as_slice(interner))
+    }
+
+    fn debug_goal(
+        &self,
+        goal: &Goal<ChalkIr>,
+        fmt: &mut fmt::Formatter<'_>,
+    ) -> Result<(), fmt::Error> {
+        let interner = self.interner();
+        write!(fmt, "{:?}", goal.data(interner))
+    }
+
+    fn debug_goals(
+        &self,
+        goals: &Goals<ChalkIr>,
+        fmt: &mut fmt::Formatter<'_>,
+    ) -> Result<(), fmt::Error> {
+        let interner = self.interner();
+        write!(fmt, "{:?}", goals.debug(interner))
+    }
+
+    fn debug_program_clause_implication(
+        &self,
+        pci: &ProgramClauseImplication<ChalkIr>,
+        fmt: &mut fmt::Formatter<'_>,
+    ) -> Result<(), fmt::Error> {
+        let interner = self.interner();
+        write!(fmt, "{:?}", pci.debug(interner))
+    }
+
+    fn debug_program_clause(
+        &self,
+        clause: &ProgramClause<ChalkIr>,
+        fmt: &mut fmt::Formatter<'_>,
+    ) -> Result<(), fmt::Error> {
+        let interner = self.interner();
+        write!(fmt, "{:?}", clause.data(interner))
+    }
+
+    fn debug_program_clauses(
+        &self,
+        clauses: &ProgramClauses<ChalkIr>,
+        fmt: &mut fmt::Formatter<'_>,
+    ) -> Result<(), fmt::Error> {
+        let interner = self.interner();
+        write!(fmt, "{:?}", clauses.as_slice(interner))
+    }
+
+    fn debug_substitution(
+        &self,
+        substitution: &Substitution<ChalkIr>,
+        fmt: &mut fmt::Formatter<'_>,
+    ) -> Result<(), fmt::Error> {
+        let interner = self.interner();
+        write!(fmt, "{:?}", substitution.debug(interner))
+    }
+
+    fn debug_separator_trait_ref(
+        &self,
+        separator_trait_ref: &SeparatorTraitRef<'_, ChalkIr>,
+        fmt: &mut fmt::Formatter<'_>,
+    ) -> Result<(), fmt::Error> {
+        let interner = self.interner();
+        write!(fmt, "{:?}", separator_trait_ref.debug(interner))
+    }
+
+    fn debug_quantified_where_clauses(
+        &self,
+        clauses: &chalk_ir::QuantifiedWhereClauses<ChalkIr>,
+        fmt: &mut fmt::Formatter<'_>,
+    ) -> Result<(), fmt::Error> {
+        let interner = self.interner();
+        write!(fmt, "{:?}", clauses.as_slice(interner))
+    }
+
+    fn debug_constraints(
+        &self,
+        constraints: &chalk_ir::Constraints<ChalkIr>,
+        fmt: &mut fmt::Formatter<'_>,
+    ) -> Result<(), fmt::Error> {
+        let interner = self.interner();
+        write!(fmt, "{:?}", constraints.as_slice(interner))
+    }
+
+    fn debug_variances(
+        &self,
+        variances: &chalk_ir::Variances<ChalkIr>,
+        fmt: &mut fmt::Formatter<'_>,
+    ) -> Result<(), fmt::Error> {
+        let interner = self.interner();
+        write!(fmt, "{:?}", variances.as_slice(interner))
+    }
+}
+
 
 pub fn environment(program: Program) -> Result<Arc<ProgramEnvironment>, ChalkError> {
 
@@ -212,17 +457,17 @@ pub fn environment(program: Program) -> Result<Arc<ProgramEnvironment>, ChalkErr
 
     let env = chalk_ir::Environment::new(builder.interner());
 
-    program
+    /*program
         .trait_data
         .values()
-        .for_each(|d| d.to_program_clauses(builder, &env));
+        .for_each(|d| d.to_program_clauses(builder, &env));*/
 
     program
         .adt_data
         .values()
         .for_each(|d| d.to_program_clauses(builder, &env));
 
-    for (&auto_trait_id, _) in program
+    /*for (&auto_trait_id, _) in program
         .trait_data
         .iter()
         .filter(|(_, auto_trait)| auto_trait.is_auto_trait())
@@ -233,9 +478,9 @@ pub fn environment(program: Program) -> Result<Arc<ProgramEnvironment>, ChalkErr
                 .map_err(|_| ())
                 .unwrap();
         }
-    }
+    }*/
 
-    for datum in program.impl_data.values() {
+    /*for datum in program.impl_data.values() {
         // If we encounter a negative impl, do not generate any rule. Negative impls
         // are currently just there to deactivate default impls for auto traits.
         if datum.is_positive() {
@@ -246,7 +491,7 @@ pub fn environment(program: Program) -> Result<Arc<ProgramEnvironment>, ChalkErr
                 .map(|&atv_id| program.associated_ty_value(atv_id))
                 .for_each(|atv| atv.to_program_clauses(builder, &env));
         }
-    }
+    }*/
 
     Ok(Arc::new(ProgramEnvironment::new(program_clauses)))
 }

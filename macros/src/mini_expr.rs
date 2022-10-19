@@ -683,7 +683,7 @@ impl ToSystemFOmegaTerm for MiniExpr {
             MiniExpr::Field(l) => l.convert_term(),
             MiniExpr::Lit(l) => l.convert_term(),
             MiniExpr::Match(_) => todo!(),
-            MiniExpr::MethodCall(_) => todo!(),
+            MiniExpr::MethodCall(l) => l.convert_term(),
             MiniExpr::Paren(_) => todo!(),
             MiniExpr::Path(l) => l.convert_term(),
             MiniExpr::Reference(l) => l.convert_term(),

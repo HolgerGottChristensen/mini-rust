@@ -398,7 +398,7 @@ pub fn type_of(context: &Context, term: Term) -> Type {
 
             Type::Tuple(types)
         }
-        // T-Proj
+        // T-TupleProj
         Term::TupleProjection(term, index) => {
             match simplify_type(context, type_of(context, *term)) {
                 Type::Tuple(types) => {

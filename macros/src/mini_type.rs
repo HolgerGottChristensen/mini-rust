@@ -2,7 +2,7 @@ use std::fmt::{Debug, Formatter};
 use paris::formatter::colorize_string;
 use quote::ToTokens;
 use syn::parse::{Parse, ParseStream};
-use syn::{ReturnType, Type};
+use syn::{Path, ReturnType, Type};
 use system_f_omega::{BaseType, Term};
 use system_f_omega::Type as FType;
 use system_f_omega::Type::TypeApp;
@@ -11,6 +11,15 @@ use crate::mini_path::MiniPath;
 
 #[derive(PartialEq, Clone)]
 pub struct MiniType(pub Type);
+
+impl MiniType {
+    pub fn path(&self) -> MiniPath {
+        MiniPath(match &self.0 {
+            Type::Path(p) => p.path.clone(),
+            _ => panic!("Not a path type"),
+        })
+    }
+}
 
 impl Parse for MiniType {
     fn parse(input: ParseStream) -> syn::Result<Self> {

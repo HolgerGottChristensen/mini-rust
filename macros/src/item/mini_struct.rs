@@ -184,6 +184,7 @@ impl LowerTypeKind for MiniStruct {
                 chalk_integration::Unit,
             ),
         })
+
     }
 }
 
