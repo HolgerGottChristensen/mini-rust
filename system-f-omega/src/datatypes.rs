@@ -3,7 +3,7 @@ use std::fmt::{Debug, Display, Formatter};
 use crate::{Context, get_color, pick_fresh_name};
 use paris::formatter::colorize_string;
 
-#[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Debug)]
+#[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Debug, Hash)]
 pub enum Kind {
     /// *
     KindStar,
@@ -23,7 +23,7 @@ impl Display for Kind {
     }
 }
 
-#[derive(Clone, Ord, PartialOrd, Eq, PartialEq)]
+#[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
 pub enum BaseType {
     Int,
     Bool,
@@ -42,7 +42,7 @@ impl Debug for BaseType {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Type {
     /// X, Y, Z
     TypeVar(String),
@@ -68,6 +68,8 @@ pub enum Type {
     Recursive(String, Kind, Box<Type>),
     /// {∃X::Kind, Type}
     Existential(String, Kind, Box<Type>),
+    /// (X∵Type).Type
+    Predicate(String, Box<Type>, Box<Type>),
 }
 
 impl Display for Type {
@@ -89,6 +91,11 @@ impl Type {
                 let (new_context, name) = pick_fresh_name(context, tyX.clone());
 
                 format!("∀{}::{}. {}", name, knK1, tyT2.to_string_type(&new_context, color))
+            }
+            Type::Predicate(tyX, tyT1, tyT2) => {
+                let (new_context, name) = pick_fresh_name(context, tyX.clone());
+
+                format!("({}∵{}).{}", name, tyT1.to_string_type(&new_context, color), tyT2.to_string_type(&new_context, color))
             }
             Type::Recursive(tyX, knK1, tyT2) => {
                 let (new_context, name) = pick_fresh_name(context, tyX.clone());
@@ -237,6 +244,10 @@ pub enum Term {
     /// new unique variable that can not be accessed anywhere.
     Scope(Box<Term>),
 
+    /// over x∴Type in Term
+    Overload(String, Type, Box<Term>),
+    /// inst x∵Type = Term in Term
+    Instance(String, Type, Box<Term>, Box<Term>),
 }
 
 impl Display for Term {
@@ -264,6 +275,8 @@ impl Term {
             Term::Scope(term) => format!("{}{}{}{}", get_color(color, "<b>scope"), get_color(color, "<b>("), term.to_string_term(context, color + 1), get_color(color, "<b>)")),
             Term::Seq(term1, term2) => format!("{}; {}", term1.to_string_term(context, color), term2.to_string_term(context, color)),
 
+            Term::Overload(x, ty, term) => format!("over {}: {} in\n{}", x, ty.to_string_type(context, color), term.to_string_term(context, color)),
+            Term::Instance(x, ty, term1, term2) => format!("inst {}: {} = {} in\n{}", x, ty.to_string_type(context, color), term1.to_string_term(context, color), term2.to_string_term(context, color)),
             Term::Fix(t) => format!("fix {}", t.to_string_term(context, color)),
             Term::Fold(t) => format!("fold {}{}{}", get_color(color, "["), t.to_string_type(context, color + 1), get_color(color, "]")),
             Term::UnFold(t) => format!("unfold {}{}{}", get_color(color, "["), t.to_string_type(context, color + 1), get_color(color, "]")),
@@ -342,15 +355,28 @@ impl Term {
 pub enum Binding {
     NameBinding(String),
     VarBinding(String, Type),
-    TyVarBinding(String, Kind)
+    OverBind(String, Type),
+    InstBind(String, Type),
+    TyVarBinding(String, Kind),
 }
 
-impl PartialEq<Binding> for &String{
+impl PartialEq for Binding {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Binding::OverBind(s, _), Binding::OverBind(s2, _)) => s == s2,
+            (_, _) => false, // Todo: Add the rest of the cases
+        }
+    }
+}
+
+impl PartialEq<Binding> for &String {
     fn eq(&self, other: &Binding) -> bool {
         match other {
             Binding::NameBinding(s) |
             Binding::VarBinding(s, _) |
+            Binding::InstBind(s, _) |
             Binding::TyVarBinding(s, _) => s == *self,
+            Binding::OverBind(_, _) => false,
         }
     }
 }

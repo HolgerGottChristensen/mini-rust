@@ -1,3 +1,5 @@
+extern crate core;
+
 mod datatypes;
 mod context_management;
 mod eval;
@@ -11,7 +13,42 @@ pub use eval::*;
 use crate::BaseType::Int;
 use crate::Kind::KindStar;
 use crate::Term::{TermAbs, TermApp, TermTypeAbs, TermVar};
-use crate::Type::{Existential, TypeVar};
+use crate::Type::{Existential, TypeArrow, TypeVar};
+
+#[test]
+fn overload() {
+    let context = Context::new();
+
+    fn eq_type(ty: Type) -> Type {
+        Type::TypeArrow(
+            Box::new(ty.clone()),
+            Box::new(TypeArrow(
+                Box::new(ty.clone()),
+                Box::new(Type::Base(BaseType::Bool))
+            )),
+        )
+    }
+
+    fn eq_term(ty: Type) -> Term {
+        Term::TermAbs("x".to_string(), ty.clone(), Box::new(
+            Term::TermAbs("y".to_string(), ty.clone(), Box::new(
+                Term::True
+            ))
+        ))
+    }
+
+    let over_type = Type::TypeAll("X".to_string(), KindStar, Box::new(
+        eq_type(TypeVar("X".to_string()))
+    ));
+
+    let over = Term::Overload("eq".to_string(), over_type, Box::new(
+        Term::Instance("eq".to_string(), eq_type(Type::Base(BaseType::Int)), Box::new(eq_term(Type::Base(BaseType::Int))), Box::new(Term::Unit))
+    ));
+
+    println!("{}", &over);
+    println!("{}", type_of(&context, over));
+    println!();
+}
 
 #[test]
 fn main() {

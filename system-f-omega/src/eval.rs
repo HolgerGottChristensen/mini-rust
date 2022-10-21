@@ -1,5 +1,6 @@
 use std::collections::HashMap;
-use crate::{add_binding, add_name, BaseType, Binding, Context, get_binding, get_kind, get_type, get_type_safe, Kind, Term, Type, type_substitution};
+use crate::{add_binding, add_name, BaseType, Binding, Context, get_binding, get_kind, get_over, get_type, get_type_safe, Kind, Term, Type, type_substitution};
+use crate::free_variables::type_specialization;
 
 pub fn is_val(context: &Context, term: Term) -> bool {
     match term {
@@ -272,6 +273,9 @@ pub fn kind_of(context: &Context, t: Type) -> Kind {
             }
 
             Kind::KindStar
+        }
+        Type::Predicate(_, _, _) => {
+            todo!()
         }
     }
 }
@@ -597,7 +601,38 @@ pub fn type_of(context: &Context, term: Term) -> Type {
                 _ => panic!("Only arrow types can be fixed.")
             }
         }
+        // T-Overload
+        Term::Overload(x, ty, term) => {
+            // Assert that there is no existing overloaded binding in the context
+            match get_over(context, Binding::OverBind(x.clone(), ty.clone())) {
+                Ok(_) => panic!("The type already has a overload with the label. Shadowing is not allowed for predicate types."),
+                Err(_) => {}
+            }
+
+            let new_context = add_binding(context, Binding::OverBind(x, ty));
+            type_of(&new_context, *term)
+        }
+        // T-Instance
+        Term::Instance(x, ty, term1, term2) => {
+            check_overload_exists(context, x.clone(), ty.clone());
+
+            let new_context = add_binding(context, Binding::InstBind(x, ty.clone()));
+
+            // Todo: Check for colliding implementations of the same Overload
+            // Todo: Consider inserting the term into the environment to access it later
+            if !type_equivalence(&new_context, ty, type_of(&new_context, *term1)) {
+                panic!("The type of the term given with the type is not the correct type.");
+            }
+
+            type_of(&new_context, *term2)
+        }
     }
 }
 
+pub fn check_overload_exists(context: &Context, x: String, ty: Type) {
+    let in_context = get_over(context, Binding::OverBind(x, ty.clone())).unwrap();
 
+    if !type_specialization(in_context, ty, context) {
+        panic!("The type you are trying to overload is not the same as the type in the context.");
+    }
+}
