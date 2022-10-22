@@ -19,9 +19,11 @@ pub fn dependency_graph(terms: Vec<Term>) -> Result<Vec<Term>, String> {
     };
 
     let mut id_counter: usize = 0;
+    let mut id_to_term_map = HashMap::new();
 
     for t in &terms {
         graph.nodes.push((bound_variable_term(t.clone()), t.clone(), id_counter));
+        id_to_term_map.insert(id_counter, t.clone());
         id_counter += 1;
     }
 
@@ -39,8 +41,15 @@ pub fn dependency_graph(terms: Vec<Term>) -> Result<Vec<Term>, String> {
         }
     }
 
-    let sorted = graph.topological_sort();
-    todo!()
+    let sorted_ids = graph.topological_sort();
+
+    let mut sorted_terms = Vec::new();
+    for id in &sorted_ids {
+        if let Some(term) = id_to_term_map.get(id) {
+            sorted_terms.push(term.clone());
+        }
+    }
+    Ok(sorted_terms)
 }
 
 impl<T> Graph<T> {
@@ -127,47 +136,58 @@ impl<T> Graph<T> {
 mod tests {
     use crate::dependency_graph::{dependency_graph, Graph};
     use crate::{Int, Term, TermAbs, TermApp, TermVar, Type};
-    use crate::Term::Integer;
+    use crate::Term::{Define, Integer};
 
 
     #[test]
     fn dependency_graph_gives_correct_order() -> Result<(), String>{
         //arrange
-        let term_1 = TermAbs(
-            "x".to_string(),
-            Type::Base(Int),
-            Box::new(
-                TermApp(
-                    Box::new(TermVar("y".to_string())),
-                    Box::new(TermVar("x".to_string()))
-                ))
+        let term_1 = TermApp(
+            Box::new(TermVar("g".to_string())),
+            Box::new(Integer(64))
         );
 
-        let term_2 = TermAbs(
-            "z".to_string(),
-            Type::Base(Int),
-            Box::new(
-                TermApp(
-                    Box::new(TermVar("y".to_string())),
-                    Box::new(TermVar("z".to_string()))
-                ))
+        let term_2 = Define(
+            "g".to_string(),
+            Type::TypeArrow(
+                Box::new(Type::Base(Int)),
+                Box::new(Type::Base(Int)),
+            ),
+            Box::new(TermAbs(
+                "x".to_string(),
+                Type::Base(Int),
+                Box::new(
+                    TermApp(
+                        Box::new(TermVar("f".to_string())),
+                        Box::new(TermVar("x".to_string()))
+                    )
+                )
+            ))
         );
 
-        let term_3 = TermAbs(
-            "y".to_string(),
-            Type::Base(Int),
-            Box::new(
-                Integer(32))
+        let term_3 = Define(
+            "f".to_string(),
+            Type::TypeArrow(
+                Box::new(Type::Base(Int)),
+                Box::new(Type::Base(Int)),
+            ),
+            Box::new(TermAbs(
+                "x".to_string(),
+                Type::Base(Int),
+                Box::new(
+                    TermVar("x".to_string())
+                )
+            ))
         );
 
-        let terms = vec![term_1, term_2, term_3];
+        let terms = vec![term_2.clone(), term_1.clone(), term_3.clone()];
 
         //act
         let sorted = dependency_graph(terms);
 
         //assert
         // expect the order y, y, some permutation of term 1 2 & 3
-        assert_eq!(sorted?, vec![]);
+        assert_eq!(sorted?, vec![term_3.clone(), term_2.clone(), term_1.clone()]);
 
         Ok(())
     }
