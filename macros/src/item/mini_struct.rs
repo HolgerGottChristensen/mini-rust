@@ -204,7 +204,7 @@ mod tests {
 
             // Assert
         }
-
+        /*
         #[test]
         fn convert_to_chalk_rust_with_fields() {
             // Arrange
@@ -234,6 +234,7 @@ mod tests {
 
             // Assert
         }
+        */
     }
 
     #[test]

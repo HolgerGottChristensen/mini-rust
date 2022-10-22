@@ -1,4 +1,7 @@
-use std::collections::VecDeque;
+use std::borrow::Borrow;
+use std::collections::{HashMap, HashSet, VecDeque};
+use std::ops::Deref;
+use crate::free_variables::{bound_variable_term, free_variables_term};
 use crate::Term;
 
 pub struct Graph<T> {
@@ -9,17 +12,34 @@ pub struct Graph<T> {
 /// Takes a list of terms as input and return a list of ordered terms by their interdependencies
 pub fn dependency_graph(terms: Vec<Term>) -> Result<Vec<Term>, String> {
 
-    /*
+    //graph to build
     let mut graph = Graph {
         nodes: Vec::new(),
-        edges: Vec::new()
+        edges: Vec::new(),
     };
 
-    for t in terms {
+    let mut id_counter: usize = 0;
 
+    for t in &terms {
+        graph.nodes.push((bound_variable_term(t.clone()), t.clone(), id_counter));
+        id_counter += 1;
     }
-    */
 
+    for (_, t, id_1) in &graph.nodes {
+        let free_vars = free_variables_term(t.clone());
+
+        for variable in &free_vars {
+            for (bound, t, id_2) in &graph.nodes {
+                if let Some(res) = bound {
+                    if res == variable {
+                        graph.edges.push((id_2.clone(), id_1.clone()));
+                    }
+                }
+            }
+        }
+    }
+
+    let sorted = graph.topological_sort();
     todo!()
 }
 
@@ -44,7 +64,9 @@ impl<T> Graph<T> {
             if *from == s {
                 if !marked[*to] {
                     edge_to[*to] = *from;
-                    self.cycle_dfs(*to, on_stack, edge_to, marked);
+                    if let Some(c) = self.cycle_dfs(*to, on_stack, edge_to, marked) {
+                        return Some(c);
+                    }
                 } else if on_stack[*to] {
                     let mut stack = Vec::new();
                     let mut x = *from;
@@ -75,8 +97,12 @@ impl<T> Graph<T> {
         }
         queue
     }
+    /// Given a Directed Acyclic Graph,
     /// Returns a topological sorted list of vertex id's (depth first reverse post order)
     pub fn topological_sort(&self) -> Vec<usize> {
+        if let Some(_) = &self.cycle() {
+            return Vec::new();
+        }
         let mut depth_first_order = self.depth_first_order();
         depth_first_order.reverse();
         depth_first_order
@@ -99,7 +125,52 @@ impl<T> Graph<T> {
 }
 
 mod tests {
-    use crate::dependency_graph::Graph;
+    use crate::dependency_graph::{dependency_graph, Graph};
+    use crate::{Int, Term, TermAbs, TermApp, TermVar, Type};
+    use crate::Term::Integer;
+
+
+    #[test]
+    fn dependency_graph_gives_correct_order() -> Result<(), String>{
+        //arrange
+        let term_1 = TermAbs(
+            "x".to_string(),
+            Type::Base(Int),
+            Box::new(
+                TermApp(
+                    Box::new(TermVar("y".to_string())),
+                    Box::new(TermVar("x".to_string()))
+                ))
+        );
+
+        let term_2 = TermAbs(
+            "z".to_string(),
+            Type::Base(Int),
+            Box::new(
+                TermApp(
+                    Box::new(TermVar("y".to_string())),
+                    Box::new(TermVar("z".to_string()))
+                ))
+        );
+
+        let term_3 = TermAbs(
+            "y".to_string(),
+            Type::Base(Int),
+            Box::new(
+                Integer(32))
+        );
+
+        let terms = vec![term_1, term_2, term_3];
+
+        //act
+        let sorted = dependency_graph(terms);
+
+        //assert
+        // expect the order y, y, some permutation of term 1 2 & 3
+        assert_eq!(sorted?, vec![]);
+
+        Ok(())
+    }
 
     #[test]
     fn top_sort_small_graph() {
@@ -124,6 +195,133 @@ mod tests {
 
         //assert
         assert_eq!(sorted, vec![4,5,1,12,11,10,9,6,0,3,2,7,8]);
+    }
 
+    #[test]
+    fn small_graph_no_topological_order() {
+        //arrange
+        let graph = Graph {
+            nodes: vec![0,1,2],
+            edges: vec![
+                (0,1), (1,2), (2,0),
+            ]
+        };
+        //act
+        let c = graph.topological_sort();
+        //assert
+        assert_eq!(c, Vec::new());
+    }
+
+    #[test]
+    fn small_graph_topological_order() {
+        //arrange
+        let graph = Graph {
+            nodes: vec![0,1,2],
+            edges: vec![
+                (0,1), (0,2), (2,1),
+            ]
+        };
+        //act
+        let sorted = graph.topological_sort();
+        //assert
+        assert_eq!(sorted, vec![0, 2, 1]);
+    }
+
+    #[test]
+    fn small_2_graph_topological_order() {
+        //arrange
+        let graph = Graph {
+            nodes: vec![0,1,2,3,4],
+            edges: vec![
+                (1,0), (3,2),
+            ]
+        };
+        //act
+        let sorted = graph.topological_sort();
+        //assert
+        assert_eq!(sorted, vec![4,3,2,1,0]);
+    }
+
+    #[test]
+    fn small_graph_cycle_found() {
+        //arrange
+        let graph = Graph {
+            nodes: vec![0,1,2],
+            edges: vec![
+                (0,1), (1,2), (2,0),
+            ]
+        };
+        //act
+        //assert
+        if let Some(c) = graph.cycle() {
+            assert_eq!(c, vec![2,1,0,2]);
+        } else {
+            assert!(false);
+        }
+    }
+
+    #[test]
+    fn small_graph_cycle_not_found() {
+        //arrange
+        let graph = Graph {
+            nodes: vec![0,1,2],
+            edges: vec![
+                (0,1), (0,2), (2,1),
+            ]
+        };
+        //act
+        let c = graph.cycle();
+        //assert
+        assert_eq!(c, None);
+    }
+
+    #[test]
+    fn big_graph_cycle_found() {
+        //arrange
+        let graph = Graph {
+            nodes: vec![0,1,2,3,4,5,6,7,8,9,10,11,12],
+            edges: vec![
+                (0,5), (0,1), (0,6),
+                (2,3), (2,0),
+                (3,5),
+                (4,3), (4,2),
+                (5,4),
+                (6,9), (6,4),
+                (7,6),
+                (8,7),
+                (9,12), (9,11), (9,10),
+                (11,12)
+            ]
+        };
+        //act
+        //assert
+        if let Some(c) = graph.cycle() {
+            assert_eq!(c, vec![3,4,5,3]);
+        } else {
+            assert!(false);
+        }
+    }
+
+    #[test]
+    fn big_graph_cycle_not_found() {
+        //arrange
+        let graph = Graph {
+            nodes: vec![0,1,2,3,4,5,6,7,8,9,10,11,12],
+            edges: vec![
+                (0,5), (0,1), (0,6),
+                (2,3), (2,0),
+                (3,5),
+                (5,4),
+                (6,9), (6,4),
+                (7,6),
+                (8,7),
+                (9,12), (9,11), (9,10),
+                (11,12)
+            ]
+        };
+        //act
+        let c = graph.cycle();
+        //assert
+        assert_eq!(c, None);
     }
 }
