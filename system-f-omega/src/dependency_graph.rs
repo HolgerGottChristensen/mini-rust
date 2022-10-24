@@ -4,8 +4,8 @@ use std::ops::Deref;
 use crate::free_variables::{bound_variable_term, free_term_variables};
 use crate::Term;
 
-pub struct Graph<T> {
-    nodes: Vec<T>,
+pub struct Graph {
+    nodes: Vec<usize>,
     edges: Vec<(usize, usize)>,
 }
 
@@ -18,20 +18,23 @@ pub fn dependency_graph(terms: Vec<Term>) -> Result<Vec<Term>, String> {
         edges: Vec::new(),
     };
 
+    let mut aux_nodes = Vec::new();
+
     let mut id_counter: usize = 0;
     let mut id_to_term_map = HashMap::new();
 
     for t in &terms {
-        graph.nodes.push((bound_variable_term(t.clone()), t.clone(), id_counter));
+        aux_nodes.push((bound_variable_term(t.clone()), t.clone(), id_counter));
+        graph.nodes.push(id_counter);
         id_to_term_map.insert(id_counter, t.clone());
         id_counter += 1;
     }
 
-    for (_, t, id_1) in &graph.nodes {
+    for (_, t, id_1) in &aux_nodes {
         let free_vars = free_term_variables(t.clone());
 
         for variable in &free_vars {
-            for (bound, t, id_2) in &graph.nodes {
+            for (bound, t, id_2) in &aux_nodes {
                 if let Some(res) = bound {
                     if res == variable {
                         graph.edges.push((id_2.clone(), id_1.clone()));
@@ -44,6 +47,7 @@ pub fn dependency_graph(terms: Vec<Term>) -> Result<Vec<Term>, String> {
     /*
     //TODO: make it work
     //construct super (group) graph
+    let mut group_id_counter: usize = 0;
     let mut id_to_group_map = HashMap::new();
     let mut group_to_id_map = HashMap::new();
 
@@ -51,10 +55,10 @@ pub fn dependency_graph(terms: Vec<Term>) -> Result<Vec<Term>, String> {
 
     for group in &connected_components {
         for member in group {
-            id_to_group_map.insert(member, id_counter);
+            id_to_group_map.insert(member, group_id_counter);
         }
-        group_to_id_map.insert(id_counter, group.clone());
-        id_counter += 1;
+        group_to_id_map.insert(group_id_counter, group.clone());
+        group_id_counter += 1;
     }
 
     let group_edges = HashSet::new();
@@ -87,7 +91,6 @@ pub fn dependency_graph(terms: Vec<Term>) -> Result<Vec<Term>, String> {
     }
     let sorted_ids: Vec<usize> = unwrapped_sorted_group_ids.into_iter().flatten().collect();
     */
-
     let sorted_ids = graph.topological_sort();
     let mut sorted_terms = Vec::new();
     for id in &sorted_ids {
@@ -98,7 +101,7 @@ pub fn dependency_graph(terms: Vec<Term>) -> Result<Vec<Term>, String> {
     Ok(sorted_terms)
 }
 
-impl<T> Graph<T> {
+impl Graph {
 
     fn dfs(&self, s: usize, queue: &mut Vec<usize>, marked: &mut Vec<bool>) {
         marked[s] = true;
@@ -202,10 +205,10 @@ impl<T> Graph<T> {
         let mut queue = Vec::new();
         let mut marked = vec![false; self.nodes.len()];
 
-        for i in 0..self.nodes.len() {
-            if !marked[i] {
+        for i in &self.nodes {
+            if !marked[*i] {
                 // dfs
-                self.dfs(i, &mut queue, &mut marked);
+                self.dfs(i.clone(), &mut queue, &mut marked);
             }
         }
         queue
