@@ -7,6 +7,12 @@ use crate::IDENT_COLOR;
 #[derive(PartialEq, Clone)]
 pub struct MiniIdent(pub Ident);
 
+impl ToString for MiniIdent {
+    fn to_string(&self) -> String {
+        self.0.to_string()
+    }
+}
+
 impl Parse for MiniIdent {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         Ok(MiniIdent(Ident::parse(input)?))

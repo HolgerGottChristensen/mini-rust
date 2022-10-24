@@ -3,7 +3,9 @@ use paris::formatter::colorize_string;
 use syn::{braced, ItemImpl, Path, Token, Type, TypePath};
 use syn::parse::{Parse, ParseStream};
 use syn::token::{Brace, For, Impl};
-use crate::{MiniFn, MiniGenerics, MiniType};
+use system_f_omega::{Kind, Term};
+use system_f_omega::Type::{TypeApp, TypeVar};
+use crate::{MiniFn, MiniGenerics, MiniType, ToSystemFOmegaTerm};
 use crate::mini_path::MiniPath;
 
 #[derive(PartialEq, Clone)]
@@ -111,5 +113,206 @@ fn parse_impl(input: ParseStream, allow_verbatim_impl: bool) -> syn::Result<Opti
             brace_token,
             items,
         }))
+    }
+}
+
+impl ToSystemFOmegaTerm for MiniImpl {
+    fn convert_term(&self) -> Term {
+        let name = MiniType(*self.self_ty.clone()).path().as_ident();
+        let generics = MiniType(*self.self_ty.clone()).path().generics();
+
+        let mut body = Term::Unit;
+
+        for item in self.items.iter().rev() {
+
+            let mut fun = item.convert_term();
+
+            // Todo: Is this the best way. We need to introduce generics somehow for each method.
+            for param in &self.generics.params {
+                fun = Term::TermTypeAbs(param.ident.to_string(), Kind::KindStar, Box::new(fun));
+            }
+
+            body = Term::Let(format!("{}::{}", &name, item.ident.to_string()), Box::new(fun), Box::new(body));
+        }
+
+        let mut self_type = TypeVar(name);
+
+        // For each generic app it to the self type
+        for generic in generics {
+            self_type = TypeApp(Box::new(self_type), Box::new(generic));
+        }
+
+        // Define the self type for use within the body
+        Term::Define("#Self".to_string(), self_type, Box::new(body))
+    }
+}
+
+mod tests {
+    use syn::parse_quote;
+    use system_f_omega::{Context, kind_of, type_of};
+    use crate::item::MiniImpl;
+    use crate::mini_expr::MiniExpr;
+    use crate::mini_file::MiniFile;
+    use crate::stmt::MiniBlock;
+    use crate::ToSystemFOmegaTerm;
+
+    #[test]
+    fn simple_impl() {
+        // Arrange
+        let mini: MiniImpl = parse_quote!(
+            impl Test {
+
+            }
+        );
+
+        let context = Context::new();
+
+        println!("\n{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+        println!("Lambda: {}", &converted);
+
+        let converted_type = type_of(&context, converted.clone());
+        println!("Type: {}", &converted_type);
+
+        let converted_kind = kind_of(&context, converted_type.clone());
+        println!("Kind: {}", &converted_kind);
+
+        // Assert
+        //assert_eq!(converted, Term::Reference(Box::new(Term::Integer(0))))
+    }
+
+    #[test]
+    fn simple_impl_fn() {
+        // Arrange
+        let mini: MiniImpl = parse_quote!(
+            impl Test {
+                fn hello(self) -> Test {
+                    self
+                }
+            }
+        );
+
+        let context = Context::new();
+
+        println!("\n{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+        println!("Lambda: {}", &converted);
+
+        let converted_type = type_of(&context, converted.clone());
+        println!("Type: {}", &converted_type);
+
+        let converted_kind = kind_of(&context, converted_type.clone());
+        println!("Kind: {}", &converted_kind);
+
+        // Assert
+        //assert_eq!(converted, Term::Reference(Box::new(Term::Integer(0))))
+    }
+
+    #[test]
+    fn impl_fn_generics() {
+        // Arrange
+        let mini: MiniImpl = parse_quote!(
+            impl<T> Test<T> {
+                fn hello(self) -> Test<T> {
+                    self
+                }
+            }
+        );
+
+        let context = Context::new();
+
+        println!("\n{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+        println!("Lambda: {}", &converted);
+
+        let converted_type = type_of(&context, converted.clone());
+        println!("Type: {}", &converted_type);
+
+        let converted_kind = kind_of(&context, converted_type.clone());
+        println!("Kind: {}", &converted_kind);
+
+        // Assert
+        //assert_eq!(converted, Term::Reference(Box::new(Term::Integer(0))))
+    }
+
+    #[test]
+    fn impl_fn_multiple() {
+        // Arrange
+        let mini: MiniImpl = parse_quote!(
+            impl Test {
+                fn hello(self) -> Test {
+                    self
+                }
+
+                fn hello2(t: i64, q: bool) -> bool {
+                    q
+                }
+
+                fn hello3(v: bool) -> (bool, bool) {
+                    (v, v)
+                }
+            }
+        );
+
+        let context = Context::new();
+
+        println!("\n{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+        println!("Lambda: {}", &converted);
+
+        let converted_type = type_of(&context, converted.clone());
+        println!("Type: {}", &converted_type);
+
+        let converted_kind = kind_of(&context, converted_type.clone());
+        println!("Kind: {}", &converted_kind);
+
+        // Assert
+        //assert_eq!(converted, Term::Reference(Box::new(Term::Integer(0))))
+    }
+
+    #[test]
+    fn simple_struct_impl() {
+        // Arrange
+        let mini: MiniBlock = parse_quote!(
+            {
+                struct Test {
+
+                }
+
+                impl Test {
+                    fn hello(&self) {
+                    }
+                }
+
+                fn test(t: Test) {
+                    Test::hello(&t)
+                }
+            }
+        );
+
+        let context = Context::new();
+
+        println!("\n{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+        println!("Lambda: {}", &converted);
+
+        let converted_type = type_of(&context, converted.clone());
+        println!("Type: {}", &converted_type);
+
+        let converted_kind = kind_of(&context, converted_type.clone());
+        println!("Kind: {}", &converted_kind);
+
+        // Assert
+        //assert_eq!(converted, Term::Reference(Box::new(Term::Integer(0))))
     }
 }

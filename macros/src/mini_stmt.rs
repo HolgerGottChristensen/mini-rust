@@ -61,7 +61,8 @@ pub fn parse_stmt(input: ParseStream, allow_nosemi: bool) -> syn::Result<MiniStm
         stmt_local(input)
     } else if input.peek(Token![struct]) ||
         input.peek(Token![enum]) ||
-        input.peek(Token![fn])
+        input.peek(Token![fn]) ||
+        input.peek(Token!(impl))
     {
         let mut item: MiniItem = input.parse()?;
         Ok(MiniStmt::Item(item))
@@ -138,6 +139,7 @@ impl ToSystemFOmegaTerm for MiniStmt {
                     MiniItem::Fn(f) => {
                         Term::Let(f.ident.0.to_string(), Box::new(f.convert_term()), Box::new(Term::Unit))
                     },
+                    MiniItem::Impl(i) => i.convert_term(),
                     _ => todo!()
                 }
             },

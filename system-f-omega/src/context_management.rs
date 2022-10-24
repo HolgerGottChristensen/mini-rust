@@ -162,6 +162,11 @@ pub fn type_map(on_var: &dyn Fn(String) -> Type, ty: Type) -> Type {
             knK1,
             Box::new(type_map(on_var, *tyT2))
         ),
+        Type::Predicate(x, ty1, ty2) => Type::Predicate(
+            x,
+            Box::new(type_map(on_var, *ty1)),
+            Box::new(type_map(on_var, *ty2)),
+        ),
     }
 }
 
@@ -313,6 +318,20 @@ pub fn get_type(context: &Context, name: &String) -> Type {
     match get_binding(context, name) {
         Some(Binding::VarBinding(_, ty)) => ty,
         _ => panic!("Binding with ident '{}' is not a VarBinding in the current Context: {:?}", name, context)
+    }
+}
+
+pub fn get_inst(context: &Context, name: &String) -> Result<Type, String> {
+    match get_binding(context, name) {
+        Some(Binding::InstBind(_, ty)) => Ok(ty),
+        _ => Err(format!("Binding with ident '{}' is not a InstBinding in the current Context: {:?}", name, context))
+    }
+}
+
+pub fn get_over(context: &Context, name: Binding) -> Result<Type, String> {
+    match context.get(name.clone()) {
+        Some(Binding::OverBind(_, ty)) => Ok(ty),
+        _ => Err(format!("Binding '{:?}' is not a OverBinding in the current Context: {:?}", name, context))
     }
 }
 

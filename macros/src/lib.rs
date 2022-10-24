@@ -11,6 +11,7 @@ mod mini_type;
 mod mini_path;
 mod mini_generics;
 mod util;
+mod lowering;
 
 use proc_macro::TokenStream;
 use chalk_integration::interner::ChalkIr;
@@ -26,7 +27,7 @@ use mini_stmt::*;
 use mini_ident::*;
 use mini_type::*;
 use mini_generics::*;
-use crate::util::Env;
+use crate::lowering::Env;
 
 pub(crate) const IDENT_COLOR: &'static str = "<magenta><i>";
 pub(crate) const TYPE_COLOR: &'static str = "<blue><b>";

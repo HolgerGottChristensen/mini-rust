@@ -2,12 +2,12 @@ use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 use std::iter::once;
 use chalk_integration::interner::ChalkIr;
-use chalk_integration::RawId;
+use chalk_integration::{Identifier, RawId, TypeKind, TypeSort};
 use chalk_ir::{AdtId, Binders, Scalar, Ty, TyKind, VariableKinds};
 use chalk_ir::interner::Interner;
 use chalk_solve::clauses::builder::ClauseBuilder;
 use chalk_solve::rust_ir;
-use chalk_solve::rust_ir::{AdtDatum, AdtDatumBound, AdtFlags, AdtKind, AdtVariantDatum};
+use chalk_solve::rust_ir::{AdtDatum, AdtDatumBound, AdtFlags, AdtKind, AdtVariantDatum, Anonymize};
 use proc_macro2::Ident;
 use syn::punctuated::Punctuated;
 use syn::{braced, Field, Token, Type, ItemStruct, WhereClause};
@@ -15,7 +15,8 @@ use syn::parse::{Parse, Parser, ParseStream};
 use syn::token::{Brace, Colon, Comma, Struct};
 use crate::{MiniEnum, MiniGenerics, MiniIdent, MiniType, ToChalkRustIR, ToSystemFOmegaTerm, ToSystemFOmegaType};
 use system_f_omega::{BaseType, Kind, Term, Type as FType};
-use crate::util::Env;
+use crate::lowering::{Env, LowerParameterMap, LowerResult, LowerTypeKind, LowerWithEnv, VariableKind};
+use crate::mini_path::MiniPath;
 
 #[derive(PartialEq, Clone)]
 pub struct MiniStruct {
@@ -101,11 +102,11 @@ impl Parse for MiniStructField {
     }
 }
 
-impl MiniStructField {
+/*impl MiniStructField {
     fn convert_to_chalk(&self, env: &Env) -> Ty<ChalkIr> {
         Ty::new(ChalkIr, TyKind::Scalar(Scalar::Bool))
     }
-}
+}*/
 
 impl ToSystemFOmegaTerm for MiniStruct {
     fn convert_term(&self) -> Term {
@@ -127,6 +128,13 @@ impl ToSystemFOmegaType for MiniStruct {
         let mut body = FType::Record(hash);
 
         // Todo: How will we handle generic bounds?
+        for generic in self.generics.params.iter().rev() {
+            for bound in &generic.bounds {
+                body = FType::Predicate("€".to_string(), Box::new(FType::TypeVar(
+                    MiniPath(bound.path.clone()).as_ident() // Todo: what about generics in bounds?
+                )), Box::new(body))
+            }
+        }
         // Add generics as TypeAbs
         for generic in self.generics.params.iter().rev() {
             body = FType::TypeAbs(generic.ident.0.to_string(), Kind::KindStar, Box::new(body));
@@ -136,35 +144,65 @@ impl ToSystemFOmegaType for MiniStruct {
     }
 }
 // Todo: impl trait, write test with simple Struct, Trait & Impl
-// Map Absyn to rust_ir
 
-impl ToChalkRustIR for MiniStruct {
-    fn convert(&self, env: &Env) -> AdtDatum<ChalkIr> {
-        let binders: Vec<_> = vec![];
-        //let binders: Vec<_> = adt_defn.all_parameters().into_iter().collect();
-        let env = env.introduce(binders.iter().cloned());
-        let binder = Binders::new(
-            VariableKinds::from_iter(ChalkIr, binders.iter().map(|v| v.kind.clone())),
-            AdtDatumBound {
+impl LowerWithEnv for (&MiniStruct, AdtId<ChalkIr>) {
+    type Lowered = AdtDatum<ChalkIr>;
+
+    fn lower(&self, env: &Env) -> LowerResult<Self::Lowered> {
+        let (mini_struct, adt_id) = self;
+
+        let binders = env.in_binders(mini_struct.all_parameters(), |env| {
+            Ok(AdtDatumBound {
                 variants: vec![AdtVariantDatum {
-                    fields: self.fields.iter().map(|f| f.convert_to_chalk(&env)).collect()
+                    fields: mini_struct.fields.iter().map(|f| Ty::new(ChalkIr, TyKind::Scalar(Scalar::Bool))).collect()
                 }],
-                where_clauses: vec![],
-            },
-        );
+                /*variants: mini_struct
+                    .variants
+                    .iter()
+                    .map(|v| {
+                        let fields: LowerResult<_> =
+                            v.fields.iter().map(|f| f.ty.lower(env)).collect();
+                        Ok(AdtVariantDatum { fields: fields? })
+                    })
+                    .collect::<LowerResult<_>>()?,*/
+                where_clauses: vec![], //adt_defn.where_clauses.lower(env)?,
+            })
+        })?;
 
-        AdtDatum {
-            binders: binder,
-            id: AdtId(RawId{
-                index: 0
-            }),
+        Ok(AdtDatum {
+            binders,
+            id: *adt_id,
             flags: AdtFlags {
                 upstream: false,
                 fundamental: false,
                 phantom_data: false
             },
             kind: AdtKind::Struct
-        }
+        })
+    }
+}
+
+impl LowerTypeKind for MiniStruct {
+    fn lower_type_kind(&self) -> LowerResult<TypeKind> {
+        Ok(TypeKind {
+            sort: TypeSort::Adt,
+            name: Identifier::from(self.ident.to_string()),
+            binders: Binders::new(
+                VariableKinds::from_iter(ChalkIr, self.all_parameters().anonymize()),
+                chalk_integration::Unit,
+            ),
+        })
+
+    }
+}
+
+impl LowerParameterMap for MiniStruct {
+    fn synthetic_parameters(&self) -> Option<chalk_ir::WithKind<ChalkIr, Identifier>> {
+        None
+    }
+    fn declared_parameters(&self) -> Vec<VariableKind> {
+        self.generics.params.iter().map(|a| VariableKind(Identifier::from(a.ident.to_string()))).collect()
+        //&self.variable_kinds
     }
 }
 
@@ -180,27 +218,29 @@ mod tests {
     mod chalk {
         use std::collections::BTreeMap;
         use chalk_integration::db::ChalkDatabase;
+        use chalk_integration::lowering::Lower;
         use chalk_integration::program::Program;
+        use chalk_integration::query::LoweringDatabase;
         use chalk_integration::SolverChoice;
         use chalk_solve::logging_db::LoggingRustIrDatabase;
         use syn::parse_quote;
-        use crate::{Env, MiniStruct, ToChalkRustIR};
+        use crate::{MiniStruct, ToChalkRustIR};
+        use crate::lowering::environment;
+        use crate::mini_file::MiniFile;
 
         #[test]
         fn convert_to_chalk_rust() {
             // Arrange
-            let mini: MiniStruct = parse_quote!(
+            let mini: MiniFile = parse_quote!(
                 struct Test {}
             );
 
             println!("\n{:#?}", &mini);
-            let env = Env {
-                parameter_map: BTreeMap::new()
-            };
 
             // Act
-            let x = mini.convert(&env);
+            let x = mini.lower().unwrap();
             println!("\n{:#?}", &x);
+            println!("\n{:#?}", environment(x));
 
             // Assert
         }
@@ -208,7 +248,7 @@ mod tests {
         #[test]
         fn convert_to_chalk_rust_with_fields() {
             // Arrange
-            let mini: MiniStruct = parse_quote!(
+            let mini: MiniFile = parse_quote!(
                 struct Test {
                     x: i64,
                     y: f64,
@@ -216,21 +256,28 @@ mod tests {
             );
 
             println!("\n{:#?}", &mini);
-            let env = Env {
-                parameter_map: BTreeMap::new()
-            };
 
             // Act
-            let x = mini.convert(&env);
+            let x = mini.lower().unwrap();
             println!("\n{:#?}", &x);
+            println!("\n{:#?}", environment(x));
 
-            let db = ChalkDatabase::with(
-                &program_text[1..program_text.len() - 1],
-                SolverChoice::default(),
+            // Assert
+        }
+
+        #[test]
+        fn convert_to_chalk_rust_generic() {
+            // Arrange
+            let mini: MiniFile = parse_quote!(
+                struct Test<T> {}
             );
 
-            let program = db.program_ir().unwrap();
-            let wrapped = LoggingRustIrDatabase::<_, Program, _>::new(program.clone());
+            println!("\n{:#?}", &mini);
+
+            // Act
+            let x = mini.lower().unwrap();
+            println!("\n{:#?}", &x);
+            println!("\n{:#?}", environment(x));
 
             // Assert
         }
@@ -325,6 +372,28 @@ mod tests {
     }
 
     #[test]
+    fn parse_generic_field_with_bound() {
+        // Arrange
+        let mini: MiniStruct = parse_quote!(
+            struct Test<T: Clone> {
+                field1: T
+            }
+        );
+
+        println!("\n{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_type();
+        let converted_kind = kind_of(&Context::new(), converted.clone());
+
+        println!("Type: {}", &converted);
+        println!("Kind: {}", &converted_kind);
+
+        // Assert
+        //assert_eq!(converted, Term::Reference(Box::new(Term::Integer(0))))
+    }
+
+    #[test]
     fn parse_multiple_generic_fields() {
         // Arrange
         let mini: MiniStruct = parse_quote!(
@@ -352,20 +421,52 @@ mod tests {
         // Arrange
         let mini: MiniExpr = parse_quote!(
             {
-                struct Test {
-                    test: i64
+                trait Clone<Self> { // lambda Self. over ^Clone ∵ Clone [Self] in Unit
+                    fn clone(s: &Self) -> Self ...
                 }
 
-                struct Test2 {
-                    test: i64
+                impl Clone<bool> for bool { // inst ^Clone ∵ Clone [bool] = ... in Unit
+                    fn clone(s: &bool) -> bool ...
                 }
 
-                // This should not typecheck because we expect the return type to be of type Test2
-                // but it is returning a type of Test.
-                // If it fails, we correctly differentiate between two structs with the same fields and same types.
-                fn t(x: Test) -> Test2 {
-                    x
+                impl Clone<i64> for i64 {
+                    fn clone(s: &i64) -> i64 ...
                 }
+
+                struct Test<T: Clone> { // λT::*. (^Clone ∵ Clone [T]).⟨test: T, #Test: Unit⟩
+                    test: T
+                }
+
+                impl<T> Clone<Test> for Test<T> where T: Debug {
+                    fn clone(s: &Test<T>) ...
+                }
+
+                fn main() {
+                    let s = Test::<bool> { test: true } // (^Clone ∵ Clone [bool]).⟨test: bool, #Test: Unit⟩
+                    result(s)
+                }
+
+                // The type contains all the methods that are brought in by bounds.
+                // We add all of them to the environment at the start of the function.
+
+                fn result(x: Test<bool>, y: Test<i64>) -> T {
+                    Clone::<bool>::clone(&x.test)  // Clone::<Self>::clone
+                    //Clone::clone(&y.test)  // Clone::<Self>::clone
+                }
+
+
+                fn main2() {
+                    simple::<bool>(&true) // Clone T => &T -> T [bool] BoolCloneDict &true
+                }
+
+                // Add Clone T to context as an assumption
+                fn simple<T: Clone>(x: &T, y: &bool) -> T { // lambda T. Clone T => &T -> T
+
+
+                    Clone::<T>::clone(x) // Check if Clone T is a specialization of something in the context
+                    Clone::<bool>::clone(y)
+                }
+
             }
         );
 
