@@ -48,7 +48,7 @@ pub enum Type {
     TypeVar(String),
     /// Type -> Type
     TypeArrow(Box<Type>, Box<Type>),
-    /// λ X::Kind. Type
+    /// λX::Kind. Type
     TypeAbs(String, Kind, Box<Type>),
     /// Type Type
     TypeApp(Box<Type>, Box<Type>),
