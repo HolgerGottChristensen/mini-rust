@@ -1,7 +1,7 @@
 use std::borrow::Borrow;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::ops::Deref;
-use crate::free_variables::{bound_variable_term, free_variables_term};
+use crate::free_variables::{bound_variable_term, free_term_variables};
 use crate::Term;
 
 pub struct Graph<T> {
@@ -28,7 +28,7 @@ pub fn dependency_graph(terms: Vec<Term>) -> Result<Vec<Term>, String> {
     }
 
     for (_, t, id_1) in &graph.nodes {
-        let free_vars = free_variables_term(t.clone());
+        let free_vars = free_term_variables(t.clone());
 
         for variable in &free_vars {
             for (bound, t, id_2) in &graph.nodes {
