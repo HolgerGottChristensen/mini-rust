@@ -275,7 +275,7 @@ pub fn kind_of(context: &Context, t: Type) -> Kind {
             Kind::KindStar
         }
         Type::Predicate(_, _, _) => {
-            todo!()
+            Kind::KindStar // Todo: What kind should we return?
         }
     }
 }

@@ -16,6 +16,7 @@ use syn::token::{Brace, Colon, Comma, Struct};
 use crate::{MiniEnum, MiniGenerics, MiniIdent, MiniType, ToChalkRustIR, ToSystemFOmegaTerm, ToSystemFOmegaType};
 use system_f_omega::{BaseType, Kind, Term, Type as FType};
 use crate::lowering::{Env, LowerParameterMap, LowerResult, LowerTypeKind, LowerWithEnv, VariableKind};
+use crate::mini_path::MiniPath;
 
 #[derive(PartialEq, Clone)]
 pub struct MiniStruct {
@@ -127,6 +128,13 @@ impl ToSystemFOmegaType for MiniStruct {
         let mut body = FType::Record(hash);
 
         // Todo: How will we handle generic bounds?
+        for generic in self.generics.params.iter().rev() {
+            for bound in &generic.bounds {
+                body = FType::Predicate("€".to_string(), Box::new(FType::TypeVar(
+                    MiniPath(bound.path.clone()).as_ident() // Todo: what about generics in bounds?
+                )), Box::new(body))
+            }
+        }
         // Add generics as TypeAbs
         for generic in self.generics.params.iter().rev() {
             body = FType::TypeAbs(generic.ident.0.to_string(), Kind::KindStar, Box::new(body));
@@ -363,6 +371,28 @@ mod tests {
     }
 
     #[test]
+    fn parse_generic_field_with_bound() {
+        // Arrange
+        let mini: MiniStruct = parse_quote!(
+            struct Test<T: Clone> {
+                field1: T
+            }
+        );
+
+        println!("\n{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_type();
+        let converted_kind = kind_of(&Context::new(), converted.clone());
+
+        println!("Type: {}", &converted);
+        println!("Kind: {}", &converted_kind);
+
+        // Assert
+        //assert_eq!(converted, Term::Reference(Box::new(Term::Integer(0))))
+    }
+
+    #[test]
     fn parse_multiple_generic_fields() {
         // Arrange
         let mini: MiniStruct = parse_quote!(
@@ -390,20 +420,52 @@ mod tests {
         // Arrange
         let mini: MiniExpr = parse_quote!(
             {
-                struct Test {
-                    test: i64
+                trait Clone<Self> { // lambda Self. over ^Clone ∵ Clone [Self] in Unit
+                    fn clone(s: &Self) -> Self ...
                 }
 
-                struct Test2 {
-                    test: i64
+                impl Clone<bool> for bool { // inst ^Clone ∵ Clone [bool] = ... in Unit
+                    fn clone(s: &bool) -> bool ...
                 }
 
-                // This should not typecheck because we expect the return type to be of type Test2
-                // but it is returning a type of Test.
-                // If it fails, we correctly differentiate between two structs with the same fields and same types.
-                fn t(x: Test) -> Test2 {
-                    x
+                impl Clone<i64> for i64 {
+                    fn clone(s: &i64) -> i64 ...
                 }
+
+                struct Test<T: Clone> { // λT::*. (^Clone ∵ Clone [T]).⟨test: T, #Test: Unit⟩
+                    test: T
+                }
+
+                impl<T> Clone<Test> for Test<T> where T: Debug {
+                    fn clone(s: &Test<T>) ...
+                }
+
+                fn main() {
+                    let s = Test::<bool> { test: true } // (^Clone ∵ Clone [bool]).⟨test: bool, #Test: Unit⟩
+                    result(s)
+                }
+
+                // The type contains all the methods that are brought in by bounds.
+                // We add all of them to the environment at the start of the function.
+
+                fn result(x: Test<bool>, y: Test<i64>) -> T {
+                    Clone::<bool>::clone(&x.test)  // Clone::<Self>::clone
+                    //Clone::clone(&y.test)  // Clone::<Self>::clone
+                }
+
+
+                fn main2() {
+                    simple::<bool>(&true) // Clone T => &T -> T [bool] BoolCloneDict &true
+                }
+
+                // Add Clone T to context as an assumption
+                fn simple<T: Clone>(x: &T, y: &bool) -> T { // lambda T. Clone T => &T -> T
+
+
+                    Clone::<T>::clone(x) // Check if Clone T is a specialization of something in the context
+                    Clone::<bool>::clone(y)
+                }
+
             }
         );
 

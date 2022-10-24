@@ -283,30 +283,18 @@ mod tests {
         // Arrange
         let mini: MiniBlock = parse_quote!(
             {
-                trait Clone {
-                    fn clone ...
-                }
-
                 struct Test {
 
                 }
 
-                impl Clone for Test {
-                    fn hello(&self) {
-                    }
-                }
-
-                impl<T> Clone for Vec<T> where T: Clone {
+                impl Test {
                     fn hello(&self) {
                     }
                 }
 
                 fn test(t: Test) {
-                    t.hello()
                     Test::hello(&t)
                 }
-
-                fn test2<T: Clone>() ...
             }
         );
 

@@ -246,8 +246,10 @@ pub enum Term {
 
     /// over x∴Type in Term
     Overload(String, Type, Box<Term>),
-    /// inst x∵Type = Term in Term
+    /// inst x∵Type = Term in Term todo: Why do we need the x:Type and not just get it from the Type
     Instance(String, Type, Box<Term>, Box<Term>),
+    // /// require (x : Type) for Term
+    // Predicate(Box<Term>, String, Type),
 }
 
 impl Display for Term {
