@@ -318,7 +318,7 @@ pub fn type_of(context: &mut Context, term: Term, substitutions: &mut Substituti
 
             let mut result = Type::TypeArrow(Box::new(t2.clone()), Box::new(Type::TypeVar("#NEW".to_string())));
 
-            result = unify(context, substitutions, t1, result, vec![], vec![]).unwrap().1;
+            result = unify(context, substitutions, t1, result, vec![], vec![]).unwrap();
 
             result = match result {
                 Type::TypeArrow(_, x) => *x,

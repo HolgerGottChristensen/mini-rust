@@ -134,10 +134,10 @@ impl Context {
             constraints: self.constraints.clone(),
         };
 
-        for binding in bindings.iter().rev() {
+        for binding in bindings.into_iter() {
             new = Context {
-                typing_context: self.typing_context.add(binding.clone()),
-                constraints: self.constraints.clone(),
+                typing_context: new.typing_context.add(binding.clone()),
+                constraints: new.constraints.clone(),
             }
         }
 

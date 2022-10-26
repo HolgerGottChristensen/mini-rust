@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use crate::{bind_variable, Constraint, Context, Substitutions, Type};
 use crate::Type::{Qualified, TypeApp, TypeArrow, TypeVar};
 
-pub fn unify(context: &mut Context, subs: &mut Substitutions, left: Type, right: Type, left_constraints: Vec<Constraint>, right_constraints: Vec<Constraint>) -> Result<(Type, Type), String> {
+pub fn unify(context: &mut Context, subs: &mut Substitutions, left: Type, right: Type, left_constraints: Vec<Constraint>, right_constraints: Vec<Constraint>) -> Result<Type, String> {
     println!("Try-Unify: {} ⊔ {}", left.to_string_type(context, 0), right.to_string_type(context, 0));
 
     match (left, right) {
@@ -10,22 +10,22 @@ pub fn unify(context: &mut Context, subs: &mut Substitutions, left: Type, right:
             let mut new_left = left_constraints.clone();
             new_left.extend(c1.clone());
 
-            let (t1, _) = unify(context, subs, *t1, t2, new_left, right_constraints)?;
+            let t1 = unify(context, subs, *t1, t2, new_left, right_constraints)?;
 
             let t1 = Type::qualified(subs.apply_consts(c1.clone()), t1);
 
-            Ok((t1.clone(), t1))
+            Ok(t1.clone())
         }
         (t1, Qualified(c2, t2)) => {
             let mut new_right = left_constraints.clone();
             new_right.extend(c2.clone());
 
 
-            let (t1, _) = unify(context, subs, t1, *t2, left_constraints, new_right)?;
+            let t1 = unify(context, subs, t1, *t2, left_constraints, new_right)?;
 
             let t1 = Type::qualified(subs.apply_consts(c2.clone()), t1);
 
-            Ok((t1.clone(), t1))
+            Ok(t1)
         }
         (Type::Existential(..), Type::Existential(..)) => {
             todo!("How do we unify two existential types")
@@ -38,8 +38,8 @@ pub fn unify(context: &mut Context, subs: &mut Substitutions, left: Type, right:
         }
         (Type::Reference(t1), Type::Reference(t2)) => {
             unify(context, subs, *t1, *t2, left_constraints, right_constraints)
-                .map(|(t1, t2)| {
-                    (Type::Reference(Box::new(t1)), Type::Reference(Box::new(t2)))
+                .map(|t1| {
+                    Type::Reference(Box::new(t1))
                 })
         }
         (Type::Tuple(t1), Type::Tuple(t2)) => {
@@ -48,42 +48,37 @@ pub fn unify(context: &mut Context, subs: &mut Substitutions, left: Type, right:
             }
 
             let mut res1 = vec![];
-            let mut res2 = vec![];
 
             for (g1, g2) in t1.into_iter().zip(t2.into_iter()) {
                 let g1 = subs.apply(g1);
                 let g2 = subs.apply(g2);
 
                 match unify(context, subs, g1, g2, left_constraints.clone(), right_constraints.clone()) {
-                    Ok((f1, f2)) => {
+                    Ok(f1) => {
                         res1.push(f1);
-                        res2.push(f2);
                     }
                     e => return e,
                 }
             }
 
             let tup1 = subs.apply(Type::Tuple(res1));
-            let tup2 = subs.apply(Type::Tuple(res2));
 
-            Ok((tup1, tup2))
+            Ok(tup1)
         }
         (Type::Record(h1), Type::Record(h2)) => {
-            if h1.len() != h1.len() {
+            if h1.len() != h2.len() {
                 return Err("The records are not equal length".to_string())
             }
 
             let mut h1_new = HashMap::new();
-            let mut h2_new = HashMap::new();
 
             for (k1, v1) in &h1 {
                 if let Some(v2) = h2.get(k1) {
                     let v1 = subs.apply(v1.clone());
                     let v2 = subs.apply(v2.clone());
                     match unify(context, subs, v1, v2, left_constraints.clone(), right_constraints.clone()) {
-                        Ok((l1, l2)) => {
+                        Ok(l1) => {
                             h1_new.insert(k1.clone(), l1);
-                            h2_new.insert(k1.clone(), l2);
                         }
                         e => return e
                     }
@@ -93,26 +88,22 @@ pub fn unify(context: &mut Context, subs: &mut Substitutions, left: Type, right:
             }
 
             let rec1 = subs.apply(Type::Record(h1_new));
-            let rec2 = subs.apply(Type::Record(h2_new));
-
-            Ok((rec1, rec2))
+            Ok(rec1)
         }
         (Type::Variants(h1), Type::Variants(h2)) => {
-            if h1.len() != h1.len() {
+            if h1.len() != h2.len() {
                 return Err("The records are not equal length".to_string())
             }
 
             let mut h1_new = HashMap::new();
-            let mut h2_new = HashMap::new();
 
             for (k1, v1) in &h1 {
                 if let Some(v2) = h2.get(k1) {
                     let v1 = subs.apply(v1.clone());
                     let v2 = subs.apply(v2.clone());
                     match unify(context, subs, v1, v2, left_constraints.clone(), right_constraints.clone()) {
-                        Ok((l1, l2)) => {
+                        Ok(l1) => {
                             h1_new.insert(k1.clone(), l1);
-                            h2_new.insert(k1.clone(), l2);
                         }
                         e => return e
                     }
@@ -122,41 +113,34 @@ pub fn unify(context: &mut Context, subs: &mut Substitutions, left: Type, right:
             }
 
             let rec1 = subs.apply(Type::Variants(h1_new));
-            let rec2 = subs.apply(Type::Variants(h2_new));
 
-            Ok((rec1, rec2))
+            Ok(rec1)
         }
         (TypeArrow(l1, r1), TypeArrow(l2, r2)) => {
             unify(context, subs, *l1, *l2, left_constraints.clone(), right_constraints.clone())
-                .and_then(|(l1, l2)| {
+                .and_then(|l1| {
                     let r1 = subs.apply(*r1);
                     let r2 = subs.apply(*r2);
                     unify(context, subs, r1, r2, left_constraints, right_constraints)
-                        .map(|(r1, r2)| {
-                            (
-                                TypeArrow(Box::new(l1), Box::new(r1)),
-                                TypeArrow(Box::new(l2), Box::new(r2))
-                            )
+                        .map(|r1| {
+                            TypeArrow(Box::new(l1), Box::new(r1))
                         })
                 })
         }
         (TypeApp(l1, r1), TypeApp(l2, r2)) => {
             unify(context, subs, *l1, *l2, left_constraints.clone(), right_constraints.clone())
-                .and_then(|(l1, l2)| {
+                .and_then(|l1| {
                     let r1 = subs.apply(*r1);
                     let r2 = subs.apply(*r2);
                     unify(context, subs, r1, r2, left_constraints, right_constraints)
-                        .map(|(r1, r2)| {
-                            (
-                                TypeApp(Box::new(l1), Box::new(r1)),
-                                TypeApp(Box::new(l2), Box::new(r2))
-                            )
+                        .map(|r1| {
+                            TypeApp(Box::new(l1), Box::new(r1))
                         })
                 })
         }
         (Type::Base(b1), Type::Base(b2)) => {
             if b1 == b2 {
-                Ok((Type::Base(b1), Type::Base(b2)))
+                Ok(Type::Base(b1))
             } else {
                 Err(format!("{:?} and {:?} can not be unified", b1, b2))
             }
@@ -182,7 +166,7 @@ pub fn unify(context: &mut Context, subs: &mut Substitutions, left: Type, right:
             match res {
                 Ok(_) => {
                     let res = subs.apply(TypeVar(x1));
-                    Ok((res.clone(), res))
+                    Ok(res)
                 }
                 Err(e) => Err(e)
             }
@@ -191,7 +175,7 @@ pub fn unify(context: &mut Context, subs: &mut Substitutions, left: Type, right:
             let res = bind_variable(context, subs, &lab1, &t2, left_constraints);
             match res {
                 Ok(_) => {
-                    Ok((t2.clone(), t2))
+                    Ok(t2)
                 }
                 Err(e) => {
                     Err(e)
@@ -202,7 +186,7 @@ pub fn unify(context: &mut Context, subs: &mut Substitutions, left: Type, right:
             let res = bind_variable(context, subs, &lab2, &t1, right_constraints);
             match res {
                 Ok(_) => {
-                    Ok((t1.clone(), t1))
+                    Ok(t1)
                 }
                 Err(e) => {
                     Err(e)
@@ -700,7 +684,7 @@ mod tests {
             println!();
             println!("Substitutions: {:?}", substitutions);
             println!("Result of unification: {:?}", unification);
-            assert_eq!(unification, Ok((Type::pair(Int, Int), Type::pair(Int, Int))))
+            assert_eq!(unification, Ok(Type::pair(Int, Int)))
         }
 
         #[test]
@@ -720,7 +704,7 @@ mod tests {
             println!();
             println!("Substitutions: {:?}", substitutions);
             println!("Result of unification: {:?}", unification);
-            assert_eq!(unification, Ok((Type::pair(Int, Int), Type::pair(Int, Int))))
+            assert_eq!(unification, Ok(Type::pair(Int, Int)))
         }
 
         #[test]
@@ -988,18 +972,13 @@ mod tests {
             println!();
             println!("Substitutions: {:?}", substitutions);
             println!("Result of unification: {:?}", unification);
-            assert_eq!(unification, Ok((
-                Type::Record(HashMap::from([
-                    ("x".to_string(), Type::Base(Int)),
-                    ("y".to_string(), Type::Base(Int)),
-                    ("z".to_string(), Type::Base(Int)),
-                ])),
+            assert_eq!(unification, Ok(
                 Type::Record(HashMap::from([
                     ("x".to_string(), Type::Base(Int)),
                     ("y".to_string(), Type::Base(Int)),
                     ("z".to_string(), Type::Base(Int)),
                 ]))
-            )))
+            ))
         }
     }
 
@@ -1247,18 +1226,13 @@ mod tests {
             println!();
             println!("Substitutions: {:?}", substitutions);
             println!("Result of unification: {:?}", unification);
-            assert_eq!(unification, Ok((
-                Type::Variants(HashMap::from([
-                    ("x".to_string(), Type::Base(Int)),
-                    ("y".to_string(), Type::Base(Int)),
-                    ("z".to_string(), Type::Base(Int)),
-                ])),
+            assert_eq!(unification, Ok(
                 Type::Variants(HashMap::from([
                     ("x".to_string(), Type::Base(Int)),
                     ("y".to_string(), Type::Base(Int)),
                     ("z".to_string(), Type::Base(Int)),
                 ]))
-            )))
+            ))
         }
     }
 
@@ -1266,7 +1240,8 @@ mod tests {
         use std::collections::HashMap;
         use crate::BaseType::{Bool, Int};
         use crate::{Binding, Constraint, Context, Substitutions, Term, Type, unify};
-        use crate::Type::{Base, TypeVar};
+        use crate::Kind::KindStar;
+        use crate::Type::{Base, TypeApp, TypeVar};
 
         fn clone_bindings() -> Vec<Binding> {
             vec![
@@ -1302,6 +1277,24 @@ mod tests {
             ]
         }
 
+        fn vec_bindings() -> Vec<Binding> {
+            let vec_type = Type::TypeAbs("X".to_string(), KindStar, Box::new(Type::TypeVar("X".to_string())));
+            vec![
+                Binding::InstanceBinding {
+                    constraints: vec![
+                        Constraint { ident: "Clone".to_string(), vars: vec![TypeVar("Y".to_string())] }
+                    ],
+                    class_name: "Clone".to_string(),
+                    ty: TypeApp(Box::new(TypeVar("Vec".to_string())), Box::new(TypeVar("Y".to_string()))),
+                    implementations: HashMap::from([
+                        ("clone".to_string(), (Term::Unit, Type::arrow(Type::reference("T"), "T")))
+                    ]),
+                },
+                Binding::VarBinding("Vec".to_string(), vec_type),
+
+            ]
+        }
+
         #[test]
         fn base_and_qualified_base() {
             // Arrange
@@ -1309,7 +1302,7 @@ mod tests {
                 vec![Constraint { ident: "Clone".to_string(), vars: vec![TypeVar("T".to_string())] }],
                 Base(Int)
             );
-            let t2 = Type::Base(Int);
+            let t2 = Base(Int);
 
             let mut substitutions = Substitutions::new();
             let mut context = Context::new()
@@ -1357,14 +1350,14 @@ mod tests {
             // Arrange
             let t1 = Type::qualified(
                 vec![Constraint { ident: "Clone".to_string(), vars: vec![TypeVar("T".to_string())] }],
-                Type::TypeVar("T".to_string())
+                TypeVar("T".to_string())
             );
-            let t2 = Type::Base(Int);
+            let t2 = Base(Int);
 
             let mut substitutions = Substitutions::new();
             let mut context = Context::new()
                 .add_bindings(clone_bindings())
-                .add_bindings(inst_clone_binding(Type::Base(Int)));
+                .add_bindings(inst_clone_binding(Base(Int)));
 
             // Act
             println!("Unify: {} ⊔ {}", t1.to_string_type(&context, 0), t2.to_string_type(&context, 0));
@@ -1465,6 +1458,84 @@ mod tests {
             let mut context = Context::new()
                 .add_bindings(clone_bindings())
                 .add_bindings(inst_clone_binding(Base(Int)));
+
+            // Act
+            println!("Unify: {} ⊔ {}", t1.to_string_type(&context, 0), t2.to_string_type(&context, 0));
+            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![], vec![]);
+
+            // Assert
+            println!();
+            println!("Substitutions: {:?}", substitutions);
+            println!("Result of unification: {:?}", unification);
+            assert!(matches!(unification, Ok(..)))
+        }
+
+        #[test]
+        fn vec() {
+            // Arrange
+            let t1 = Type::qualified(
+                vec![Constraint { ident: "Clone".to_string(), vars: vec![TypeVar("T".to_string())] }],
+                TypeVar("T".to_string())
+            );
+            let t2 = TypeApp(Box::new(TypeVar("Vec".to_string())), Box::new(Type::Base(Int)));
+
+            let mut substitutions = Substitutions::new();
+            let mut context = Context::new()
+                .add_bindings(clone_bindings())
+                .add_bindings(inst_clone_binding(Base(Int)))
+                .add_bindings(vec_bindings());
+
+            // Act
+            println!("Unify: {} ⊔ {}", t1.to_string_type(&context, 0), t2.to_string_type(&context, 0));
+            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![], vec![]);
+
+            // Assert
+            println!();
+            println!("Substitutions: {:?}", substitutions);
+            println!("Result of unification: {:?}", unification);
+            assert!(matches!(unification, Ok(..)))
+        }
+
+        #[test]
+        fn vec_inner_wrong() {
+            // Arrange
+            let t1 = Type::qualified(
+                vec![Constraint { ident: "Clone".to_string(), vars: vec![TypeVar("T".to_string())] }],
+                TypeVar("T".to_string())
+            );
+            let t2 = TypeApp(Box::new(TypeVar("Vec".to_string())), Box::new(Type::Base(Bool)));
+
+            let mut substitutions = Substitutions::new();
+            let mut context = Context::new()
+                .add_bindings(clone_bindings())
+                .add_bindings(inst_clone_binding(Base(Int)))
+                .add_bindings(vec_bindings());
+
+            // Act
+            println!("Unify: {} ⊔ {}", t1.to_string_type(&context, 0), t2.to_string_type(&context, 0));
+            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![], vec![]);
+
+            // Assert
+            println!();
+            println!("Substitutions: {:?}", substitutions);
+            println!("Result of unification: {:?}", unification);
+            assert!(matches!(unification, Err(..)))
+        }
+
+        #[test]
+        fn vec_constructor_only() {
+            // Arrange
+            let t1 = Type::qualified(
+                vec![Constraint { ident: "Clone".to_string(), vars: vec![TypeVar("T".to_string())] }],
+                TypeVar("T".to_string())
+            );
+            let t2 = TypeVar("Vec".to_string());
+
+            let mut substitutions = Substitutions::new();
+            let mut context = Context::new()
+                .add_bindings(clone_bindings())
+                .add_bindings(inst_clone_binding(Base(Int)))
+                .add_bindings(vec_bindings());
 
             // Act
             println!("Unify: {} ⊔ {}", t1.to_string_type(&context, 0), t2.to_string_type(&context, 0));
