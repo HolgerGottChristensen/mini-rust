@@ -56,7 +56,7 @@ impl ToSystemFOmegaTerm for MiniLitExpr {
 mod tests {
     use quote::quote;
     use syn::parse_quote;
-    use system_f_omega::{Context, kind_of, Term, type_of};
+    use system_f_omega::{Context, kind_of, Substitutions, Term, type_of};
     use crate::{MiniFn, MiniLitExpr, MiniStmt, ToSystemFOmegaTerm};
 
     #[test]
@@ -70,7 +70,7 @@ mod tests {
 
         // Act
         let converted = mini.convert_term();
-        let converted_type = type_of(&Context::new(), converted.clone());
+        let converted_type = type_of(&Context::new(), converted.clone(), &mut Substitutions::new());
         let converted_kind = kind_of(&Context::new(), converted_type.clone());
 
         println!("Lambda: {}", &converted);
@@ -92,7 +92,7 @@ mod tests {
 
         // Act
         let converted = mini.convert_term();
-        let converted_type = type_of(&Context::new(), converted.clone());
+        let converted_type = type_of(&Context::new(), converted.clone(), &mut Substitutions::new());
         let converted_kind = kind_of(&Context::new(), converted_type.clone());
 
         println!("Lambda: {}", &converted);
@@ -114,7 +114,7 @@ mod tests {
 
         // Act
         let converted = mini.convert_term();
-        let converted_type = type_of(&Context::new(), converted.clone());
+        let converted_type = type_of(&Context::new(), converted.clone(), &mut Substitutions::new());
         let converted_kind = kind_of(&Context::new(), converted_type.clone());
 
         println!("Lambda: {}", &converted);
@@ -136,7 +136,7 @@ mod tests {
 
         // Act
         let converted = mini.convert_term();
-        let converted_type = type_of(&Context::new(), converted.clone());
+        let converted_type = type_of(&Context::new(), converted.clone(), &mut Substitutions::new());
         let converted_kind = kind_of(&Context::new(), converted_type.clone());
 
         println!("Lambda: {}", &converted);

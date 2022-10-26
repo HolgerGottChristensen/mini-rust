@@ -700,7 +700,7 @@ mod tests {
     use std::collections::HashMap;
     use quote::quote;
     use syn::parse_quote;
-    use system_f_omega::{add_binding, BaseType, Binding, Context, kind_of, Term, Type, type_of};
+    use system_f_omega::{BaseType, Binding, Context, kind_of, Substitutions, Term, Type, type_of};
     use crate::{MiniExprReference, MiniFn, MiniLitExpr, MiniStmt, ToSystemFOmegaTerm};
     use crate::mini_expr::MiniExpr;
 
@@ -715,7 +715,7 @@ mod tests {
 
         // Act
         let converted = mini.convert_term();
-        let converted_type = type_of(&Context::new(), converted.clone());
+        let converted_type = type_of(&Context::new(), converted.clone(), &mut Substitutions::new());
         let converted_kind = kind_of(&Context::new(), converted_type.clone());
 
         println!("Lambda: {}", &converted);
@@ -737,7 +737,7 @@ mod tests {
 
         // Act
         let converted = mini.convert_term();
-        let converted_type = type_of(&Context::new(), converted.clone());
+        let converted_type = type_of(&Context::new(), converted.clone(), &mut Substitutions::new());
         let converted_kind = kind_of(&Context::new(), converted_type.clone());
 
         println!("Lambda: {}", &converted);
@@ -759,7 +759,7 @@ mod tests {
 
         // Act
         let converted = mini.convert_term();
-        let converted_type = type_of(&Context::new(), converted.clone());
+        let converted_type = type_of(&Context::new(), converted.clone(), &mut Substitutions::new());
         let converted_kind = kind_of(&Context::new(), converted_type.clone());
 
         println!("Lambda: {}", &converted);
@@ -778,7 +778,7 @@ mod tests {
         );
 
         let context = Context::new();
-        let context = add_binding(&context, Binding::VarBinding("neg".to_string(), Type::TypeArrow(
+        let context = context.add_binding(Binding::VarBinding("neg".to_string(), Type::TypeArrow(
             Box::new(Type::Base(BaseType::Int)),
             Box::new(Type::Base(BaseType::Int)),
         )));
@@ -787,7 +787,7 @@ mod tests {
 
         // Act
         let converted = mini.convert_term();
-        let converted_type = type_of(&context, converted.clone());
+        let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new());
         let converted_kind = kind_of(&context, converted_type.clone());
 
         println!("Lambda: {}", &converted);
@@ -806,7 +806,7 @@ mod tests {
         );
 
         let context = Context::new();
-        let context = add_binding(&context, Binding::VarBinding("not".to_string(), Type::TypeArrow(
+        let context = context.add_binding(Binding::VarBinding("not".to_string(), Type::TypeArrow(
             Box::new(Type::Base(BaseType::Bool)),
             Box::new(Type::Base(BaseType::Bool)),
         )));
@@ -815,7 +815,7 @@ mod tests {
 
         // Act
         let converted = mini.convert_term();
-        let converted_type = type_of(&context, converted.clone());
+        let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new());
         let converted_kind = kind_of(&context, converted_type.clone());
 
         println!("Lambda: {}", &converted);
@@ -834,7 +834,7 @@ mod tests {
         );
 
         let context = Context::new();
-        let context = add_binding(&context, Binding::VarBinding("add".to_string(), Type::TypeArrow(
+        let context = context.add_binding(Binding::VarBinding("add".to_string(), Type::TypeArrow(
             Box::new(Type::Base(BaseType::Int)),
             Box::new(Type::TypeArrow(
                 Box::new(Type::Base(BaseType::Int)),
@@ -846,7 +846,7 @@ mod tests {
 
         // Act
         let converted = mini.convert_term();
-        let converted_type = type_of(&context, converted.clone());
+        let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new());
         let converted_kind = kind_of(&context, converted_type.clone());
 
         println!("Lambda: {}", &converted);
@@ -865,7 +865,7 @@ mod tests {
         );
 
         let context = Context::new();
-        let context = add_binding(&context, Binding::VarBinding("eq".to_string(), Type::TypeArrow(
+        let context = context.add_binding(Binding::VarBinding("eq".to_string(), Type::TypeArrow(
             Box::new(Type::Base(BaseType::Int)),
             Box::new(Type::TypeArrow(
                 Box::new(Type::Base(BaseType::Int)),
@@ -877,7 +877,7 @@ mod tests {
 
         // Act
         let converted = mini.convert_term();
-        let converted_type = type_of(&context, converted.clone());
+        let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new());
         let converted_kind = kind_of(&context, converted_type.clone());
 
         println!("Lambda: {}", &converted);
@@ -903,7 +903,7 @@ mod tests {
 
         // Act
         let converted = mini.convert_term();
-        let converted_type = type_of(&context, converted.clone());
+        let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new());
         let converted_kind = kind_of(&context, converted_type.clone());
 
         println!("Lambda: {}", &converted);
@@ -930,7 +930,7 @@ mod tests {
 
         // Act
         let converted = mini.convert_term();
-        let converted_type = type_of(&context, converted.clone());
+        let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new());
         let converted_kind = kind_of(&context, converted_type.clone());
 
         println!("Lambda: {}", &converted);
@@ -960,7 +960,7 @@ mod tests {
 
         // Act
         let converted = mini.convert_term();
-        let converted_type = type_of(&context, converted.clone());
+        let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new());
         let converted_kind = kind_of(&context, converted_type.clone());
 
         println!("Lambda: {}", &converted);
@@ -988,7 +988,7 @@ mod tests {
 
         // Act
         let converted = mini.convert_term();
-        let converted_type = type_of(&context, converted.clone());
+        let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new());
         let converted_kind = kind_of(&context, converted_type.clone());
 
         println!("Lambda: {}", &converted);
@@ -1018,7 +1018,7 @@ mod tests {
 
         // Act
         let converted = mini.convert_term();
-        let converted_type = type_of(&context, converted.clone());
+        let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new());
         let converted_kind = kind_of(&context, converted_type.clone());
 
         println!("Lambda: {}", &converted);
@@ -1037,7 +1037,7 @@ mod tests {
         );
 
         let context = Context::new();
-        let context = add_binding(&context, Binding::VarBinding("function".to_string(), Type::TypeArrow(
+        let context = context.add_binding(Binding::VarBinding("function".to_string(), Type::TypeArrow(
             Box::new(Type::Base(BaseType::Unit)),
             Box::new(Type::TypeArrow(
                 Box::new(Type::Base(BaseType::Int)),
@@ -1049,7 +1049,7 @@ mod tests {
 
         // Act
         let converted = mini.convert_term();
-        let converted_type = type_of(&context, converted.clone());
+        let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new());
         let converted_kind = kind_of(&context, converted_type.clone());
 
         println!("Lambda: {}", &converted);
@@ -1068,7 +1068,7 @@ mod tests {
         );
 
         let context = Context::new();
-        let context = add_binding(&context, Binding::VarBinding("function".to_string(), Type::TypeArrow(
+        let context = context.add_binding(Binding::VarBinding("function".to_string(), Type::TypeArrow(
             Box::new(Type::Base(BaseType::Unit)),
             Box::new(Type::TypeArrow(
                 Box::new(Type::Base(BaseType::Int)),
@@ -1083,7 +1083,7 @@ mod tests {
 
         // Act
         let converted = mini.convert_term();
-        let converted_type = type_of(&context, converted.clone());
+        let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new());
         let converted_kind = kind_of(&context, converted_type.clone());
 
         println!("Lambda: {}", &converted);
@@ -1107,7 +1107,7 @@ mod tests {
 
         // Act
         let converted = mini.convert_term();
-        let converted_type = type_of(&context, converted.clone());
+        let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new());
         let converted_kind = kind_of(&context, converted_type.clone());
 
         println!("Lambda: {}", &converted);
@@ -1133,7 +1133,7 @@ mod tests {
         let converted = mini.convert_term();
         println!("Lambda: {}", &converted);
 
-        let converted_type = type_of(&context, converted.clone());
+        let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new());
         println!("Type: {}", &converted_type);
 
         let converted_kind = kind_of(&context, converted_type.clone());
@@ -1151,7 +1151,7 @@ mod tests {
         );
 
         let context = Context::new();
-        let context = add_binding(&context, Binding::VarBinding(
+        let context = context.add_binding(Binding::VarBinding(
             "s".to_string(),
             Type::Record(HashMap::from([
                 ("field1".to_string(), Type::Base(BaseType::Int)),
@@ -1165,7 +1165,7 @@ mod tests {
         let converted = mini.convert_term();
         println!("Lambda: {}", &converted);
 
-        let converted_type = type_of(&context, converted.clone());
+        let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new());
         println!("Type: {}", &converted_type);
 
         let converted_kind = kind_of(&context, converted_type.clone());
@@ -1194,7 +1194,7 @@ mod tests {
         let converted = mini.convert_term();
         println!("Lambda: {}", &converted);
 
-        let converted_type = type_of(&context, converted.clone());
+        let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new());
         println!("Type: {}", &converted_type);
 
         let converted_kind = kind_of(&context, converted_type.clone());
@@ -1225,7 +1225,7 @@ mod tests {
         let converted = mini.convert_term();
         println!("Lambda: {}", &converted);
 
-        let converted_type = type_of(&context, converted.clone());
+        let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new());
         println!("Type: {}", &converted_type);
 
         let converted_kind = kind_of(&context, converted_type.clone());
@@ -1256,7 +1256,7 @@ mod tests {
         let converted = mini.convert_term();
         println!("Lambda: {}", &converted);
 
-        let converted_type = type_of(&context, converted.clone());
+        let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new());
         println!("Type: {}", &converted_type);
 
         let converted_kind = kind_of(&context, converted_type.clone());
@@ -1293,7 +1293,7 @@ mod tests {
         let converted = mini.convert_term();
         println!("Lambda: {}", &converted);
 
-        let converted_type = type_of(&context, converted.clone());
+        let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new());
         println!("Type: {}", &converted_type);
 
         let converted_kind = kind_of(&context, converted_type.clone());
@@ -1325,7 +1325,7 @@ mod tests {
         let converted = mini.convert_term();
         println!("Lambda: {}", &converted);
 
-        let converted_type = type_of(&context, converted.clone());
+        let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new());
         println!("Type: {}", &converted_type);
 
         let converted_kind = kind_of(&context, converted_type.clone());

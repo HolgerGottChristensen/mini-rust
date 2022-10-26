@@ -149,7 +149,7 @@ impl ToSystemFOmegaTerm for MiniImpl {
 
 mod tests {
     use syn::parse_quote;
-    use system_f_omega::{Context, kind_of, type_of};
+    use system_f_omega::{Context, kind_of, Substitutions, type_of};
     use crate::item::MiniImpl;
     use crate::mini_expr::MiniExpr;
     use crate::mini_file::MiniFile;
@@ -173,7 +173,7 @@ mod tests {
         let converted = mini.convert_term();
         println!("Lambda: {}", &converted);
 
-        let converted_type = type_of(&context, converted.clone());
+        let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new());
         println!("Type: {}", &converted_type);
 
         let converted_kind = kind_of(&context, converted_type.clone());
@@ -202,7 +202,7 @@ mod tests {
         let converted = mini.convert_term();
         println!("Lambda: {}", &converted);
 
-        let converted_type = type_of(&context, converted.clone());
+        let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new());
         println!("Type: {}", &converted_type);
 
         let converted_kind = kind_of(&context, converted_type.clone());
@@ -231,7 +231,7 @@ mod tests {
         let converted = mini.convert_term();
         println!("Lambda: {}", &converted);
 
-        let converted_type = type_of(&context, converted.clone());
+        let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new());
         println!("Type: {}", &converted_type);
 
         let converted_kind = kind_of(&context, converted_type.clone());
@@ -268,7 +268,7 @@ mod tests {
         let converted = mini.convert_term();
         println!("Lambda: {}", &converted);
 
-        let converted_type = type_of(&context, converted.clone());
+        let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new());
         println!("Type: {}", &converted_type);
 
         let converted_kind = kind_of(&context, converted_type.clone());
@@ -306,7 +306,7 @@ mod tests {
         let converted = mini.convert_term();
         println!("Lambda: {}", &converted);
 
-        let converted_type = type_of(&context, converted.clone());
+        let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new());
         println!("Type: {}", &converted_type);
 
         let converted_kind = kind_of(&context, converted_type.clone());

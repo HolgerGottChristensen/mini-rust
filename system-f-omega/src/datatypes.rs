@@ -42,6 +42,13 @@ impl Debug for BaseType {
     }
 }
 
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Constraint {
+    pub ident: String,
+    pub vars: Vec<Type>,
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Type {
     /// X, Y, Z
@@ -68,8 +75,8 @@ pub enum Type {
     Recursive(String, Kind, Box<Type>),
     /// {∃X::Kind, Type}
     Existential(String, Kind, Box<Type>),
-    /// (X∵Type).Type
-    Predicate(String, Box<Type>, Box<Type>),
+    /// Eq a, Ord b => Type
+    Qualified(Vec<Constraint>, Box<Type>),
 }
 
 impl Display for Type {
@@ -79,6 +86,40 @@ impl Display for Type {
 }
 
 impl Type {
+    pub fn qualified(constraints: impl Into<Vec<Constraint>>, ty: impl Into<Type>) -> Type {
+        Type::Qualified(constraints.into(), Box::new(ty.into()))
+    }
+
+    pub fn arrow(t1: impl Into<Type>, t2: impl Into<Type>) -> Type {
+        Type::TypeArrow(Box::new(t1.into()), Box::new(t2.into()))
+    }
+
+    pub fn tuple3(t1: impl Into<Type>, t2: impl Into<Type>, t3: impl Into<Type>) -> Type {
+        Type::Tuple(vec![
+            t1.into(),
+            t2.into(),
+            t3.into(),
+        ])
+    }
+
+    pub fn pair(t1: impl Into<Type>, t2: impl Into<Type>) -> Type {
+        Type::Tuple(vec![
+            t1.into(),
+            t2.into(),
+        ])
+    }
+
+    pub fn reference(t1: impl Into<Type>) -> Type {
+        Type::Reference(Box::new(t1.into()))
+    }
+
+    pub fn type_var(&self) -> String {
+        match self {
+            Type::TypeVar(x) => x.clone(),
+            _ => panic!("Not a type var")
+        }
+    }
+
     pub fn to_string_type(&self, context: &Context, color: u32) -> String {
         match self {
             Type::TypeAbs(tyX,knK1,tyT2) => {
@@ -92,10 +133,18 @@ impl Type {
 
                 format!("∀{}::{}. {}", name, knK1, tyT2.to_string_type(&new_context, color))
             }
-            Type::Predicate(tyX, tyT1, tyT2) => {
-                let (new_context, name) = pick_fresh_name(context, tyX.clone());
+            Type::Qualified(constraints, rest) => {
+                //let (new_context, name) = pick_fresh_name(context, tyX.clone());
 
-                format!("({}∵{}).{}", name, tyT1.to_string_type(&new_context, color), tyT2.to_string_type(&new_context, color))
+                let formatted = constraints.iter().map(|constraint| {
+                    let vars = constraint.vars.iter().map(|a| {
+                        a.to_string_type(context, color)
+                    }).collect::<Vec<_>>().join(" ");
+
+                    format!("{} {}", constraint.ident, vars)
+                }).collect::<Vec<_>>().join(", ");
+
+                format!("{} => {}", formatted, rest.to_string_type(&context, color))
             }
             Type::Recursive(tyX, knK1, tyT2) => {
                 let (new_context, name) = pick_fresh_name(context, tyX.clone());
@@ -160,6 +209,18 @@ impl Type {
             Type::Reference(b) => format!("&{}", b.to_string_type(context, color)),
             t => format!("{}{}{}", get_color(color, "("), t.to_string_type(context, color + 1), get_color(color, ")"))
         }
+    }
+}
+
+impl From<&str> for Type {
+    fn from(s: &str) -> Self {
+        Type::TypeVar(s.to_string())
+    }
+}
+
+impl From<BaseType> for Type {
+    fn from(s: BaseType) -> Self {
+        Type::Base(s)
     }
 }
 
@@ -244,10 +305,34 @@ pub enum Term {
     /// new unique variable that can not be accessed anywhere.
     Scope(Box<Term>),
 
-    /// over x∴Type in Term
-    Overload(String, Type, Box<Term>),
-    /// inst x∵Type = Term in Term todo: Why do we need the x:Type and not just get it from the Type
-    Instance(String, Type, Box<Term>, Box<Term>),
+    /// ????
+    Class {
+        /// The constraints required for implementors of this class
+        constraints: Vec<Constraint>,
+        /// The name of the class
+        name: String,
+        /// The type variables for the type
+        vars: Vec<Type>,
+        /// The implementation type declarations for the class.
+        declarations: HashMap<String, Type>,
+        /// The default implementations of this class. We also know them as bindings
+        default_implementations: HashMap<String, Term>,
+        /// The Term after the "in"
+        continuation: Box<Term>,
+    },
+    /// ????
+    Instance {
+        /// The constraints required for a type to be able to use this implementation
+        constraints: Vec<Constraint>,
+        /// The name of the class
+        class_name: String,
+        /// The implementation is for this type
+        ty: Type,
+        /// Implementations of this instance
+        implementations: HashMap<String, (Term, Type)>,
+        /// The Term after the "in"
+        continuation: Box<Term>,
+    },
     // /// require (x : Type) for Term
     // Predicate(Box<Term>, String, Type),
 }
@@ -277,8 +362,17 @@ impl Term {
             Term::Scope(term) => format!("{}{}{}{}", get_color(color, "<b>scope"), get_color(color, "<b>("), term.to_string_term(context, color + 1), get_color(color, "<b>)")),
             Term::Seq(term1, term2) => format!("{}; {}", term1.to_string_term(context, color), term2.to_string_term(context, color)),
 
-            Term::Overload(x, ty, term) => format!("over {}: {} in\n{}", x, ty.to_string_type(context, color), term.to_string_term(context, color)),
-            Term::Instance(x, ty, term1, term2) => format!("inst {}: {} = {} in\n{}", x, ty.to_string_type(context, color), term1.to_string_term(context, color), term2.to_string_term(context, color)),
+            Term::Class {
+                constraints, name, vars, declarations, default_implementations, continuation
+            } => {
+                let vars_string = vars.iter().map(|t| t.to_string_type(context, color)).collect::<Vec<_>>().join(" ");
+                let declarations = declarations.iter().map(|(name, t)| format!("{} = {}", name, t.to_string_type(context, color))).collect::<Vec<_>>().join(", ");
+                format!("class {} {} where {} in\n{}", name, vars_string, declarations, continuation.to_string_term(context, color))
+            },
+            Term::Instance { constraints, class_name, ty, implementations, continuation } => {
+                let implementations = implementations.iter().map(|(name, (t, _))| format!("{} = {}", name, t.to_string_term(context, color))).collect::<Vec<_>>().join(", ");
+                format!("instance {} {} where {} in\n{}", class_name, ty.to_string_type(context, color), implementations, continuation.to_string_term(context, color))
+            },
             Term::Fix(t) => format!("fix {}", t.to_string_term(context, color)),
             Term::Fold(t) => format!("fold {}{}{}", get_color(color, "["), t.to_string_type(context, color + 1), get_color(color, "]")),
             Term::UnFold(t) => format!("unfold {}{}{}", get_color(color, "["), t.to_string_type(context, color + 1), get_color(color, "]")),
@@ -349,36 +443,6 @@ impl Term {
                 format!("{} {}{}{}", t1.to_string_term_app(context, color), get_color(color, "["), t2.to_string_type(context, color + 1), get_color(color, "]"))
             }
             t => format!("{}", t.to_string_atomic(context, color)),
-        }
-    }
-}
-
-#[derive(Clone, Debug)]
-pub enum Binding {
-    NameBinding(String),
-    VarBinding(String, Type),
-    OverBind(String, Type),
-    InstBind(String, Type),
-    TyVarBinding(String, Kind),
-}
-
-impl PartialEq for Binding {
-    fn eq(&self, other: &Self) -> bool {
-        match (self, other) {
-            (Binding::OverBind(s, _), Binding::OverBind(s2, _)) => s == s2,
-            (_, _) => false, // Todo: Add the rest of the cases
-        }
-    }
-}
-
-impl PartialEq<Binding> for &String {
-    fn eq(&self, other: &Binding) -> bool {
-        match other {
-            Binding::NameBinding(s) |
-            Binding::VarBinding(s, _) |
-            Binding::InstBind(s, _) |
-            Binding::TyVarBinding(s, _) => s == *self,
-            Binding::OverBind(_, _) => false,
         }
     }
 }

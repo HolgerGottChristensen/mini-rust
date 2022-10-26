@@ -162,7 +162,7 @@ impl ToSystemFOmegaTerm for MiniStmt {
 mod tests {
     use quote::quote;
     use syn::parse_quote;
-    use system_f_omega::{Context, type_of};
+    use system_f_omega::{Context, Substitutions, type_of};
     use crate::{MiniFn, MiniStmt, ToSystemFOmegaTerm};
 
     #[test]
@@ -178,7 +178,7 @@ mod tests {
         let converted = mini.convert_term();
 
         println!("\nLambda:\n{}", &converted);
-        println!("\nType:\n{}", type_of(&Context::new(), converted));
+        println!("\nType:\n{}", type_of(&Context::new(), converted, &mut Substitutions::new()));
 
         // Assert
         //assert!(matches!(actual, CarbideExpr::Lit(LitExpr {lit: Lit::Int(_)})))

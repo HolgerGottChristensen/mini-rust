@@ -206,7 +206,7 @@ mod tests {
     use std::collections::HashMap;
     use quote::quote;
     use syn::parse_quote;
-    use system_f_omega::{add_binding, BaseType, Binding, Context, kind_of, Term, Type, type_of};
+    use system_f_omega::{BaseType, Binding, Context, kind_of, Substitutions, Term, Type, type_of};
     use crate::{MiniEnum, MiniExprReference, MiniFn, MiniLitExpr, MiniStmt, ToSystemFOmegaTerm, ToSystemFOmegaType};
     use crate::mini_expr::MiniExpr;
     use crate::stmt::MiniBlock;
@@ -253,7 +253,7 @@ mod tests {
         let converted = mini.convert_term();
         println!("Lambda: {}", &converted);
 
-        let converted_type = type_of(&Context::new(), converted.clone());
+        let converted_type = type_of(&Context::new(), converted.clone(), &mut Substitutions::new());
         println!("Type: {}", &converted_type);
 
         let converted_kind = kind_of(&Context::new(), converted_type.clone());
@@ -283,7 +283,7 @@ mod tests {
         let converted = mini.convert_term();
         println!("Lambda: {}", &converted);
 
-        let converted_type = type_of(&Context::new(), converted.clone());
+        let converted_type = type_of(&Context::new(), converted.clone(), &mut Substitutions::new());
         println!("Type: {}", &converted_type);
 
         let converted_kind = kind_of(&Context::new(), converted_type.clone());
@@ -313,7 +313,7 @@ mod tests {
         let converted = mini.convert_term();
         println!("Lambda: {}", &converted);
 
-        let converted_type = type_of(&Context::new(), converted.clone());
+        let converted_type = type_of(&Context::new(), converted.clone(), &mut Substitutions::new());
         println!("Type: {}", &converted_type);
 
         let converted_kind = kind_of(&Context::new(), converted_type.clone());
@@ -461,7 +461,7 @@ mod tests {
         let converted = mini.convert_term();
         println!("Lambda: {}", &converted);
 
-        let converted_type = type_of(&Context::new(), converted.clone());
+        let converted_type = type_of(&Context::new(), converted.clone(), &mut Substitutions::new());
         println!("Type: {}", &converted_type);
 
         let converted_kind = kind_of(&Context::new(), converted_type.clone());
@@ -494,7 +494,7 @@ mod tests {
         let converted = mini.convert_term();
         println!("Lambda: {}", &converted);
 
-        let converted_type = type_of(&Context::new(), converted.clone());
+        let converted_type = type_of(&Context::new(), converted.clone(), &mut Substitutions::new());
         println!("Type: {}", &converted_type);
 
         let converted_kind = kind_of(&Context::new(), converted_type.clone());
@@ -527,7 +527,7 @@ mod tests {
         let converted = mini.convert_term();
         println!("Lambda: {}", &converted);
 
-        let converted_type = type_of(&Context::new(), converted.clone());
+        let converted_type = type_of(&Context::new(), converted.clone(), &mut Substitutions::new());
         println!("Type: {}", &converted_type);
 
         let converted_kind = kind_of(&Context::new(), converted_type.clone());
@@ -560,7 +560,7 @@ mod tests {
         let converted = mini.convert_term();
         println!("Lambda: {}", &converted);
 
-        let converted_type = type_of(&Context::new(), converted.clone());
+        let converted_type = type_of(&Context::new(), converted.clone(), &mut Substitutions::new());
         println!("Type: {}", &converted_type);
 
         let converted_kind = kind_of(&Context::new(), converted_type.clone());
@@ -592,7 +592,7 @@ mod tests {
         let converted = mini.convert_term();
         println!("Lambda: {}", &converted);
 
-        let converted_type = type_of(&Context::new(), converted.clone());
+        let converted_type = type_of(&Context::new(), converted.clone(), &mut Substitutions::new());
         println!("Type: {}", &converted_type);
 
         let converted_kind = kind_of(&Context::new(), converted_type.clone());
@@ -619,7 +619,7 @@ mod tests {
         let converted = mini.convert_term();
         println!("Lambda: {}", &converted);
 
-        let converted_type = type_of(&Context::new(), converted.clone());
+        let converted_type = type_of(&Context::new(), converted.clone(), &mut Substitutions::new());
         println!("Type: {}", &converted_type);
 
         let converted_kind = kind_of(&Context::new(), converted_type.clone());
@@ -653,7 +653,7 @@ mod tests {
         let converted = mini.convert_term();
         println!("Lambda: {}", &converted);
 
-        let converted_type = type_of(&Context::new(), converted.clone());
+        let converted_type = type_of(&Context::new(), converted.clone(), &mut Substitutions::new());
         println!("Type: {}", &converted_type);
 
         let converted_kind = kind_of(&Context::new(), converted_type.clone());
@@ -691,7 +691,7 @@ mod tests {
         let converted = mini.convert_term();
         println!("Lambda: {}", &converted);
 
-        let converted_type = type_of(&Context::new(), converted.clone());
+        let converted_type = type_of(&Context::new(), converted.clone(), &mut Substitutions::new());
         println!("Type: {}", &converted_type); // Todo: Why does this type not get simplified?
 
         let converted_kind = kind_of(&Context::new(), converted_type.clone());

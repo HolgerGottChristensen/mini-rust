@@ -128,13 +128,13 @@ impl ToSystemFOmegaType for MiniStruct {
         let mut body = FType::Record(hash);
 
         // Todo: How will we handle generic bounds?
-        for generic in self.generics.params.iter().rev() {
+        /*for generic in self.generics.params.iter().rev() {
             for bound in &generic.bounds {
                 body = FType::Predicate("€".to_string(), Box::new(FType::TypeVar(
                     MiniPath(bound.path.clone()).as_ident() // Todo: what about generics in bounds?
                 )), Box::new(body))
             }
-        }
+        }*/
         // Add generics as TypeAbs
         for generic in self.generics.params.iter().rev() {
             body = FType::TypeAbs(generic.ident.0.to_string(), Kind::KindStar, Box::new(body));
@@ -211,7 +211,7 @@ mod tests {
     use std::collections::HashMap;
     use quote::quote;
     use syn::parse_quote;
-    use system_f_omega::{add_binding, BaseType, Binding, Context, kind_of, Term, Type, type_of};
+    use system_f_omega::{BaseType, Binding, Context, kind_of, Substitutions, Term, Type, type_of};
     use crate::{MiniEnum, MiniExprReference, MiniFn, MiniLitExpr, MiniStmt, MiniStruct, ToSystemFOmegaTerm, ToSystemFOmegaType};
     use crate::mini_expr::MiniExpr;
 
@@ -475,7 +475,7 @@ mod tests {
 
         // Act
         let converted = mini.convert_term();
-        let converted_type = type_of(&context, converted.clone());
+        let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new());
         //let converted_kind = kind_of(&context, converted_type.clone());
 
         println!("Lambda: {}", &converted);
@@ -511,7 +511,7 @@ mod tests {
 
         // Act
         let converted = mini.convert_term();
-        let converted_type = type_of(&context, converted.clone());
+        let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new());
         //let converted_kind = kind_of(&context, converted_type.clone());
 
         println!("Lambda: {}", &converted);
