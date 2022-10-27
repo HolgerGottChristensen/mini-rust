@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::ops::DerefMut;
 use crate::{add_name, BaseType, Binding, Constraint, Context, get_binding, get_kind, class_exists, get_type, get_type_safe, Kind, Substitutions, Term, Type, type_substitution, ZeroOneMore, unify};
+use crate::BaseType::Unit;
 use crate::Type::{Qualified, TypeApp, TypeArrow, TypeVar};
 
 pub fn is_val(context: &Context, term: Term) -> bool {
@@ -290,7 +291,7 @@ pub fn check_kind_star(context: &Context, tyt: Type) {
 // TYPING
 /// Check the type of a given term with the context. We need all classes to be the first,
 /// and instances to be the second.
-pub fn type_of(context: &mut Context, term: Term, substitutions: &mut Substitutions) -> Type {
+pub fn type_of(context: &Context, term: Term, substitutions: &mut Substitutions) -> Type {
     match term {
         // T-Var
         Term::TermVar(name) => {
@@ -321,7 +322,7 @@ pub fn type_of(context: &mut Context, term: Term, substitutions: &mut Substituti
             result = unify(context, substitutions, t1, result, vec![], vec![]).unwrap();
 
             result = match result {
-                Type::TypeArrow(_, x) => *x,
+                TypeArrow(_, x) => *x,
                 _ => panic!("Must be a type application (should be a function type), found {:?}", result)
             };
             result
@@ -709,6 +710,14 @@ pub fn type_of(context: &mut Context, term: Term, substitutions: &mut Substituti
 
             type_of(&mut new_context, *continuation, substitutions)
         }
+        // T-Assign
+        Term::Assignment(x, term) => {
+            let ty = get_type(context, &x);
+            if !type_equivalence(context, type_of(context, *term, substitutions), ty.clone()) {
+                panic!("The assigned term needs to have the same type as the variable assigned to.")
+            }
+            ty
+        }
     }
 }
 
@@ -728,8 +737,8 @@ fn distribute_qualification(ty: Type) -> Type {
     }
 }
 
-pub fn bind_variable(context: &mut Context, subs: &mut Substitutions, var: &String, typ: &Type, constraints: Vec<Constraint>) -> Result<(), String> {
-    println!("Bind var {:?} to {}, with constraints {:?}", var, typ.to_string_type(context, 0), &constraints);
+pub fn bind_variable(context: &Context, subs: &mut Substitutions, var: &String, typ: &Type, constraints: Vec<Constraint>) -> Result<(), String> {
+    println!("Bind var {} to {}, with constraints {:?}", var, typ.to_string_type(context, 0), &constraints);
     //println!("{:#?}", context);
     match typ {
         TypeVar(var2) => {

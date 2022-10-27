@@ -248,6 +248,8 @@ pub enum Term {
     Unit,
     /// & Term
     Reference(Box<Term>),
+    /// x = Term
+    Assignment(String, Box<Term>),
     /// If Term then Term else Term
     If(Box<Term>, Box<Term>, Box<Term>),
     /// let x = Term in Term
@@ -361,7 +363,9 @@ impl Term {
             Term::Define(x, ty, term) => format!("define {}{} = {}{} in {}", get_color(color, "("), x, ty.to_string_type(context, color + 1), get_color(color, ")"), term.to_string_term(context, color)),
             Term::Scope(term) => format!("{}{}{}{}", get_color(color, "<b>scope"), get_color(color, "<b>("), term.to_string_term(context, color + 1), get_color(color, "<b>)")),
             Term::Seq(term1, term2) => format!("{}; {}", term1.to_string_term(context, color), term2.to_string_term(context, color)),
-
+            Term::Assignment(x, term) => {
+                format!("{} = {}{}{}", x, get_color(color, "("), term.to_string_term(context, color + 1), get_color(color, ")"))
+            }
             Term::Class {
                 constraints, name, vars, declarations, default_implementations, continuation
             } => {

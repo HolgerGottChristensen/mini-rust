@@ -190,7 +190,7 @@ impl Context {
     /// Returns whether the type 'searched_type' has an instance for 'class'
     /// If no instance was found, return the instance which was missing
     pub(crate) fn has_instance(&self, class: &String, searched_type: &Type, new_constraints: &mut Vec<Constraint>) -> Result<(), String> {
-        println!("Search for instance with class name: {} for {:?}", class, searched_type);
+        println!("{} {} {} {}", colorize_string("<blue>Search after instance:</>"), class, colorize_string("<blue>for</>"), searched_type.to_string_type(&self, 0));
 
         // Loop through each instance in our local typing environment.
         for ref binding in LinkedListIter(self.typing_context.clone()) {

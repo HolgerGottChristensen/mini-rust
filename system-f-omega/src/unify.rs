@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use crate::{bind_variable, Constraint, Context, Substitutions, Type};
 use crate::Type::{Qualified, TypeApp, TypeArrow, TypeVar};
 
-pub fn unify(context: &mut Context, subs: &mut Substitutions, left: Type, right: Type, left_constraints: Vec<Constraint>, right_constraints: Vec<Constraint>) -> Result<Type, String> {
+pub fn unify(context: &Context, subs: &mut Substitutions, left: Type, right: Type, left_constraints: Vec<Constraint>, right_constraints: Vec<Constraint>) -> Result<Type, String> {
     println!("Try-Unify: {} ⊔ {}", left.to_string_type(context, 0), right.to_string_type(context, 0));
 
     match (left, right) {
@@ -76,6 +76,7 @@ pub fn unify(context: &mut Context, subs: &mut Substitutions, left: Type, right:
                 if let Some(v2) = h2.get(k1) {
                     let v1 = subs.apply(v1.clone());
                     let v2 = subs.apply(v2.clone());
+
                     match unify(context, subs, v1, v2, left_constraints.clone(), right_constraints.clone()) {
                         Ok(l1) => {
                             h1_new.insert(k1.clone(), l1);
@@ -1317,7 +1318,8 @@ mod tests {
             println!();
             println!("Substitutions: {:?}", substitutions);
             println!("Result of unification: {:?}", unification);
-            assert!(matches!(unification, Ok(..)))
+            assert!(matches!(unification, Ok(..)));
+            println!("Result pretty: {}", unification.map(|a| a.to_string_type(&context, 0)).unwrap_or("Error".to_string()));
         }
 
         #[test]
@@ -1342,7 +1344,8 @@ mod tests {
             println!();
             println!("Substitutions: {:?}", substitutions);
             println!("Result of unification: {:?}", unification);
-            assert!(matches!(unification, Err(..)))
+            assert!(matches!(unification, Err(..)));
+            println!("Result pretty: {}", unification.map(|a| a.to_string_type(&context, 0)).unwrap_or("Error".to_string()));
         }
 
         #[test]
@@ -1367,7 +1370,8 @@ mod tests {
             println!();
             println!("Substitutions: {:?}", substitutions);
             println!("Result of unification: {:?}", unification);
-            assert!(matches!(unification, Ok(..)))
+            assert!(matches!(unification, Ok(..)));
+            println!("Result pretty: {}", unification.map(|a| a.to_string_type(&context, 0)).unwrap_or("Error".to_string()));
         }
 
         #[test]
@@ -1392,7 +1396,8 @@ mod tests {
             println!();
             println!("Substitutions: {:?}", substitutions);
             println!("Result of unification: {:?}", unification);
-            assert!(matches!(unification, Err(..)))
+            assert!(matches!(unification, Err(..)));
+            println!("Result pretty: {}", unification.map(|a| a.to_string_type(&context, 0)).unwrap_or("Error".to_string()));
         }
 
         #[test]
@@ -1417,7 +1422,8 @@ mod tests {
             println!();
             println!("Substitutions: {:?}", substitutions);
             println!("Result of unification: {:?}", unification);
-            assert!(matches!(unification, Ok(..)))
+            assert!(matches!(unification, Ok(..)));
+            println!("Result pretty: {}", unification.map(|a| a.to_string_type(&context, 0)).unwrap_or("Error".to_string()));
         }
 
         #[test]
@@ -1442,7 +1448,8 @@ mod tests {
             println!();
             println!("Substitutions: {:?}", substitutions);
             println!("Result of unification: {:?}", unification);
-            assert!(matches!(unification, Ok(..)))
+            assert!(matches!(unification, Ok(..)));
+            println!("Result pretty: {}", unification.map(|a| a.to_string_type(&context, 0)).unwrap_or("Error".to_string()));
         }
 
         #[test]
@@ -1467,7 +1474,8 @@ mod tests {
             println!();
             println!("Substitutions: {:?}", substitutions);
             println!("Result of unification: {:?}", unification);
-            assert!(matches!(unification, Ok(..)))
+            assert!(matches!(unification, Ok(..)));
+            println!("Result pretty: {}", unification.map(|a| a.to_string_type(&context, 0)).unwrap_or("Error".to_string()));
         }
 
         #[test]
@@ -1493,7 +1501,8 @@ mod tests {
             println!();
             println!("Substitutions: {:?}", substitutions);
             println!("Result of unification: {:?}", unification);
-            assert!(matches!(unification, Ok(..)))
+            assert!(matches!(unification, Ok(..)));
+            println!("Result pretty: {}", unification.map(|a| a.to_string_type(&context, 0)).unwrap_or("Error".to_string()));
         }
 
         #[test]
@@ -1519,7 +1528,8 @@ mod tests {
             println!();
             println!("Substitutions: {:?}", substitutions);
             println!("Result of unification: {:?}", unification);
-            assert!(matches!(unification, Err(..)))
+            assert!(matches!(unification, Err(..)));
+            println!("Result pretty: {}", unification.map(|a| a.to_string_type(&context, 0)).unwrap_or("Error".to_string()));
         }
 
         #[test]
@@ -1545,7 +1555,8 @@ mod tests {
             println!();
             println!("Substitutions: {:?}", substitutions);
             println!("Result of unification: {:?}", unification);
-            assert!(matches!(unification, Ok(..)))
+            assert!(matches!(unification, Ok(..)));
+            println!("Result pretty: {}", unification.map(|a| a.to_string_type(&context, 0)).unwrap_or("Error".to_string()));
         }
     }
 }

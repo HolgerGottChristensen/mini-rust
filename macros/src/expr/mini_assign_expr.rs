@@ -24,7 +24,7 @@ impl ToSystemFOmegaTerm for MiniExprAssign {
             _ => panic!("For now only idents can be assigned to"),
         };
 
-        Term::Ascribe(Box::new(self.right.convert_term()), Type::TypeVar(ident))
+        Term::Assignment(ident, Box::new(self.right.convert_term()))
     }
 }
 
