@@ -10,11 +10,8 @@ mod mini_ident;
 mod mini_type;
 mod mini_path;
 mod mini_generics;
-mod util;
-mod lowering;
 
 use proc_macro::TokenStream;
-use chalk_integration::interner::ChalkIr;
 use system_f_omega::{Context, Term, Type, type_of};
 
 use syn::{parse_macro_input, DeriveInput, Expr};
@@ -27,7 +24,6 @@ use mini_stmt::*;
 use mini_ident::*;
 use mini_type::*;
 use mini_generics::*;
-use crate::lowering::Env;
 
 pub(crate) const IDENT_COLOR: &'static str = "<magenta><i>";
 pub(crate) const TYPE_COLOR: &'static str = "<blue><b>";
@@ -61,8 +57,4 @@ pub(crate) trait ToSystemFOmegaTerm {
 
 pub(crate) trait ToSystemFOmegaType {
     fn convert_type(&self) -> system_f_omega::Type;
-}
-
-pub(crate) trait ToChalkRustIR {
-    fn convert(&self, env: &Env) -> chalk_solve::rust_ir::AdtDatum<ChalkIr>;
 }

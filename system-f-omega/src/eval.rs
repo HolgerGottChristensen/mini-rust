@@ -715,22 +715,6 @@ pub fn type_of(context: &Context, term: Term, substitutions: &mut Substitutions)
     }
 }
 
-/// Tries to distribute qualifications
-fn distribute_qualification(ty: Type) -> Type {
-    match ty {
-        Type::Qualified(constraints, inner) => {
-            match *inner {
-                Type::TypeVar(s) => TypeVar(s),
-                Type::TypeArrow(ty1, ty2) => {
-                    Type::TypeArrow(Box::new(Qualified(constraints.clone(), ty1)), Box::new(Qualified(constraints.clone(), ty2)))
-                }
-                x => Qualified(constraints, Box::new(x))
-            }
-        }
-        x => x,
-    }
-}
-
 pub fn bind_variable(context: &Context, subs: &mut Substitutions, var: &String, typ: &Type, constraints: Vec<Constraint>) -> Result<(), String> {
     println!("Bind var {} to {}, with constraints {:?}", var, typ.to_string_type(context, 0), &constraints);
     //println!("{:#?}", context);

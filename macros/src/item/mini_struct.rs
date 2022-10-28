@@ -1,21 +1,13 @@
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 use std::iter::once;
-use chalk_integration::interner::ChalkIr;
-use chalk_integration::{Identifier, RawId, TypeKind, TypeSort};
-use chalk_ir::{AdtId, Binders, Scalar, Ty, TyKind, VariableKinds};
-use chalk_ir::interner::Interner;
-use chalk_solve::clauses::builder::ClauseBuilder;
-use chalk_solve::rust_ir;
-use chalk_solve::rust_ir::{AdtDatum, AdtDatumBound, AdtFlags, AdtKind, AdtVariantDatum, Anonymize};
 use proc_macro2::Ident;
 use syn::punctuated::Punctuated;
 use syn::{braced, Field, Token, Type, ItemStruct, WhereClause};
 use syn::parse::{Parse, Parser, ParseStream};
 use syn::token::{Brace, Colon, Comma, Struct};
-use crate::{MiniEnum, MiniGenerics, MiniIdent, MiniType, ToChalkRustIR, ToSystemFOmegaTerm, ToSystemFOmegaType};
+use crate::{MiniEnum, MiniGenerics, MiniIdent, MiniType, ToSystemFOmegaTerm, ToSystemFOmegaType};
 use system_f_omega::{BaseType, Kind, Term, Type as FType};
-use crate::lowering::{Env, LowerParameterMap, LowerResult, LowerTypeKind, LowerWithEnv, VariableKind};
 use crate::mini_path::MiniPath;
 
 #[derive(PartialEq, Clone)]
@@ -102,11 +94,6 @@ impl Parse for MiniStructField {
     }
 }
 
-/*impl MiniStructField {
-    fn convert_to_chalk(&self, env: &Env) -> Ty<ChalkIr> {
-        Ty::new(ChalkIr, TyKind::Scalar(Scalar::Bool))
-    }
-}*/
 
 impl ToSystemFOmegaTerm for MiniStruct {
     fn convert_term(&self) -> Term {
@@ -143,68 +130,6 @@ impl ToSystemFOmegaType for MiniStruct {
         body
     }
 }
-// Todo: impl trait, write test with simple Struct, Trait & Impl
-
-impl LowerWithEnv for (&MiniStruct, AdtId<ChalkIr>) {
-    type Lowered = AdtDatum<ChalkIr>;
-
-    fn lower(&self, env: &Env) -> LowerResult<Self::Lowered> {
-        let (mini_struct, adt_id) = self;
-
-        let binders = env.in_binders(mini_struct.all_parameters(), |env| {
-            Ok(AdtDatumBound {
-                variants: vec![AdtVariantDatum {
-                    fields: mini_struct.fields.iter().map(|f| Ty::new(ChalkIr, TyKind::Scalar(Scalar::Bool))).collect()
-                }],
-                /*variants: mini_struct
-                    .variants
-                    .iter()
-                    .map(|v| {
-                        let fields: LowerResult<_> =
-                            v.fields.iter().map(|f| f.ty.lower(env)).collect();
-                        Ok(AdtVariantDatum { fields: fields? })
-                    })
-                    .collect::<LowerResult<_>>()?,*/
-                where_clauses: vec![], //adt_defn.where_clauses.lower(env)?,
-            })
-        })?;
-
-        Ok(AdtDatum {
-            binders,
-            id: *adt_id,
-            flags: AdtFlags {
-                upstream: false,
-                fundamental: false,
-                phantom_data: false
-            },
-            kind: AdtKind::Struct
-        })
-    }
-}
-
-impl LowerTypeKind for MiniStruct {
-    fn lower_type_kind(&self) -> LowerResult<TypeKind> {
-        Ok(TypeKind {
-            sort: TypeSort::Adt,
-            name: Identifier::from(self.ident.to_string()),
-            binders: Binders::new(
-                VariableKinds::from_iter(ChalkIr, self.all_parameters().anonymize()),
-                chalk_integration::Unit,
-            ),
-        })
-
-    }
-}
-
-impl LowerParameterMap for MiniStruct {
-    fn synthetic_parameters(&self) -> Option<chalk_ir::WithKind<ChalkIr, Identifier>> {
-        None
-    }
-    fn declared_parameters(&self) -> Vec<VariableKind> {
-        self.generics.params.iter().map(|a| VariableKind(Identifier::from(a.ident.to_string()))).collect()
-        //&self.variable_kinds
-    }
-}
 
 
 mod tests {
@@ -214,74 +139,6 @@ mod tests {
     use system_f_omega::{BaseType, Binding, Context, kind_of, Substitutions, Term, Type, type_of};
     use crate::{MiniEnum, MiniExprReference, MiniFn, MiniLitExpr, MiniStmt, MiniStruct, ToSystemFOmegaTerm, ToSystemFOmegaType};
     use crate::mini_expr::MiniExpr;
-
-    mod chalk {
-        use std::collections::BTreeMap;
-        use chalk_integration::db::ChalkDatabase;
-        use chalk_integration::lowering::Lower;
-        use chalk_integration::program::Program;
-        use chalk_integration::query::LoweringDatabase;
-        use chalk_integration::SolverChoice;
-        use chalk_solve::logging_db::LoggingRustIrDatabase;
-        use syn::parse_quote;
-        use crate::{MiniStruct, ToChalkRustIR};
-        use crate::lowering::environment;
-        use crate::mini_file::MiniFile;
-
-        #[test]
-        fn convert_to_chalk_rust() {
-            // Arrange
-            let mini: MiniFile = parse_quote!(
-                struct Test {}
-            );
-
-            println!("\n{:#?}", &mini);
-
-            // Act
-            let x = mini.lower().unwrap();
-            println!("\n{:#?}", &x);
-            println!("\n{:#?}", environment(x));
-
-            // Assert
-        }
-
-        #[test]
-        fn convert_to_chalk_rust_with_fields() {
-            // Arrange
-            let mini: MiniFile = parse_quote!(
-                struct Test {
-                    x: i64,
-                    y: f64,
-                }
-            );
-
-            println!("\n{:#?}", &mini);
-
-            // Act
-            let x = mini.lower().unwrap();
-            println!("\n{:#?}", &x);
-            println!("\n{:#?}", environment(x));
-
-            // Assert
-        }
-
-        #[test]
-        fn convert_to_chalk_rust_generic() {
-            // Arrange
-            let mini: MiniFile = parse_quote!(
-                struct Test<T> {}
-            );
-
-            println!("\n{:#?}", &mini);
-
-            // Act
-            let x = mini.lower().unwrap();
-            println!("\n{:#?}", &x);
-            println!("\n{:#?}", environment(x));
-
-            // Assert
-        }
-    }
 
     #[test]
     fn parse_zero_field() {
