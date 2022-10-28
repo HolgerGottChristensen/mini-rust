@@ -10,14 +10,26 @@ pub enum Kind {
     KindArrow(Box<Kind>, Box<Kind>),
 }
 
-impl Display for Kind {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl Kind {
+    fn to_string_kind(&self) -> String {
         match self {
-            Kind::KindStar => write!(f, "{}", colorize_string("<bright-blue><b>*</>")),
+            Kind::KindStar => self.to_string_atomic(),
             Kind::KindArrow(k1, k2) => {
-                let colored = format!("{} <bright-blue><b>=></> {}", k1, k2);
-                write!(f, "({})", colorize_string(colored))
+                colorize_string(format!("{} <bright-blue><b>=></> {}", k1.to_string_atomic(), k2.to_string_kind()))
             }
         }
+    }
+
+    fn to_string_atomic(&self) -> String {
+        match self {
+            Kind::KindStar => colorize_string("<bright-blue><b>*</>"),
+            x => format!("({})", x.to_string_kind()),
+        }
+    }
+}
+
+impl Display for Kind {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.to_string_kind())
     }
 }
