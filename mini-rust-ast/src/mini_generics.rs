@@ -6,7 +6,7 @@ use syn::ext::IdentExt;
 use syn::parse::{Parse, ParseStream};
 use syn::punctuated::Punctuated;
 
-use crate::{MiniIdent, TraitBound};
+use crate::{MiniIdent, MiniRecIdent, TraitBound};
 
 #[derive(PartialEq, Clone)]
 pub struct MiniGenerics {
@@ -32,7 +32,7 @@ impl Debug for MiniGenerics {
 
 #[derive(PartialEq, Clone)]
 pub struct MiniTypeParam {
-    pub ident: MiniIdent,
+    pub ident: MiniRecIdent,
     pub colon_token: Option<Token![:]>,
     pub bounds: Punctuated<TraitBound, Token![+]>,
     //pub eq_token: Option<Token![=]>,
@@ -80,16 +80,19 @@ impl Parse for MiniGenerics {
 
             let lookahead = input.lookahead1();
             if lookahead.peek(syn::Ident) {
-                params.push_value(MiniTypeParam {
-                    ..input.parse()?
-                });
-            } else if input.peek(Token![_]) {
+                params.push_value(MiniTypeParam::parse(input)?);
+            }
+            /*
+            else if input.peek(Token![_]) {
+
                 params.push_value(MiniTypeParam {
                     ident: MiniIdent(input.call(Ident::parse_any)?),
                     colon_token: None,
                     bounds: Punctuated::new(),
                 });
-            } else {
+            }
+            */
+            else {
                 return Err(lookahead.error());
             }
 
@@ -113,7 +116,7 @@ impl Parse for MiniGenerics {
 
 impl Parse for MiniTypeParam {
     fn parse(input: ParseStream) -> syn::Result<Self> {
-        let ident: MiniIdent = input.parse()?;
+        let ident = MiniRecIdent::parse(input)?;
         let colon_token: Option<Token![:]> = input.parse()?;
 
         let mut bounds = Punctuated::new();

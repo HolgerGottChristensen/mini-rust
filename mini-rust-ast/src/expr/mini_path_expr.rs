@@ -9,7 +9,7 @@ use syn::punctuated::Punctuated;
 use mini_ir::Term;
 
 use crate::mini_path::MiniPath;
-use crate::ToSystemFOmegaTerm;
+use crate::ToMiniIrTerm;
 
 #[derive(PartialEq, Clone)]
 pub struct MiniExprPath {
@@ -142,7 +142,7 @@ fn parse_segment_helper(input: ParseStream, expr_style: bool) -> syn::Result<Pat
     }
 }
 
-impl ToSystemFOmegaTerm for MiniExprPath {
+impl ToMiniIrTerm for MiniExprPath {
     fn convert_term(&self) -> Term {
         // Todo: What about self?
         let mut body = Term::TermVar(MiniPath(self.path.clone()).as_ident());

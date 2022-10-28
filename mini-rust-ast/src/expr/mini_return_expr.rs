@@ -4,7 +4,7 @@ use syn::Token;
 use mini_ir::{Term, Type};
 
 use crate::mini_expr::{AllowStruct, MiniExpr};
-use crate::ToSystemFOmegaTerm;
+use crate::ToMiniIrTerm;
 
 #[derive(PartialEq, Clone, Debug)]
 pub struct MiniExprReturn {
@@ -19,7 +19,7 @@ pub fn expr_ret(input: ParseStream, allow_struct: AllowStruct) -> syn::Result<Mi
     })
 }
 
-impl ToSystemFOmegaTerm for MiniExprReturn {
+impl ToMiniIrTerm for MiniExprReturn {
     fn convert_term(&self) -> Term {
         Term::Ascribe(Box::new(self.expr.convert_term()), Type::TypeVar("#Return".to_string()))
     }

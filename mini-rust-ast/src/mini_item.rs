@@ -6,7 +6,7 @@ use syn::parse::{Parse, ParseStream};
 
 use mini_ir::{Term, Type};
 
-use crate::{MiniEnum, MiniFn, MiniImpl, MiniStruct, MiniTrait, ToSystemFOmegaTerm, ToSystemFOmegaType};
+use crate::{MiniEnum, MiniFn, MiniImpl, MiniStruct, MiniTrait, ToMiniIrTerm, ToMiniIrType};
 
 #[derive(PartialEq, Clone)]
 pub enum MiniItem {
@@ -47,7 +47,7 @@ impl Parse for MiniItem {
     }
 }
 
-impl ToSystemFOmegaType for MiniItem {
+impl ToMiniIrType for MiniItem {
     fn convert_type(&self) -> Type {
         match self {
             MiniItem::Enum(f) => f.convert_type(),
@@ -59,7 +59,7 @@ impl ToSystemFOmegaType for MiniItem {
     }
 }
 
-impl ToSystemFOmegaTerm for MiniItem {
+impl ToMiniIrTerm for MiniItem {
     fn convert_term(&self) -> Term {
         match self {
             MiniItem::Enum(f) => f.convert_term(),

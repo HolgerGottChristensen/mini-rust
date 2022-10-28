@@ -3,7 +3,7 @@ use syn::parse::ParseStream;
 use mini_ir::Term;
 
 use crate::mini_expr::{AllowStruct, MiniExpr, MiniUnOp};
-use crate::ToSystemFOmegaTerm;
+use crate::ToMiniIrTerm;
 
 #[derive(PartialEq, Clone, Debug)]
 pub struct MiniExprUnary {
@@ -22,7 +22,7 @@ pub fn parse_expr_unary(
     })
 }
 
-impl ToSystemFOmegaTerm for MiniExprUnary {
+impl ToMiniIrTerm for MiniExprUnary {
     fn convert_term(&self) -> Term {
         // Todo: How do we access methods in traits based on some parameters. We might need an environment and lookup a function?
         match self.op {

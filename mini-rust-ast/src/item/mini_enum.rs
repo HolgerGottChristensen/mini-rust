@@ -10,7 +10,7 @@ use syn::token::{Brace, Comma, Enum, Paren};
 use mini_ir::{BaseType, Kind, Term};
 use mini_ir::Type as FType;
 
-use crate::{MiniGenerics, MiniIdent, MiniType, ToSystemFOmegaTerm, ToSystemFOmegaType};
+use crate::{MiniGenerics, MiniIdent, MiniType, ToMiniIrKind, ToMiniIrTerm, ToMiniIrType};
 
 #[derive(PartialEq, Clone)]
 pub struct MiniEnum {
@@ -106,7 +106,7 @@ impl Parse for MiniEnumVariant {
 }
 
 // Todo: Add a field or somethings, that uniquely identifies an enum
-impl ToSystemFOmegaTerm for MiniEnum {
+impl ToMiniIrTerm for MiniEnum {
     fn convert_term(&self) -> Term {
         let variants = self.convert_type();
         let mut body = Term::Unit;
@@ -119,13 +119,13 @@ impl ToSystemFOmegaTerm for MiniEnum {
                     let mut variants = variants.clone();
 
                     for generic in self.generics.params.iter() {
-                        variants = FType::TypeApp(Box::new(variants), Box::new(FType::TypeVar(generic.ident.0.to_string())))
+                        variants = FType::TypeApp(Box::new(variants), Box::new(FType::TypeVar(generic.ident.to_string())))
                     }
 
                     let mut function = Term::Tagging(field.ident.0.to_string(), Box::new(Term::Unit), variants);
 
                     for generic in self.generics.params.iter().rev() {
-                        function = Term::TermTypeAbs(generic.ident.0.to_string(), Kind::KindStar, Box::new(function));
+                        function = Term::TermTypeAbs(generic.ident.to_string(), generic.ident.convert_kind(), Box::new(function));
                     }
 
                     body = Term::Let(
@@ -138,7 +138,7 @@ impl ToSystemFOmegaTerm for MiniEnum {
                     let mut variants = variants.clone();
 
                     for generic in self.generics.params.iter() {
-                        variants = FType::TypeApp(Box::new(variants), Box::new(FType::TypeVar(generic.ident.0.to_string())))
+                        variants = FType::TypeApp(Box::new(variants), Box::new(FType::TypeVar(generic.ident.to_string())))
                     }
 
                     let mut tups = vec![];
@@ -158,7 +158,7 @@ impl ToSystemFOmegaTerm for MiniEnum {
                     function = Term::TermAbs("#default".to_string(), FType::Base(BaseType::Unit), Box::new(function));
 
                     for generic in self.generics.params.iter().rev() {
-                        function = Term::TermTypeAbs(generic.ident.0.to_string(), Kind::KindStar, Box::new(function));
+                        function = Term::TermTypeAbs(generic.ident.to_string(), generic.ident.convert_kind(), Box::new(function));
                     }
 
                     body = Term::Let(
@@ -176,7 +176,7 @@ impl ToSystemFOmegaTerm for MiniEnum {
     }
 }
 
-impl ToSystemFOmegaType for MiniEnum {
+impl ToMiniIrType for MiniEnum {
     fn convert_type(&self) -> FType {
         let map = self.fields.iter().map(|variant| {
             let case = match &variant.items {
@@ -195,7 +195,7 @@ impl ToSystemFOmegaType for MiniEnum {
         // Todo: How will we handle generic bounds?
         // Add generics as TypeAbs
         for generic in self.generics.params.iter().rev() {
-            body = FType::TypeAbs(generic.ident.0.to_string(), Kind::KindStar, Box::new(body));
+            body = FType::TypeAbs(generic.ident.to_string(), generic.ident.convert_kind(), Box::new(body));
         }
 
         body
@@ -207,7 +207,7 @@ mod tests {
 
     use mini_ir::{BaseType, Binding, Context, kind_of, Substitutions, type_of};
 
-    use crate::{MiniEnum, ToSystemFOmegaTerm, ToSystemFOmegaType};
+    use crate::{MiniEnum, ToMiniIrTerm, ToMiniIrType};
     use crate::stmt::MiniBlock;
 
     #[test]

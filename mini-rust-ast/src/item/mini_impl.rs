@@ -7,7 +7,7 @@ use syn::token::{Brace, For, Impl};
 use mini_ir::{Kind, Term};
 use mini_ir::Type::{TypeApp, TypeVar};
 
-use crate::{MiniFn, MiniGenerics, MiniType, ToSystemFOmegaTerm};
+use crate::{MiniFn, MiniGenerics, MiniType, ToMiniIrKind, ToMiniIrTerm};
 use crate::mini_path::MiniPath;
 
 #[derive(PartialEq, Clone)]
@@ -118,7 +118,7 @@ fn parse_impl(input: ParseStream, allow_verbatim_impl: bool) -> syn::Result<Opti
     }
 }
 
-impl ToSystemFOmegaTerm for MiniImpl {
+impl ToMiniIrTerm for MiniImpl {
     fn convert_term(&self) -> Term {
         let name = MiniType(*self.self_ty.clone()).path().as_ident();
         let generics = MiniType(*self.self_ty.clone()).path().generics();
@@ -130,7 +130,7 @@ impl ToSystemFOmegaTerm for MiniImpl {
 
             // Todo: Is this the best way. We need to introduce generics somehow for each method.
             for param in &self.generics.params {
-                fun = Term::TermTypeAbs(param.ident.to_string(), Kind::KindStar, Box::new(fun));
+                fun = Term::TermTypeAbs(param.ident.to_string(), param.ident.convert_kind(), Box::new(fun));
             }
 
             body = Term::Let(format!("{}::{}", &name, item.ident.to_string()), Box::new(fun), Box::new(body));
@@ -155,7 +155,7 @@ mod tests {
 
     use crate::item::MiniImpl;
     use crate::stmt::MiniBlock;
-    use crate::ToSystemFOmegaTerm;
+    use crate::ToMiniIrTerm;
 
     #[test]
     fn simple_impl() {

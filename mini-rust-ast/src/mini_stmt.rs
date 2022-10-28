@@ -8,7 +8,7 @@ use syn::token::{Let, Semi};
 
 use mini_ir::Term;
 
-use crate::{MiniItem, ToSystemFOmegaTerm, ToSystemFOmegaType};
+use crate::{MiniItem, ToMiniIrTerm, ToMiniIrType};
 use crate::mini_expr::MiniExpr;
 use crate::mini_pat::{MiniPat, multi_pat_with_leading_vert};
 
@@ -119,7 +119,7 @@ fn stmt_expr(
 }
 
 
-impl ToSystemFOmegaTerm for MiniStmt {
+impl ToMiniIrTerm for MiniStmt {
     fn convert_term(&self) -> Term {
         match self {
             MiniStmt::Local { let_token, pat, eq_token, expr, semi_token } => {
@@ -166,7 +166,7 @@ mod tests {
 
     use mini_ir::{Context, Substitutions, type_of};
 
-    use crate::{MiniStmt, ToSystemFOmegaTerm};
+    use crate::{MiniStmt, ToMiniIrTerm};
 
     #[test]
     fn parse_local_simple() {

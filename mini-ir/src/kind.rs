@@ -16,7 +16,7 @@ impl Display for Kind {
             Kind::KindStar => write!(f, "{}", colorize_string("<bright-blue><b>*</>")),
             Kind::KindArrow(k1, k2) => {
                 let colored = format!("{} <bright-blue><b>=></> {}", k1, k2);
-                write!(f, "{}", colorize_string(colored))
+                write!(f, "({})", colorize_string(colored))
             }
         }
     }

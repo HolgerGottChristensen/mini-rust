@@ -6,7 +6,7 @@ use syn::{GenericArgument, Path, PathArguments};
 
 use mini_ir::Type as FType;
 
-use crate::{MiniType, PATH_COLOR, ToSystemFOmegaType};
+use crate::{MiniType, PATH_COLOR, ToMiniIrType};
 
 #[derive(PartialEq, Clone)]
 pub struct MiniPath(pub Path);

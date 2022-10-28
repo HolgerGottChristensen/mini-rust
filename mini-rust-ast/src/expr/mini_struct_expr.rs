@@ -7,7 +7,7 @@ use syn::punctuated::Punctuated;
 
 use mini_ir::{Term, Type};
 
-use crate::{MiniIdent, ToSystemFOmegaTerm};
+use crate::{MiniIdent, ToMiniIrTerm};
 use crate::mini_expr::MiniExpr;
 use crate::mini_path::MiniPath;
 
@@ -78,7 +78,7 @@ pub fn expr_struct_helper(input: ParseStream, path: Path) -> syn::Result<MiniExp
     })
 }
 
-impl ToSystemFOmegaTerm for MiniExprStruct {
+impl ToMiniIrTerm for MiniExprStruct {
     fn convert_term(&self) -> Term {
         let fields = self.fields.iter().map(|f| {
             // Todo: Handle paths with generics applied

@@ -53,10 +53,14 @@ pub fn mini_rust_to_mini_ir(input: TokenStream) -> TokenStream {
     tokens.into()
 }
 
-pub(crate) trait ToSystemFOmegaTerm {
+pub(crate) trait ToMiniIrTerm {
     fn convert_term(&self) -> Term;
 }
 
-pub(crate) trait ToSystemFOmegaType {
+pub(crate) trait ToMiniIrType {
     fn convert_type(&self) -> mini_ir::Type;
+}
+
+pub(crate) trait ToMiniIrKind {
+    fn convert_kind(&self) -> mini_ir::Kind;
 }

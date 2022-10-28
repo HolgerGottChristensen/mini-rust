@@ -1,7 +1,7 @@
 use mini_ir::Term;
 
 use crate::mini_expr::{MiniBinOp, MiniExpr};
-use crate::ToSystemFOmegaTerm;
+use crate::ToMiniIrTerm;
 
 #[derive(PartialEq, Clone, Debug)]
 pub struct MiniExprBinary {
@@ -10,7 +10,7 @@ pub struct MiniExprBinary {
     pub right: Box<MiniExpr>,
 }
 
-impl ToSystemFOmegaTerm for MiniExprBinary {
+impl ToMiniIrTerm for MiniExprBinary {
     fn convert_term(&self) -> Term {
         let function_name = self.op.name();
 

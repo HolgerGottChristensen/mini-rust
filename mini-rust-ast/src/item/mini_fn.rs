@@ -12,7 +12,7 @@ use mini_ir::{BaseType, Context, Kind, Substitutions, Term, type_of};
 use mini_ir::Type as FType;
 use mini_ir::Type::TypeVar;
 
-use crate::{MiniGenerics, MiniIdent, MiniType, ToSystemFOmegaTerm, ToSystemFOmegaType};
+use crate::{MiniGenerics, MiniIdent, MiniType, ToMiniIrKind, ToMiniIrTerm, ToMiniIrType};
 use crate::stmt::MiniBlock;
 
 #[derive(PartialEq, Clone)]
@@ -185,13 +185,13 @@ impl Parse for MiniFnArg {
     }
 }
 
-impl ToSystemFOmegaType for MiniFn {
+impl ToMiniIrType for MiniFn {
     fn convert_type(&self) -> FType {
-        type_of(&Context::new(), ToSystemFOmegaTerm::convert_term(self), &mut Substitutions::new()).unwrap()
+        type_of(&Context::new(), ToMiniIrTerm::convert_term(self), &mut Substitutions::new()).unwrap()
     }
 }
 
-impl ToSystemFOmegaTerm for MiniFn {
+impl ToMiniIrTerm for MiniFn {
     fn convert_term(&self) -> Term {
         let mut body = self.block.convert_term();
 
@@ -250,7 +250,7 @@ impl ToSystemFOmegaTerm for MiniFn {
         // Todo: How will we handle generic bounds?
         // Add generics as TypeAbs
         for generic in self.generics.params.iter().rev() {
-            body = Term::TermTypeAbs(generic.ident.0.to_string(), Kind::KindStar, Box::new(body));
+            body = Term::TermTypeAbs(generic.ident.to_string(), generic.ident.convert_kind(), Box::new(body));
         }
 
         body
@@ -262,7 +262,7 @@ mod tests {
 
     use mini_ir::{Context, Substitutions, type_of};
 
-    use crate::{MiniFn, ToSystemFOmegaTerm};
+    use crate::{MiniFn, ToMiniIrTerm};
     use crate::stmt::MiniBlock;
 
     #[test]
@@ -418,6 +418,63 @@ mod tests {
         // Arrange
         let mini: MiniFn = parse_quote!(
              fn hello<T>(arg1: T) {}
+        );
+
+        println!("\n{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+
+        println!("\nLambda:\n{}", &converted);
+        println!("\nType:\n{}", type_of(&Context::new(), converted, &mut Substitutions::new()).unwrap());
+
+        // Assert
+        //assert!(matches!(actual, CarbideExpr::Lit(LitExpr {lit: Lit::Int(_)})))
+    }
+
+    #[test]
+    fn parse_fn_HKT() {
+        // Arrange
+        let mini: MiniFn = parse_quote!(
+             fn hello<T<U>>() {}
+        );
+
+        println!("\n{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+
+        println!("\nLambda:\n{}", &converted);
+        println!("\nType:\n{}", type_of(&Context::new(), converted, &mut Substitutions::new()).unwrap());
+
+        // Assert
+        //assert!(matches!(actual, CarbideExpr::Lit(LitExpr {lit: Lit::Int(_)})))
+    }
+
+    #[test]
+    fn parse_fn_HKT_nested() {
+        // Arrange
+        let mini: MiniFn = parse_quote!(
+             fn hello<T<U<I>>>() {}
+        );
+
+        println!("\n{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+
+        println!("\nLambda:\n{}", &converted);
+        println!("\nType:\n{}", type_of(&Context::new(), converted, &mut Substitutions::new()).unwrap());
+
+        // Assert
+        //assert!(matches!(actual, CarbideExpr::Lit(LitExpr {lit: Lit::Int(_)})))
+    }
+
+    #[test]
+    fn parse_fn_HKT_multiple() {
+        // Arrange
+        let mini: MiniFn = parse_quote!(
+             fn hello<T<U, I>>() {}
         );
 
         println!("\n{:#?}", &mini);

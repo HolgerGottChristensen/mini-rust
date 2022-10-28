@@ -5,7 +5,7 @@ use syn::parse::{Parse, ParseStream};
 
 use mini_ir::Term;
 
-use crate::{MiniStmt, parse_stmt, ToSystemFOmegaTerm};
+use crate::{MiniStmt, parse_stmt, ToMiniIrTerm};
 
 #[derive(PartialEq, Clone)]
 pub struct MiniBlock {
@@ -56,7 +56,7 @@ pub fn parse_within(input: ParseStream) -> syn::Result<Vec<MiniStmt>> {
     Ok(stmts)
 }
 
-impl ToSystemFOmegaTerm for MiniBlock {
+impl ToMiniIrTerm for MiniBlock {
     fn convert_term(&self) -> Term {
         // Check if there are any statements. If not, return unit.
         if self.stmts.len() > 0 {

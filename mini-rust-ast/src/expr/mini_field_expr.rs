@@ -3,7 +3,7 @@ use syn::{Member, Token};
 use mini_ir::Term;
 
 use crate::mini_expr::MiniExpr;
-use crate::ToSystemFOmegaTerm;
+use crate::ToMiniIrTerm;
 
 #[derive(PartialEq, Clone, Debug)]
 pub struct MiniExprField {
@@ -12,7 +12,7 @@ pub struct MiniExprField {
     pub member: Member,
 }
 
-impl ToSystemFOmegaTerm for MiniExprField {
+impl ToMiniIrTerm for MiniExprField {
     fn convert_term(&self) -> Term {
         match &self.member {
             Member::Named(named) => {

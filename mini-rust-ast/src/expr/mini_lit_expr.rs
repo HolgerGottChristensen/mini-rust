@@ -7,7 +7,7 @@ use syn::parse::{Parse, ParseStream};
 
 use mini_ir::Term;
 
-use crate::ToSystemFOmegaTerm;
+use crate::ToMiniIrTerm;
 
 #[derive(PartialEq, Clone)]
 pub struct MiniLitExpr {
@@ -31,7 +31,7 @@ impl Parse for MiniLitExpr {
     }
 }
 
-impl ToSystemFOmegaTerm for MiniLitExpr {
+impl ToMiniIrTerm for MiniLitExpr {
     fn convert_term(&self) -> Term {
         match &self.lit {
             Lit::Str(_) => todo!(),
@@ -61,7 +61,7 @@ mod tests {
 
     use mini_ir::{Context, kind_of, Substitutions, Term, type_of};
 
-    use crate::{MiniLitExpr, ToSystemFOmegaTerm};
+    use crate::{MiniLitExpr, ToMiniIrTerm};
 
     #[test]
     fn parse_lit_int() {

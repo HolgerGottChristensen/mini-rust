@@ -1,7 +1,8 @@
 use std::collections::HashMap;
-use std::fmt::{Display, Formatter};
+use std::fmt::{Display, format, Formatter};
+use std::sync::atomic::{AtomicU32, Ordering};
 
-use crate::{Context, get_color};
+use crate::{Context, get_color, TypeVar};
 use crate::base_type::BaseType;
 use crate::constraint::Constraint;
 use crate::kind::Kind;
@@ -166,6 +167,11 @@ impl Type {
             Type::Reference(b) => format!("&{}", b.to_string_type(context, color)),
             t => format!("{}{}{}", get_color(color, "("), t.to_string_type(context, color + 1), get_color(color, ")"))
         }
+    }
+
+    pub fn new_unique_var() -> Type {
+        static COUNTER: AtomicU32 = AtomicU32::new(0);
+        TypeVar(format!("#NEW{}", COUNTER.fetch_add(1, Ordering::Relaxed)))
     }
 }
 

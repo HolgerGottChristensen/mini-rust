@@ -4,7 +4,7 @@ use mini_ir::{Term};
 
 use crate::mini_expr::MiniExpr;
 use crate::mini_path::MiniPath;
-use crate::ToSystemFOmegaTerm;
+use crate::ToMiniIrTerm;
 
 #[derive(PartialEq, Clone, Debug)]
 pub struct MiniExprAssign {
@@ -13,7 +13,7 @@ pub struct MiniExprAssign {
     pub right: Box<MiniExpr>,
 }
 
-impl ToSystemFOmegaTerm for MiniExprAssign {
+impl ToMiniIrTerm for MiniExprAssign {
     fn convert_term(&self) -> Term {
         let ident = match &*self.left {
             MiniExpr::Path(p) => {
@@ -35,7 +35,7 @@ mod tests {
 
     use mini_ir::{BaseType, Context, kind_of, Substitutions, Type, type_of};
 
-    use crate::ToSystemFOmegaTerm;
+    use crate::ToMiniIrTerm;
     use crate::stmt::MiniBlock;
 
     #[test]

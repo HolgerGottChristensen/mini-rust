@@ -4,7 +4,7 @@ use syn::punctuated::Punctuated;
 use mini_ir::Term;
 
 use crate::mini_expr::MiniExpr;
-use crate::ToSystemFOmegaTerm;
+use crate::ToMiniIrTerm;
 
 #[derive(PartialEq, Clone, Debug)]
 pub struct MiniExprTuple {
@@ -12,7 +12,7 @@ pub struct MiniExprTuple {
     pub elems: Punctuated<MiniExpr, Token![,]>,
 }
 
-impl ToSystemFOmegaTerm for MiniExprTuple {
+impl ToMiniIrTerm for MiniExprTuple {
     fn convert_term(&self) -> Term {
         if self.elems.iter().count() == 0 {
             Term::Unit

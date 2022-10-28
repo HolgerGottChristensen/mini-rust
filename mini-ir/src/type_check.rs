@@ -32,7 +32,7 @@ pub fn type_of(context: &Context, term: Term, substitutions: &mut Substitutions)
             let mut t2 = type_of(context, *term2, substitutions)?;
             let mut t1 = type_of(context, *term1, substitutions)?;
 
-            let mut result = TypeArrow(Box::new(t2.clone()), Box::new(TypeVar("#NEW".to_string())));
+            let mut result = TypeArrow(Box::new(t2.clone()), Box::new(Type::new_unique_var()));
 
             result = unify(context, substitutions, t1, result, vec![], vec![])?;
 

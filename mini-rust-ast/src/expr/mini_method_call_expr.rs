@@ -3,7 +3,7 @@ use syn::punctuated::Punctuated;
 
 use mini_ir::Term;
 
-use crate::{MiniIdent, ToSystemFOmegaTerm};
+use crate::{MiniIdent, ToMiniIrTerm};
 use crate::mini_expr::MiniExpr;
 
 #[derive(PartialEq, Clone, Debug)]
@@ -16,7 +16,7 @@ pub struct MiniExprMethodCall {
     pub args: Punctuated<MiniExpr, Token![,]>,
 }
 
-impl ToSystemFOmegaTerm for MiniExprMethodCall {
+impl ToMiniIrTerm for MiniExprMethodCall {
     fn convert_term(&self) -> Term {
         todo!()
     }

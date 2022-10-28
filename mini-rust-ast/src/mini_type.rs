@@ -9,7 +9,7 @@ use mini_ir::BaseType;
 use mini_ir::Type as FType;
 use mini_ir::Type::TypeApp;
 
-use crate::{ToSystemFOmegaTerm, ToSystemFOmegaType, TYPE_COLOR};
+use crate::{ToMiniIrTerm, ToMiniIrType, TYPE_COLOR};
 use crate::mini_path::MiniPath;
 
 #[derive(PartialEq, Clone)]
@@ -37,7 +37,7 @@ impl Debug for MiniType {
     }
 }
 
-impl ToSystemFOmegaType for MiniType {
+impl ToMiniIrType for MiniType {
     fn convert_type(&self) -> FType {
         match &self.0 {
             Type::BareFn(p) => {
@@ -119,7 +119,7 @@ mod tests {
 
     use mini_ir::{BaseType, Context, kind_of, Type as FType, Type};
 
-    use crate::{MiniType, ToSystemFOmegaType};
+    use crate::{MiniType, ToMiniIrType};
 
     #[test]
     fn convert_unit() {

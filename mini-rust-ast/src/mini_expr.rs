@@ -9,7 +9,7 @@ use syn::punctuated::Punctuated;
 
 use mini_ir::Term;
 
-use crate::{expr_ret, expr_struct_helper, MiniExprAssign, MiniExprBinary, MiniExprBlock, MiniExprBox, MiniExprCall, MiniExprField, MiniExprMatch, MiniExprMethodCall, MiniExprParen, MiniExprPath, MiniExprReference, MiniExprReturn, MiniExprStruct, MiniExprTuple, MiniExprUnary, MiniExprWhile, MiniIdent, parse_expr_box, parse_expr_unary, ToSystemFOmegaTerm};
+use crate::{expr_ret, expr_struct_helper, MiniExprAssign, MiniExprBinary, MiniExprBlock, MiniExprBox, MiniExprCall, MiniExprField, MiniExprMatch, MiniExprMethodCall, MiniExprParen, MiniExprPath, MiniExprReference, MiniExprReturn, MiniExprStruct, MiniExprTuple, MiniExprUnary, MiniExprWhile, MiniIdent, parse_expr_box, parse_expr_unary, ToMiniIrTerm};
 use crate::expr::MiniLitExpr;
 
 #[derive(PartialEq, Clone)]
@@ -672,7 +672,7 @@ impl MiniExpr {
     });
 }
 
-impl ToSystemFOmegaTerm for MiniExpr {
+impl ToMiniIrTerm for MiniExpr {
     fn convert_term(&self) -> Term {
         match self {
             MiniExpr::Assign(l) => l.convert_term(),
@@ -703,7 +703,7 @@ mod tests {
 
     use mini_ir::{BaseType, Binding, Context, kind_of, Substitutions, Term, Type, type_of};
 
-    use crate::ToSystemFOmegaTerm;
+    use crate::ToMiniIrTerm;
     use crate::mini_expr::MiniExpr;
 
     #[test]

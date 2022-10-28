@@ -9,7 +9,7 @@ use syn::token::{Brace, Colon, Comma, Struct};
 
 use mini_ir::{BaseType, Kind, Term, Type as FType};
 
-use crate::{MiniEnum, MiniGenerics, MiniIdent, MiniType, ToSystemFOmegaTerm, ToSystemFOmegaType};
+use crate::{MiniEnum, MiniGenerics, MiniIdent, MiniType, ToMiniIrKind, ToMiniIrTerm, ToMiniIrType};
 
 #[derive(PartialEq, Clone)]
 pub struct MiniStruct {
@@ -96,14 +96,14 @@ impl Parse for MiniStructField {
 }
 
 
-impl ToSystemFOmegaTerm for MiniStruct {
+impl ToMiniIrTerm for MiniStruct {
     fn convert_term(&self) -> Term {
         Term::Define(self.ident.0.to_string(), self.convert_type(), Box::new(Term::Unit))
     }
 }
 
 // Todo: Add a field that uniquely identifies a struct
-impl ToSystemFOmegaType for MiniStruct {
+impl ToMiniIrType for MiniStruct {
     fn convert_type(&self) -> FType {
         let map = self.fields.iter().map(|field| {
             let case = MiniType(field.ty.clone()).convert_type();
@@ -125,7 +125,7 @@ impl ToSystemFOmegaType for MiniStruct {
         }*/
         // Add generics as TypeAbs
         for generic in self.generics.params.iter().rev() {
-            body = FType::TypeAbs(generic.ident.0.to_string(), Kind::KindStar, Box::new(body));
+            body = FType::TypeAbs(generic.ident.to_string(), generic.ident.convert_kind(), Box::new(body));
         }
 
         body
@@ -138,7 +138,7 @@ mod tests {
 
     use mini_ir::{BaseType, Binding, Context, kind_of, Substitutions, type_of};
 
-    use crate::{MiniStruct, ToSystemFOmegaTerm, ToSystemFOmegaType};
+    use crate::{MiniStruct, ToMiniIrTerm, ToMiniIrType};
     use crate::mini_expr::MiniExpr;
 
     #[test]

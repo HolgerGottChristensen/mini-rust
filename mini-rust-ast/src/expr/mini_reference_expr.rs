@@ -3,7 +3,7 @@ use syn::Token;
 use mini_ir::Term;
 
 use crate::mini_expr::MiniExpr;
-use crate::ToSystemFOmegaTerm;
+use crate::ToMiniIrTerm;
 
 #[derive(PartialEq, Clone, Debug)]
 pub struct MiniExprReference {
@@ -12,7 +12,7 @@ pub struct MiniExprReference {
     pub expr: Box<MiniExpr>,
 }
 
-impl ToSystemFOmegaTerm for MiniExprReference {
+impl ToMiniIrTerm for MiniExprReference {
     fn convert_term(&self) -> Term {
         Term::Reference(Box::new(self.expr.convert_term())) // todo: Consider mutability
     }

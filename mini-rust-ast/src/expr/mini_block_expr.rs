@@ -4,7 +4,7 @@ use syn::parse::{Parse, ParseStream};
 use mini_ir::Term;
 
 use crate::stmt::{MiniBlock, parse_within};
-use crate::ToSystemFOmegaTerm;
+use crate::ToMiniIrTerm;
 
 #[derive(PartialEq, Clone, Debug)]
 pub struct MiniExprBlock {
@@ -24,7 +24,7 @@ impl Parse for MiniExprBlock {
     }
 }
 
-impl ToSystemFOmegaTerm for MiniExprBlock {
+impl ToMiniIrTerm for MiniExprBlock {
     fn convert_term(&self) -> Term {
         self.block.convert_term()
     }
