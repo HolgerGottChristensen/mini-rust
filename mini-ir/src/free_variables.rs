@@ -1,8 +1,7 @@
-use std::collections::{BTreeSet, HashMap, HashSet};
-use std::collections::hash_map::RandomState;
-use crate::{Context, get_type, get_type_safe, Term, Type, type_equivalence, type_substitution};
+use std::collections::HashSet;
+use crate::Term;
+use crate::types::Type;
 
-// Todo: Get free variables from types
 pub fn free_term_variables(term: Term) -> HashSet<String> {
     match term {
         Term::TermVar(x) => HashSet::from([x]),
@@ -80,207 +79,14 @@ pub fn free_type_variables(typ: Type) -> HashSet<String> {
         Type::Qualified(x, t1) => free_type_variables(*t1),
     }
 }
-//
-// /// Check if T2 is a specialization of T1, formally: T1 ⊑ T2
-// pub fn type_specialization(t1: Type, t2: Type, context: &Context) -> bool {
-//
-//     // ∀X1...∀Xn. (x1 :: r).(xn :: r). T1
-//     let (prefixed_t1, rest1) = prefixed_for_all_vars(t1.clone()); // [X1, X2, ..., Xn]  |  (x1 :: r).(xn :: r). T1
-//     let (prefixed_t2, rest2) = prefixed_for_all_vars(t2.clone());
-//     let fv_t1 = free_type_variables(t1.clone());
-//
-//     // Check (1) that no variables in T2 is free variables in T1
-//     for p in &prefixed_t2 {
-//         if fv_t1.contains(p) {
-//             panic!("The forall variables in T2 must not be a free variable in T1")
-//         }
-//     }
-//
-//     // Check (2) create a list of substitution for T1 that makes it equal T2
-//     let substitutions = substitutions(rest1.clone(), rest2.clone(), &prefixed_t1);
-//
-//
-//     // Check if there are any conflicting substitutions
-//     let hashmap = HashMap::<String, Type, RandomState>::from_iter(substitutions.clone());
-//     for (lab, typ) in &substitutions {
-//         let t = &hashmap[lab];
-//         if !type_equivalence(context, typ.clone(), t.clone()) {
-//             panic!("There are conflicting substitutions in the list, hence t2 is not a specialization of t1")
-//         }
-//     }
-//
-//
-//     //dbg!(&rest1);
-//     // Apply substitutions to t1
-//     let mut new_t1 = rest1;
-//     let mut new_t2 = rest2;
-//
-//     for (k, v) in &hashmap {
-//         new_t1 = type_substitution(k, v.clone(), new_t1);
-//     }
-//     //dbg!(&new_t1);
-//
-//
-//     // (x1 :: r).(xn :: r). T1
-//     let (predicates_t1, rest1) = prefixed_predicates(new_t1.clone()); // [(x1 :: r), ..., (xn :: r)] | T1
-//     let (predicates_t2, rest2) = prefixed_predicates(new_t2.clone()); // [(x1 :: r), ..., (xn :: r)] | T2
-//
-//     //dbg!(&predicates_t1);
-//     //dbg!(&predicates_t2);
-//
-//     let predicates_t1 = predicates_t1.iter().filter(|(a, ty1)| {
-//         let mut keep = true;
-//
-//         // If the predicate is in both types, we can remove it from the list.
-//         for (b, ty2) in &predicates_t2 {
-//             if a == b && type_equivalence(context, ty1.clone(), ty2.clone()) {
-//                 keep = false;
-//             }
-//         }
-//
-//         keep
-//     }).cloned().collect::<Vec<_>>();
-//
-//     //dbg!(&predicates_t1);
-//
-//     let predicates_t1 = predicates_t1.iter().filter(|(a, ty1)| {
-//         let mut keep = true;
-//
-//         // If the type is defined in the context with the expected type, we can remove it.
-//         match get_type_safe(context, a) {
-//             Ok(context_type) => {
-//                 if type_equivalence(context, context_type, ty1.clone()) {
-//                     keep = false;
-//                 }
-//             }
-//             Err(_) => {}
-//         }
-//
-//         //dbg!(context);
-//         // If the type is defined in an inst, we can remove it if the inst type is more general than the expected type.
-//         /*match get_inst(context, a) {
-//             Ok(ctx_type) => {
-//
-//                 if type_specialization(ctx_type, ty1.clone(), context) {
-//                     keep = false;
-//                 }
-//             }
-//             Err(_) => {}
-//         }*/
-//
-//         keep
-//     }).cloned().collect::<Vec<_>>();
-//
-//     //dbg!(&predicates_t1);
-//
-//     if predicates_t1.len() != 0 {
-//         panic!("We expected the predicates list to be empty");
-//     }
-//
-//     if !type_equivalence(context, rest1.clone(), rest2.clone()) {
-//         panic!("The rest of t1: {} and t2: {}, are not equal", &rest1, &rest2);
-//     }
-//
-//     true
-// }
 
-//
-// pub fn substitutions(t1: Type, t2: Type, allowed_substitutions: &Vec<String>) -> Vec<(String, Type)> {
-//     match (t1, t2) {
-//         (Type::TypeVar(x), t) if allowed_substitutions.contains(&x) => vec![(x, t)],
-//         (Type::TypeVar(x1), Type::TypeVar(x2)) => {
-//             if x1 != x2 {
-//                 panic!("Could not provide a substitution since the type vars are different");
-//             }
-//
-//             vec![]
-//         }
-//         (Type::Base(b1), Type::Base(b2)) if b1 == b2 => {
-//             vec![]
-//         }
-//         (Type::Tuple(v1), Type::Tuple(v2)) => {
-//             let mut subs = vec![];
-//
-//             for (g1, g2) in v1.into_iter().zip(v2.into_iter()) {
-//                 subs.extend(substitutions(g1, g2, allowed_substitutions))
-//             }
-//
-//             subs
-//         }
-//         (Type::Record(h1), Type::Record(h2)) |
-//         (Type::Variants(h1), Type::Variants(h2)) => {
-//             let mut subs = vec![];
-//
-//             for (k1, v1) in &h1 {
-//                 if let Some(v2) = h2.get(k1) {
-//                     subs.extend(substitutions(v1.clone(), v2.clone(), allowed_substitutions))
-//                 } else {
-//                     panic!("The fields does not match and are therefore not unifiable.")
-//                 }
-//             }
-//
-//             subs
-//         }
-//         (Type::TypeApp(t11, t12), Type::TypeApp(t21, t22)) |
-//         (Type::TypeArrow(t11, t12), Type::TypeArrow(t21, t22)) => {
-//             let mut subs = vec![];
-//
-//             subs.extend(substitutions(*t11, *t21, allowed_substitutions));
-//             subs.extend(substitutions(*t12, *t22, allowed_substitutions));
-//
-//             subs
-//         }
-//         (Type::Reference(t1), Type::Reference(t2)) => substitutions(*t1, *t2, allowed_substitutions),
-//         (Type::TypeAbs(x1, k1, t1), Type::TypeAbs(x2, k2, t2)) |
-//         (Type::Existential(x1, k1, t1), Type::Existential(x2, k2, t2)) |
-//         (Type::Recursive(x1, k1, t1), Type::Recursive(x2, k2, t2)) |
-//         (Type::TypeAll(x1, k1, t1), Type::TypeAll(x2, k2, t2)) => {
-//             assert_eq!(k1, k2);
-//
-//             if x1 != x2 {
-//                 panic!("The ForAll/Existential/Recursive labels are not equal")
-//             }
-//
-//             let mut new_allowed = allowed_substitutions.iter().cloned().filter(|i| i != &x1).collect::<Vec<_>>();
-//             substitutions(*t1, *t2, &new_allowed)
-//         }
-//         (Type::Predicate(x1, t11, t12), Type::Predicate(x2, t21, t22)) => {
-//             if x1 != x2 {
-//                 panic!("The predicate labels are not equal")
-//             }
-//
-//             let mut subs = vec![];
-//             subs.extend(substitutions(*t11, *t21, allowed_substitutions));
-//             subs.extend(substitutions(*t12, *t22, allowed_substitutions));
-//             subs
-//         }
-//         (Type::Predicate(x1, t1, t2), t3) => {
-//             let mut subs = vec![];
-//             subs.extend(substitutions(*t1, t3.clone(), allowed_substitutions));
-//             subs.extend(substitutions(*t2, t3.clone(), allowed_substitutions));
-//             subs
-//         }
-//         (t1, t2) => panic!("The type {} are not equal to {} with the allowed_substitutions: {:?}", t1, t2, &allowed_substitutions)
-//     }
-// }
-//
-// pub fn prefixed_for_all_vars(t: Type) -> (Vec<String>, Type) {
-//     let mut vars = vec![];
-//     let mut current = t;
-//
-//     while let Type::TypeAll(x, _, inner) = current {
-//         vars.push(x);
-//         current = *inner;
-//     }
-//
-//     (vars, current)
-// }
-//
 mod tests {
-    use std::collections::{HashMap, HashSet};
+    use std::collections::HashSet;
     use crate::free_variables::{free_term_variables, free_type_variables};
-    use crate::{BaseType, Binding, Context, Term, Type};
-    use crate::Kind::KindStar;
+    use crate::Term;
+    use crate::base_type::BaseType;
+    use crate::kind::Kind::KindStar;
+    use crate::types::Type;
 
 
     #[test]

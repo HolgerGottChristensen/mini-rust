@@ -1,19 +1,30 @@
-mod datatypes;
-mod context_management;
-mod eval;
+mod term;
+mod context;
+mod kind_check;
 mod free_variables;
 mod dependency_graph;
 mod unify;
+mod util;
+mod binding;
+mod substitutions;
+mod kind;
+mod base_type;
+mod constraint;
+mod types;
+mod type_check;
+mod type_util;
 
 use std::collections::HashMap;
-pub use datatypes::*;
-pub use context_management::*;
-pub use eval::*;
+pub use term::*;
+pub use context::*;
+pub use util::*;
+pub use kind_check::*;
+use substitutions::Substitutions;
 pub use unify::*;
-use crate::BaseType::Int;
-use crate::Kind::KindStar;
-use crate::Term::{TermAbs, TermApp, TermTypeAbs, TermVar};
-use crate::Type::{Existential, TypeArrow, TypeVar};
+use base_type::BaseType::Int;
+use types::*;
+use type_check::type_of;
+use crate::types::Type::TypeVar;
 
 #[test]
 fn overload() {
