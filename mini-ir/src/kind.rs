@@ -1,4 +1,5 @@
 use std::fmt::{Display, Formatter};
+
 use paris::formatter::colorize_string;
 
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Debug, Hash)]

@@ -1,10 +1,12 @@
 use std::fmt::{Debug, Formatter};
+
 use proc_macro2::Ident;
-use syn::punctuated::Punctuated;
-use syn::{GenericParam, Generics, Token, TypeParamBound, WhereClause};
+use syn::{Token, WhereClause};
 use syn::ext::IdentExt;
 use syn::parse::{Parse, ParseStream};
-use crate::{MiniIdent, MiniTrait, TraitBound};
+use syn::punctuated::Punctuated;
+
+use crate::{MiniIdent, TraitBound};
 
 #[derive(PartialEq, Clone)]
 pub struct MiniGenerics {

@@ -1,6 +1,7 @@
 use std::collections::HashMap;
-use crate::{Context};
+
 use crate::constraint::Constraint;
+use crate::Context;
 use crate::substitutions::Substitutions;
 use crate::types::Type;
 use crate::types::Type::TypeVar;

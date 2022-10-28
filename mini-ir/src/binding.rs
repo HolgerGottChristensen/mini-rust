@@ -1,7 +1,8 @@
 use std::collections::HashMap;
-use crate::Term;
+
 use crate::constraint::Constraint;
 use crate::kind::Kind;
+use crate::Term;
 use crate::types::Type;
 
 #[derive(Clone, Debug)]

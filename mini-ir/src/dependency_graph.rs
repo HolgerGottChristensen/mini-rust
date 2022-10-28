@@ -1,4 +1,3 @@
-use std::collections::VecDeque;
 use crate::Term;
 
 pub struct Graph<T> {

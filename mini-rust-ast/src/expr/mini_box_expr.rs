@@ -1,5 +1,6 @@
 use syn::parse::ParseStream;
 use syn::Token;
+
 use crate::mini_expr::{AllowStruct, MiniExpr};
 
 #[derive(PartialEq, Clone, Debug)]

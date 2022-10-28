@@ -1,3 +1,17 @@
+use std::collections::HashMap;
+
+use base_type::BaseType::Int;
+pub use context::*;
+pub use kind_check::*;
+use substitutions::Substitutions;
+pub use term::*;
+use type_check::type_of;
+use types::*;
+pub use unify::*;
+pub use util::*;
+
+use crate::types::Type::TypeVar;
+
 mod term;
 mod context;
 mod kind_check;
@@ -13,18 +27,6 @@ mod constraint;
 mod types;
 mod type_check;
 mod type_util;
-
-use std::collections::HashMap;
-pub use term::*;
-pub use context::*;
-pub use util::*;
-pub use kind_check::*;
-use substitutions::Substitutions;
-pub use unify::*;
-use base_type::BaseType::Int;
-use types::*;
-use type_check::type_of;
-use crate::types::Type::TypeVar;
 
 #[test]
 fn overload() {

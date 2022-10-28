@@ -1,6 +1,8 @@
-use syn::punctuated::Punctuated;
 use syn::{token, Token};
+use syn::punctuated::Punctuated;
+
 use mini_ir::Term;
+
 use crate::mini_expr::MiniExpr;
 use crate::ToSystemFOmegaTerm;
 

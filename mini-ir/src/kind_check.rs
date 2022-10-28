@@ -1,4 +1,4 @@
-use crate::{Context, Term};
+use crate::Context;
 use crate::binding::Binding;
 use crate::kind::Kind;
 use crate::types::Type;

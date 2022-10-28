@@ -1,9 +1,12 @@
 use std::fmt::{Debug, Formatter};
+
 use paris::formatter::colorize_string;
 use quote::ToTokens;
-use syn::{ExprLit, Lit};
+use syn::Lit;
 use syn::parse::{Parse, ParseStream};
+
 use mini_ir::Term;
+
 use crate::ToSystemFOmegaTerm;
 
 #[derive(PartialEq, Clone)]
@@ -54,10 +57,11 @@ impl ToSystemFOmegaTerm for MiniLitExpr {
 }
 
 mod tests {
-    use quote::quote;
     use syn::parse_quote;
+
     use mini_ir::{Context, kind_of, Substitutions, Term, type_of};
-    use crate::{MiniFn, MiniLitExpr, MiniStmt, ToSystemFOmegaTerm};
+
+    use crate::{MiniLitExpr, ToSystemFOmegaTerm};
 
     #[test]
     fn parse_lit_int() {

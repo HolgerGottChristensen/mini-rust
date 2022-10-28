@@ -1,4 +1,5 @@
 use std::collections::HashSet;
+
 use crate::Term;
 use crate::types::Type;
 
@@ -82,12 +83,12 @@ pub fn free_type_variables(typ: Type) -> HashSet<String> {
 
 mod tests {
     use std::collections::HashSet;
-    use crate::free_variables::{free_term_variables, free_type_variables};
-    use crate::Term;
-    use crate::base_type::BaseType;
-    use crate::kind::Kind::KindStar;
-    use crate::types::Type;
 
+    use crate::base_type::BaseType;
+    use crate::free_variables::{free_term_variables, free_type_variables};
+    use crate::kind::Kind::KindStar;
+    use crate::Term;
+    use crate::types::Type;
 
     #[test]
     fn forall_type_var() {

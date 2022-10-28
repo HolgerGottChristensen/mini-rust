@@ -1,7 +1,9 @@
 use std::collections::HashMap;
 use std::fmt::{Debug, Display, Formatter};
-use crate::{Context, get_color};
+
 use paris::formatter::colorize_string;
+
+use crate::{Context, get_color};
 use crate::constraint::Constraint;
 use crate::kind::Kind;
 use crate::types::Type;

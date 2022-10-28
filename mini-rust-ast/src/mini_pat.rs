@@ -1,9 +1,11 @@
 use std::fmt::{Debug, Formatter};
+
 use paris::formatter::colorize_string;
 use quote::ToTokens;
-use syn::parse::ParseStream;
 use syn::{Pat, PatOr, Token};
+use syn::parse::ParseStream;
 use syn::punctuated::Punctuated;
+
 use crate::PAT_COLOR;
 
 pub struct MiniPat(pub Pat);

@@ -1,12 +1,13 @@
 use std::fmt::{Debug, Formatter};
+
 use proc_macro2::Ident;
-use quote::ToTokens;
 use syn::{Path, PathArguments, PathSegment, QSelf, Token, token, Type};
 use syn::ext::IdentExt;
 use syn::parse::{Parse, ParseStream};
 use syn::punctuated::Punctuated;
-use syn::token::Colon2;
+
 use mini_ir::Term;
+
 use crate::mini_path::MiniPath;
 use crate::ToSystemFOmegaTerm;
 

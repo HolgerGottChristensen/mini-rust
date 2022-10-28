@@ -1,10 +1,12 @@
 use std::fmt::{Debug, Formatter};
-use paris::formatter::colorize_string;
-use syn::{braced, ItemImpl, Path, Token, Type, TypePath};
+
+use syn::{braced, Path, Token, Type, TypePath};
 use syn::parse::{Parse, ParseStream};
 use syn::token::{Brace, For, Impl};
+
 use mini_ir::{Kind, Term};
 use mini_ir::Type::{TypeApp, TypeVar};
+
 use crate::{MiniFn, MiniGenerics, MiniType, ToSystemFOmegaTerm};
 use crate::mini_path::MiniPath;
 
@@ -149,10 +151,10 @@ impl ToSystemFOmegaTerm for MiniImpl {
 
 mod tests {
     use syn::parse_quote;
+
     use mini_ir::{Context, kind_of, Substitutions, type_of};
+
     use crate::item::MiniImpl;
-    use crate::mini_expr::MiniExpr;
-    use crate::mini_file::MiniFile;
     use crate::stmt::MiniBlock;
     use crate::ToSystemFOmegaTerm;
 

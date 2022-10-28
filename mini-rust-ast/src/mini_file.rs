@@ -1,5 +1,6 @@
 use syn::parse::{Parse, ParseStream};
-use crate::{MiniItem, ToSystemFOmegaTerm};
+
+use crate::MiniItem;
 
 #[derive(PartialEq, Clone, Debug)]
 pub struct MiniFile {

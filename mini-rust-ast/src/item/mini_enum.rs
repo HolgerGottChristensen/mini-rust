@@ -1,14 +1,15 @@
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
-use paris::formatter::colorize_string;
-use proc_macro2::Ident;
+
 use quote::ToTokens;
-use syn::punctuated::Punctuated;
-use syn::{braced, Field, Generics, parenthesized, Token, Type, ItemEnum, token, WhereClause};
+use syn::{braced, parenthesized, Token, token, Type, WhereClause};
 use syn::parse::{Parse, Parser, ParseStream};
-use syn::token::{Brace, Colon, Comma, Enum, Paren, Struct};
-use mini_ir::{BaseType, Context, Kind, Term, type_of};
+use syn::punctuated::Punctuated;
+use syn::token::{Brace, Comma, Enum, Paren};
+
+use mini_ir::{BaseType, Kind, Term};
 use mini_ir::Type as FType;
+
 use crate::{MiniGenerics, MiniIdent, MiniType, ToSystemFOmegaTerm, ToSystemFOmegaType};
 
 #[derive(PartialEq, Clone)]
@@ -203,12 +204,11 @@ impl ToSystemFOmegaType for MiniEnum {
 }
 
 mod tests {
-    use std::collections::HashMap;
-    use quote::quote;
     use syn::parse_quote;
-    use mini_ir::{BaseType, Binding, Context, kind_of, Substitutions, Term, Type, type_of};
-    use crate::{MiniEnum, MiniExprReference, MiniFn, MiniLitExpr, MiniStmt, ToSystemFOmegaTerm, ToSystemFOmegaType};
-    use crate::mini_expr::MiniExpr;
+
+    use mini_ir::{BaseType, Binding, Context, kind_of, Substitutions, type_of};
+
+    use crate::{MiniEnum, ToSystemFOmegaTerm, ToSystemFOmegaType};
     use crate::stmt::MiniBlock;
 
     #[test]

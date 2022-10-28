@@ -1,14 +1,16 @@
 use std::fmt::{Debug, Formatter};
-use proc_macro2::Ident;
+
 use quote::ToTokens;
-use syn::parse::{Parse, ParseBuffer, ParseStream};
-use syn::{Pat, Path, PatType, Token, token, Type};
+use syn::{Pat, PatType, Token, token, Type};
+use syn::parse::{Parse, ParseStream};
 use syn::parse::discouraged::Speculative;
 use syn::token::{Let, Semi};
-use mini_ir::{Context, kind_of, Term};
+
+use mini_ir::Term;
+
+use crate::{MiniItem, ToSystemFOmegaTerm, ToSystemFOmegaType};
 use crate::mini_expr::MiniExpr;
 use crate::mini_pat::{MiniPat, multi_pat_with_leading_vert};
-use crate::{MiniItem, ToSystemFOmegaTerm, ToSystemFOmegaType};
 
 #[derive(PartialEq, Clone)]
 pub enum MiniStmt {
@@ -160,10 +162,11 @@ impl ToSystemFOmegaTerm for MiniStmt {
 }
 
 mod tests {
-    use quote::quote;
     use syn::parse_quote;
+
     use mini_ir::{Context, Substitutions, type_of};
-    use crate::{MiniFn, MiniStmt, ToSystemFOmegaTerm};
+
+    use crate::{MiniStmt, ToSystemFOmegaTerm};
 
     #[test]
     fn parse_local_simple() {

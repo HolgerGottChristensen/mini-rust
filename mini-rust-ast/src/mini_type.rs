@@ -1,11 +1,14 @@
 use std::fmt::{Debug, Formatter};
+
 use paris::formatter::colorize_string;
 use quote::ToTokens;
+use syn::{ReturnType, Type};
 use syn::parse::{Parse, ParseStream};
-use syn::{Path, ReturnType, Type};
-use mini_ir::{BaseType, Term};
+
+use mini_ir::BaseType;
 use mini_ir::Type as FType;
 use mini_ir::Type::TypeApp;
+
 use crate::{ToSystemFOmegaTerm, ToSystemFOmegaType, TYPE_COLOR};
 use crate::mini_path::MiniPath;
 
@@ -112,9 +115,10 @@ impl ToSystemFOmegaType for MiniType {
 }
 
 mod tests {
-    use quote::quote;
     use syn::parse_quote;
-    use mini_ir::{Context, kind_of, type_of, Type as FType, BaseType, Type};
+
+    use mini_ir::{BaseType, Context, kind_of, Type as FType, Type};
+
     use crate::{MiniType, ToSystemFOmegaType};
 
     #[test]

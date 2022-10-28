@@ -1,12 +1,14 @@
 use std::collections::HashMap;
 use std::iter::once;
-use quote::ToTokens;
-use syn::{Attribute, braced, Expr, ExprPath, FieldValue, Member, Path, token, Token};
+
+use syn::{braced, Path, token, Token};
 use syn::parse::{Parse, ParseStream};
 use syn::punctuated::Punctuated;
+
 use mini_ir::{BaseType, Term, Type};
+
+use crate::{MiniIdent, ToSystemFOmegaTerm};
 use crate::mini_expr::MiniExpr;
-use crate::{MiniExprPath, MiniIdent, ToSystemFOmegaTerm};
 use crate::mini_path::MiniPath;
 
 #[derive(PartialEq, Clone, Debug)]

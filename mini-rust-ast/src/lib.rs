@@ -1,3 +1,19 @@
+use proc_macro::TokenStream;
+
+use quote::quote;
+use syn::parse_macro_input;
+
+use mini_file::*;
+use mini_generics::*;
+use mini_ident::*;
+use mini_ir::Term;
+use mini_item::*;
+use mini_stmt::*;
+use mini_type::*;
+
+use crate::expr::*;
+use crate::item::*;
+
 mod mini_expr;
 mod expr;
 mod mini_item;
@@ -10,20 +26,6 @@ mod mini_ident;
 mod mini_type;
 mod mini_path;
 mod mini_generics;
-
-use proc_macro::TokenStream;
-use mini_ir::{Context, Term, Type, type_of};
-
-use syn::{parse_macro_input, DeriveInput, Expr};
-use quote::quote;
-use crate::expr::*;
-use crate::item::*;
-use mini_item::*;
-use mini_file::*;
-use mini_stmt::*;
-use mini_ident::*;
-use mini_type::*;
-use mini_generics::*;
 
 pub(crate) const IDENT_COLOR: &'static str = "<magenta><i>";
 pub(crate) const TYPE_COLOR: &'static str = "<blue><b>";

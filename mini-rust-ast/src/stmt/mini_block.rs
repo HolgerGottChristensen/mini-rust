@@ -1,7 +1,10 @@
 use std::fmt::{Debug, Formatter};
-use syn::{braced, Stmt, token, Token};
+
+use syn::{braced, token};
 use syn::parse::{Parse, ParseStream};
+
 use mini_ir::Term;
+
 use crate::{MiniStmt, parse_stmt, ToSystemFOmegaTerm};
 
 #[derive(PartialEq, Clone)]

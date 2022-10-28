@@ -1,9 +1,12 @@
 use std::fmt::{Debug, Formatter};
+
 use paris::formatter::colorize_string;
 use quote::ToTokens;
 use syn::{GenericArgument, Path, PathArguments};
-use crate::{MiniType, PATH_COLOR, ToSystemFOmegaType};
+
 use mini_ir::Type as FType;
+
+use crate::{MiniType, PATH_COLOR, ToSystemFOmegaType};
 
 #[derive(PartialEq, Clone)]
 pub struct MiniPath(pub Path);

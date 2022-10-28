@@ -1,13 +1,16 @@
 use std::fmt::{Debug, Formatter};
 use std::mem;
+
 use paris::formatter::colorize_string;
-use proc_macro2::{Ident, Span};
-use syn::{BinOp, Error, Expr, Lit, LitFloat, Member, parenthesized, Path, PathArguments, Token, token};
-use syn::parse::{Parse, ParseBuffer, ParseStream};
+use proc_macro2::Span;
+use syn::{Lit, LitFloat, Member, parenthesized, Path, PathArguments, Token, token};
+use syn::parse::{Parse, ParseStream};
 use syn::punctuated::Punctuated;
+
 use mini_ir::Term;
-use crate::expr::MiniLitExpr;
+
 use crate::{expr_ret, expr_struct_helper, MiniExprAssign, MiniExprBinary, MiniExprBlock, MiniExprBox, MiniExprCall, MiniExprField, MiniExprMatch, MiniExprMethodCall, MiniExprParen, MiniExprPath, MiniExprReference, MiniExprReturn, MiniExprStruct, MiniExprTuple, MiniExprUnary, MiniExprWhile, MiniIdent, parse_expr_box, parse_expr_unary, ToSystemFOmegaTerm};
+use crate::expr::MiniLitExpr;
 
 #[derive(PartialEq, Clone)]
 pub enum MiniExpr {
@@ -698,10 +701,12 @@ impl ToSystemFOmegaTerm for MiniExpr {
 
 mod tests {
     use std::collections::HashMap;
-    use quote::quote;
+
     use syn::parse_quote;
+
     use mini_ir::{BaseType, Binding, Context, kind_of, Substitutions, Term, Type, type_of};
-    use crate::{MiniExprReference, MiniFn, MiniLitExpr, MiniStmt, ToSystemFOmegaTerm};
+
+    use crate::ToSystemFOmegaTerm;
     use crate::mini_expr::MiniExpr;
 
     #[test]

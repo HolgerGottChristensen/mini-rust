@@ -1,4 +1,5 @@
 use mini_ir::Term;
+
 use crate::mini_expr::{MiniBinOp, MiniExpr};
 use crate::ToSystemFOmegaTerm;
 

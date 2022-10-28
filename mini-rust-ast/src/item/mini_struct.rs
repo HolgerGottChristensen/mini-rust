@@ -1,14 +1,15 @@
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 use std::iter::once;
-use proc_macro2::Ident;
-use syn::punctuated::Punctuated;
-use syn::{braced, Field, Token, Type, ItemStruct, WhereClause};
+
+use syn::{braced, Token, Type, WhereClause};
 use syn::parse::{Parse, Parser, ParseStream};
+use syn::punctuated::Punctuated;
 use syn::token::{Brace, Colon, Comma, Struct};
-use crate::{MiniEnum, MiniGenerics, MiniIdent, MiniType, ToSystemFOmegaTerm, ToSystemFOmegaType};
+
 use mini_ir::{BaseType, Kind, Term, Type as FType};
-use crate::mini_path::MiniPath;
+
+use crate::{MiniEnum, MiniGenerics, MiniIdent, MiniType, ToSystemFOmegaTerm, ToSystemFOmegaType};
 
 #[derive(PartialEq, Clone)]
 pub struct MiniStruct {
@@ -133,11 +134,11 @@ impl ToSystemFOmegaType for MiniStruct {
 
 
 mod tests {
-    use std::collections::HashMap;
-    use quote::quote;
     use syn::parse_quote;
-    use mini_ir::{BaseType, Binding, Context, kind_of, Substitutions, Term, Type, type_of};
-    use crate::{MiniEnum, MiniExprReference, MiniFn, MiniLitExpr, MiniStmt, MiniStruct, ToSystemFOmegaTerm, ToSystemFOmegaType};
+
+    use mini_ir::{BaseType, Binding, Context, kind_of, Substitutions, type_of};
+
+    use crate::{MiniStruct, ToSystemFOmegaTerm, ToSystemFOmegaType};
     use crate::mini_expr::MiniExpr;
 
     #[test]

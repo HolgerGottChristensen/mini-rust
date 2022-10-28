@@ -1,6 +1,8 @@
 use syn::parse::ParseStream;
 use syn::Token;
+
 use mini_ir::{Term, Type};
+
 use crate::mini_expr::{AllowStruct, MiniExpr};
 use crate::ToSystemFOmegaTerm;
 

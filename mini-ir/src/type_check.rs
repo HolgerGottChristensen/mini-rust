@@ -1,8 +1,9 @@
 use std::collections::HashMap;
-use crate::constraint::Constraint;
+
 use crate::{Context, Term, unify};
 use crate::base_type::BaseType;
 use crate::binding::Binding;
+use crate::constraint::Constraint;
 use crate::substitutions::Substitutions;
 use crate::type_util::type_substitution;
 use crate::types::Type;

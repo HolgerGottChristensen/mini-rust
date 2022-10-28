@@ -1,5 +1,7 @@
-use syn::{token};
-use mini_ir::{BaseType, Term, Type};
+use syn::token;
+
+use mini_ir::{BaseType, Term};
+
 use crate::mini_expr::MiniExpr;
 use crate::mini_path::MiniPath;
 use crate::ToSystemFOmegaTerm;
@@ -30,8 +32,10 @@ impl ToSystemFOmegaTerm for MiniExprAssign {
 
 mod tests {
     use syn::parse_quote;
+
     use mini_ir::{BaseType, Context, kind_of, Substitutions, Type, type_of};
-    use crate::{ToSystemFOmegaTerm};
+
+    use crate::ToSystemFOmegaTerm;
     use crate::stmt::MiniBlock;
 
     #[test]

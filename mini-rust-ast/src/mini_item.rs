@@ -1,8 +1,11 @@
 use std::fmt::{Debug, Formatter};
+
 use proc_macro2::Span;
-use syn::parse::{Parse, ParseStream};
 use syn::{Error, Token};
+use syn::parse::{Parse, ParseStream};
+
 use mini_ir::{Term, Type};
+
 use crate::{MiniEnum, MiniFn, MiniImpl, MiniStruct, MiniTrait, ToSystemFOmegaTerm, ToSystemFOmegaType};
 
 #[derive(PartialEq, Clone)]

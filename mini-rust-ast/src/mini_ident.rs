@@ -1,7 +1,9 @@
 use std::fmt::{Debug, Formatter};
+
 use paris::formatter::colorize_string;
 use proc_macro2::Ident;
 use syn::parse::{Parse, ParseStream};
+
 use crate::IDENT_COLOR;
 
 #[derive(PartialEq, Clone)]

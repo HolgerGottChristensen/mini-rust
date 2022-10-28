@@ -1,8 +1,9 @@
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
+
+use crate::{Context, get_color};
 use crate::base_type::BaseType;
 use crate::constraint::Constraint;
-use crate::{Context, get_color};
 use crate::kind::Kind;
 
 #[derive(Clone, Debug, PartialEq, Eq)]

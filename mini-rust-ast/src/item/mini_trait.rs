@@ -1,9 +1,10 @@
 use std::fmt::{Debug, Formatter};
-use proc_macro2::Ident;
-use syn::punctuated::Punctuated;
-use syn::{braced, ItemTrait, Path, token, Token};
+
+use syn::{braced, Path, token, Token};
 use syn::parse::{Parse, ParseStream};
+use syn::punctuated::Punctuated;
 use syn::token::{Add, Brace, Colon, Trait};
+
 use crate::{MiniFn, MiniGenerics, MiniIdent};
 use crate::mini_path::MiniPath;
 

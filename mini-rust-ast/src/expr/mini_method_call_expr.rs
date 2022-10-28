@@ -1,9 +1,10 @@
-use proc_macro2::Ident;
 use syn::{Token, token};
 use syn::punctuated::Punctuated;
-use mini_ir::{Term, type_of};
-use crate::mini_expr::MiniExpr;
+
+use mini_ir::Term;
+
 use crate::{MiniIdent, ToSystemFOmegaTerm};
+use crate::mini_expr::MiniExpr;
 
 #[derive(PartialEq, Clone, Debug)]
 pub struct MiniExprMethodCall {

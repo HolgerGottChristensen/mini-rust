@@ -1,17 +1,19 @@
 use std::fmt::{Debug, Formatter};
+
 use paris::formatter::colorize_string;
-use proc_macro2::{Ident, Span};
-use syn::punctuated::Punctuated;
-use syn::{Error, ItemFn, parenthesized, Pat, PatOr, token, Token, Type};
-use syn::parse::{Parse, ParseBuffer, ParseStream};
+use proc_macro2::Span;
+use syn::{Error, parenthesized, token, Token, Type};
+use syn::parse::{Parse, ParseStream};
 use syn::parse::discouraged::Speculative;
+use syn::punctuated::Punctuated;
 use syn::token::{And, Colon, Comma, Mut, Paren, RArrow, SelfValue};
+
 use mini_ir::{BaseType, Context, Kind, Substitutions, Term, type_of};
-use crate::mini_pat::{MiniPat, multi_pat};
-use crate::{MiniGenerics, MiniIdent, MiniType, ToSystemFOmegaTerm, ToSystemFOmegaType};
-use crate::stmt::MiniBlock;
 use mini_ir::Type as FType;
 use mini_ir::Type::TypeVar;
+
+use crate::{MiniGenerics, MiniIdent, MiniType, ToSystemFOmegaTerm, ToSystemFOmegaType};
+use crate::stmt::MiniBlock;
 
 #[derive(PartialEq, Clone)]
 pub struct MiniFn {
@@ -257,9 +259,10 @@ impl ToSystemFOmegaTerm for MiniFn {
 }
 
 mod tests {
-    use quote::quote;
     use syn::parse_quote;
+
     use mini_ir::{Context, Substitutions, type_of};
+
     use crate::{MiniFn, ToSystemFOmegaTerm};
     use crate::stmt::MiniBlock;
 

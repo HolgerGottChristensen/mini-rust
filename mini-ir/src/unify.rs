@@ -1,9 +1,10 @@
 use std::collections::HashMap;
-use crate::Context;
+
 use crate::constraint::Constraint;
-use crate::types::Type;
+use crate::Context;
 use crate::substitutions::Substitutions;
 use crate::type_util::bind_variable;
+use crate::types::Type;
 use crate::types::Type::{Qualified, TypeApp, TypeArrow, TypeVar};
 
 pub fn unify(context: &Context, subs: &mut Substitutions, left: Type, right: Type, left_constraints: Vec<Constraint>, right_constraints: Vec<Constraint>) -> Result<Type, String> {
@@ -207,10 +208,10 @@ pub fn unify(context: &Context, subs: &mut Substitutions, left: Type, right: Typ
 mod tests {
 
     mod base {
-        use crate::base_type::BaseType::{Float, Int};
         use crate::{Context, unify};
-        use crate::types::Type;
+        use crate::base_type::BaseType::{Float, Int};
         use crate::substitutions::Substitutions;
+        use crate::types::Type;
 
         #[test]
         fn success() {
@@ -257,8 +258,8 @@ mod tests {
         use crate::{Context, unify};
         use crate::base_type::BaseType;
         use crate::base_type::BaseType::Int;
-        use crate::types::Type;
         use crate::substitutions::Substitutions;
+        use crate::types::Type;
 
         #[test]
         fn simple_type() {
@@ -342,10 +343,10 @@ mod tests {
     }
 
     mod arrow {
-        use crate::base_type::BaseType::{Bool, Float, Int};
         use crate::{Context, unify};
-        use crate::types::Type;
+        use crate::base_type::BaseType::{Bool, Float, Int};
         use crate::substitutions::Substitutions;
+        use crate::types::Type;
 
         #[test]
         fn simple_arrow() {
@@ -509,10 +510,10 @@ mod tests {
     }
 
     mod reference {
-        use crate::base_type::BaseType::{Bool, Int};
         use crate::{Context, unify};
-        use crate::types::Type;
+        use crate::base_type::BaseType::{Bool, Int};
         use crate::substitutions::Substitutions;
+        use crate::types::Type;
 
         #[test]
         fn success() {
@@ -556,11 +557,11 @@ mod tests {
     }
 
     mod forall {
-        use crate::kind::Kind::KindStar;
         use crate::{Context, unify};
         use crate::base_type::BaseType;
-        use crate::types::Type;
+        use crate::kind::Kind::KindStar;
         use crate::substitutions::Substitutions;
+        use crate::types::Type;
 
         #[test]
         fn same_success() {
@@ -581,10 +582,10 @@ mod tests {
     }
 
     mod tuple {
-        use crate::base_type::BaseType::{Bool, Int};
         use crate::{Context, unify};
-        use crate::types::Type;
+        use crate::base_type::BaseType::{Bool, Int};
         use crate::substitutions::Substitutions;
+        use crate::types::Type;
 
         #[test]
         fn pair_success() {
@@ -749,10 +750,11 @@ mod tests {
 
     mod record {
         use std::collections::HashMap;
-        use crate::base_type::BaseType::{Bool, Float, Int};
+
         use crate::{Context, unify};
-        use crate::types::Type;
+        use crate::base_type::BaseType::{Bool, Float, Int};
         use crate::substitutions::Substitutions;
+        use crate::types::Type;
 
         #[test]
         fn zero_element_records() {
@@ -1005,10 +1007,11 @@ mod tests {
 
     mod variants {
         use std::collections::HashMap;
-        use crate::base_type::BaseType::{Bool, Float, Int};
+
         use crate::{Context, unify};
-        use crate::types::Type;
+        use crate::base_type::BaseType::{Bool, Float, Int};
         use crate::substitutions::Substitutions;
+        use crate::types::Type;
 
         #[test]
         fn zero_element_variants() {
@@ -1261,13 +1264,14 @@ mod tests {
 
     mod quantify {
         use std::collections::HashMap;
-        use crate::base_type::BaseType::{Bool, Int};
+
         use crate::{Context, Term, unify};
+        use crate::base_type::BaseType::{Bool, Int};
         use crate::binding::Binding;
         use crate::constraint::Constraint;
         use crate::kind::Kind::KindStar;
-        use crate::types::Type;
         use crate::substitutions::Substitutions;
+        use crate::types::Type;
         use crate::types::Type::{Base, TypeApp, TypeVar};
 
         fn clone_bindings() -> Vec<Binding> {

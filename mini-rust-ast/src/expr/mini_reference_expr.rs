@@ -1,5 +1,7 @@
 use syn::Token;
+
 use mini_ir::Term;
+
 use crate::mini_expr::MiniExpr;
 use crate::ToSystemFOmegaTerm;
 

@@ -1,7 +1,8 @@
-use std::fmt::{Debug, Formatter};
 use std::collections::HashMap;
-use crate::Context;
+use std::fmt::{Debug, Formatter};
+
 use crate::constraint::Constraint;
+use crate::Context;
 use crate::types::Type;
 
 /// A Substitution is a mapping from typevariables to types.

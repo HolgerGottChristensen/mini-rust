@@ -1,11 +1,13 @@
 use std::collections::HashMap;
 use std::fmt::Debug;
+
 use im_rc::{Vector, vector};
 use paris::formatter::colorize_string;
-use crate::types::Type;
+
 use crate::binding::Binding;
 use crate::constraint::Constraint;
 use crate::kind::Kind;
+use crate::types::Type;
 use crate::types::Type::TypeVar;
 
 #[derive(Debug)]
