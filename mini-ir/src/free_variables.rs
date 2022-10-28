@@ -81,6 +81,14 @@ pub fn free_type_variables(typ: Type) -> HashSet<String> {
     }
 }
 
+pub fn bound_variable_term(term: Term) -> Option<String> {
+    match term {
+        Term::Define(name, typ, t) =>
+            Some(name),
+        _ => None
+    }
+}
+
 mod tests {
     use std::collections::HashSet;
 

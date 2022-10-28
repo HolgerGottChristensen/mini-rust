@@ -1,6 +1,6 @@
 use syn::token;
 
-use mini_ir::{BaseType, Term};
+use mini_ir::{Term};
 
 use crate::mini_expr::MiniExpr;
 use crate::mini_path::MiniPath;

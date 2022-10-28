@@ -5,7 +5,7 @@ use syn::{braced, Path, token, Token};
 use syn::parse::{Parse, ParseStream};
 use syn::punctuated::Punctuated;
 
-use mini_ir::{BaseType, Term, Type};
+use mini_ir::{Term, Type};
 
 use crate::{MiniIdent, ToSystemFOmegaTerm};
 use crate::mini_expr::MiniExpr;

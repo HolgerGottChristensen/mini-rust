@@ -102,7 +102,6 @@ pub fn dependency_graph(terms: Vec<Term>) -> Result<Vec<Term>, String> {
 }
 
 impl Graph {
-
     fn dfs(&self, s: usize, queue: &mut Vec<usize>, marked: &mut Vec<bool>) {
         marked[s] = true;
         for (from, to) in &self.edges {
@@ -115,7 +114,7 @@ impl Graph {
         queue.push(s);
     }
 
-    fn cycle_dfs(&self, s: usize, on_stack: &mut Vec<bool>, edge_to: &mut Vec<usize>, marked: &mut Vec<bool>) -> Option<Vec<usize>>{
+    fn cycle_dfs(&self, s: usize, on_stack: &mut Vec<bool>, edge_to: &mut Vec<usize>, marked: &mut Vec<bool>) -> Option<Vec<usize>> {
         marked[s] = true;
         on_stack[s] = true;
         for (from, to) in &self.edges {
@@ -143,12 +142,12 @@ impl Graph {
     }
 
     fn strongly_connected_components_util(&self,
-                                         u: usize,
-                                         low: &mut Vec<i64>,
-                                         disc: &mut Vec<i64>,
-                                         stack_member: &mut Vec<bool>,
-                                         stack: &mut Vec<usize>,
-                                         comps: &mut Vec<Vec<usize>>, time: &mut i64
+                                          u: usize,
+                                          low: &mut Vec<i64>,
+                                          disc: &mut Vec<i64>,
+                                          stack_member: &mut Vec<bool>,
+                                          stack: &mut Vec<usize>,
+                                          comps: &mut Vec<Vec<usize>>, time: &mut i64,
     ) {
         disc[u] = time.clone();
         low[u] = time.clone();
@@ -180,7 +179,6 @@ impl Graph {
             }
             comps.push(group);
         }
-
     }
 
     pub fn strongly_connected_component(&self) -> Vec<Vec<usize>> {
@@ -193,7 +191,7 @@ impl Graph {
 
         for node in 0..self.nodes.len() {
             if disc[node] == -1 {
-                self.strongly_connected_components_util(node, &mut low, &mut  disc, &mut  stack_member, &mut  stack, &mut  comps, &mut time);
+                self.strongly_connected_components_util(node, &mut low, &mut disc, &mut stack_member, &mut stack, &mut comps, &mut time);
             }
         }
 
@@ -225,9 +223,9 @@ impl Graph {
     }
 
     pub fn cycle(&self) -> Option<Vec<usize>> {
-        let mut marked = vec![false;self.nodes.len()];
-        let mut on_stack = vec![false;self.nodes.len()];
-        let mut edge_to = vec![0;self.nodes.len()];
+        let mut marked = vec![false; self.nodes.len()];
+        let mut on_stack = vec![false; self.nodes.len()];
+        let mut edge_to = vec![0; self.nodes.len()];
 
         for i in 0..self.nodes.len() {
             if !marked[i] {
@@ -242,16 +240,16 @@ impl Graph {
 
 mod tests {
     use crate::dependency_graph::{dependency_graph, Graph};
-    use crate::{Int, Term, TermAbs, TermApp, TermVar, Type};
-    use crate::Term::{Define, If, Integer, True};
+    use crate::{Int, Type};
+    use crate::Term::{Define, If, Integer, TermAbs, TermApp, TermVar, True};
 
 
     #[test]
-    fn dependency_graph_gives_correct_order_on_sequential_program() -> Result<(), String>{
+    fn dependency_graph_gives_correct_order_on_sequential_program() -> Result<(), String> {
         //arrange
         let term_1 = TermApp(
             Box::new(TermVar("g".to_string())),
-            Box::new(Integer(64))
+            Box::new(Integer(64)),
         );
 
         let term_2 = Define(
@@ -266,10 +264,10 @@ mod tests {
                 Box::new(
                     TermApp(
                         Box::new(TermVar("f".to_string())),
-                        Box::new(TermVar("x".to_string()))
+                        Box::new(TermVar("x".to_string())),
                     )
-                )
-            ))
+                ),
+            )),
         );
 
         let term_3 = Define(
@@ -283,8 +281,8 @@ mod tests {
                 Type::Base(Int),
                 Box::new(
                     TermVar("x".to_string())
-                )
-            ))
+                ),
+            )),
         );
 
         let terms = vec![term_2.clone(), term_1.clone(), term_3.clone()];
@@ -300,16 +298,16 @@ mod tests {
     }
 
     #[test]
-    fn dependency_graph_gives_correct_order_on_recursive_program() -> Result<(), String>{
+    fn dependency_graph_gives_correct_order_on_recursive_program() -> Result<(), String> {
         //arrange
         let term_1 = TermApp(
             Box::new(TermVar("f".to_string())),
-            Box::new(Integer(3))
+            Box::new(Integer(3)),
         );
 
         let term_2 = TermApp(
             Box::new(TermVar("g".to_string())),
-            Box::new(Integer(3))
+            Box::new(Integer(3)),
         );
 
         let term_3 = Define(
@@ -324,10 +322,10 @@ mod tests {
                 Box::new(
                     TermApp(
                         Box::new(TermVar("f".to_string())),
-                        Box::new(TermVar("x".to_string()))
+                        Box::new(TermVar("x".to_string())),
                     )
-                )
-            ))
+                ),
+            )),
         );
 
         let term_4 = Define(
@@ -344,10 +342,10 @@ mod tests {
                     Box::new(Integer(0)),
                     Box::new(TermApp(
                         Box::new(TermVar("f".to_string())),
-                        Box::new(Integer(3))
-                    ))
-                ))
-            ))
+                        Box::new(Integer(3)),
+                    )),
+                )),
+            )),
         );
 
         let terms = vec![term_2.clone(), term_4.clone(), term_1.clone(), term_3.clone()];
@@ -363,11 +361,11 @@ mod tests {
     }
 
     #[test]
-    fn dependency_graph_gives_correct_order_on_mutual_recursive_program() -> Result<(), String>{
+    fn dependency_graph_gives_correct_order_on_mutual_recursive_program() -> Result<(), String> {
         //arrange
         let term_1 = TermApp(
             Box::new(TermVar("g".to_string())),
-            Box::new(Integer(64))
+            Box::new(Integer(64)),
         );
 
         let term_2 = Define(
@@ -384,10 +382,10 @@ mod tests {
                     Box::new(Integer(0)),
                     Box::new(TermApp(
                         Box::new(TermVar("f".to_string())),
-                        Box::new(Integer(3))
-                    ))
-                ))
-            ))
+                        Box::new(Integer(3)),
+                    )),
+                )),
+            )),
         );
 
         let term_3 = Define(
@@ -404,10 +402,10 @@ mod tests {
                     Box::new(Integer(0)),
                     Box::new(TermApp(
                         Box::new(TermVar("g".to_string())),
-                        Box::new(Integer(3))
-                    ))
-                ))
-            ))
+                        Box::new(Integer(3)),
+                    )),
+                )),
+            )),
         );
 
         let terms = vec![term_2.clone(), term_1.clone(), term_3.clone()];
@@ -426,35 +424,35 @@ mod tests {
     fn top_sort_small_graph() {
         //arrange
         let graph = Graph {
-            nodes: vec![0,1,2,3,4,5,6,7,8,9,10,11,12],
+            nodes: vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
             edges: vec![
-                (0,5), (0,1), (0,6),
-                (2,3), (2,0),
-                (3,5),
-                (5,4),
-                (6,9), (6,4),
-                (7,6),
-                (8,7),
-                (9,12), (9,11), (9,10),
-                (11,12)
-            ]
+                (0, 5), (0, 1), (0, 6),
+                (2, 3), (2, 0),
+                (3, 5),
+                (5, 4),
+                (6, 9), (6, 4),
+                (7, 6),
+                (8, 7),
+                (9, 12), (9, 11), (9, 10),
+                (11, 12),
+            ],
         };
 
         //act
         let sorted = graph.depth_first_order();
 
         //assert
-        assert_eq!(sorted, vec![4,5,1,12,11,10,9,6,0,3,2,7,8]);
+        assert_eq!(sorted, vec![4, 5, 1, 12, 11, 10, 9, 6, 0, 3, 2, 7, 8]);
     }
 
     #[test]
     fn small_graph_no_topological_order() {
         //arrange
         let graph = Graph {
-            nodes: vec![0,1,2],
+            nodes: vec![0, 1, 2],
             edges: vec![
-                (0,1), (1,2), (2,0),
-            ]
+                (0, 1), (1, 2), (2, 0),
+            ],
         };
         //act
         let c = graph.topological_sort();
@@ -466,10 +464,10 @@ mod tests {
     fn small_graph_topological_order() {
         //arrange
         let graph = Graph {
-            nodes: vec![0,1,2],
+            nodes: vec![0, 1, 2],
             edges: vec![
-                (0,1), (0,2), (2,1),
-            ]
+                (0, 1), (0, 2), (2, 1),
+            ],
         };
         //act
         let sorted = graph.topological_sort();
@@ -481,30 +479,30 @@ mod tests {
     fn small_2_graph_topological_order() {
         //arrange
         let graph = Graph {
-            nodes: vec![0,1,2,3,4],
+            nodes: vec![0, 1, 2, 3, 4],
             edges: vec![
-                (1,0), (3,2),
-            ]
+                (1, 0), (3, 2),
+            ],
         };
         //act
         let sorted = graph.topological_sort();
         //assert
-        assert_eq!(sorted, vec![4,3,2,1,0]);
+        assert_eq!(sorted, vec![4, 3, 2, 1, 0]);
     }
 
     #[test]
     fn small_graph_cycle_found() {
         //arrange
         let graph = Graph {
-            nodes: vec![0,1,2],
+            nodes: vec![0, 1, 2],
             edges: vec![
-                (0,1), (1,2), (2,0),
-            ]
+                (0, 1), (1, 2), (2, 0),
+            ],
         };
         //act
         //assert
         if let Some(c) = graph.cycle() {
-            assert_eq!(c, vec![2,1,0,2]);
+            assert_eq!(c, vec![2, 1, 0, 2]);
         } else {
             assert!(false);
         }
@@ -514,10 +512,10 @@ mod tests {
     fn small_graph_cycle_not_found() {
         //arrange
         let graph = Graph {
-            nodes: vec![0,1,2],
+            nodes: vec![0, 1, 2],
             edges: vec![
-                (0,1), (0,2), (2,1),
-            ]
+                (0, 1), (0, 2), (2, 1),
+            ],
         };
         //act
         let c = graph.cycle();
@@ -529,24 +527,24 @@ mod tests {
     fn big_graph_cycle_found() {
         //arrange
         let graph = Graph {
-            nodes: vec![0,1,2,3,4,5,6,7,8,9,10,11,12],
+            nodes: vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
             edges: vec![
-                (0,5), (0,1), (0,6),
-                (2,3), (2,0),
-                (3,5),
-                (4,3), (4,2),
-                (5,4),
-                (6,9), (6,4),
-                (7,6),
-                (8,7),
-                (9,12), (9,11), (9,10),
-                (11,12)
-            ]
+                (0, 5), (0, 1), (0, 6),
+                (2, 3), (2, 0),
+                (3, 5),
+                (4, 3), (4, 2),
+                (5, 4),
+                (6, 9), (6, 4),
+                (7, 6),
+                (8, 7),
+                (9, 12), (9, 11), (9, 10),
+                (11, 12),
+            ],
         };
         //act
         //assert
         if let Some(c) = graph.cycle() {
-            assert_eq!(c, vec![3,4,5,3]);
+            assert_eq!(c, vec![3, 4, 5, 3]);
         } else {
             assert!(false);
         }
@@ -556,18 +554,18 @@ mod tests {
     fn big_graph_cycle_not_found() {
         //arrange
         let graph = Graph {
-            nodes: vec![0,1,2,3,4,5,6,7,8,9,10,11,12],
+            nodes: vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
             edges: vec![
-                (0,5), (0,1), (0,6),
-                (2,3), (2,0),
-                (3,5),
-                (5,4),
-                (6,9), (6,4),
-                (7,6),
-                (8,7),
-                (9,12), (9,11), (9,10),
-                (11,12)
-            ]
+                (0, 5), (0, 1), (0, 6),
+                (2, 3), (2, 0),
+                (3, 5),
+                (5, 4),
+                (6, 9), (6, 4),
+                (7, 6),
+                (8, 7),
+                (9, 12), (9, 11), (9, 10),
+                (11, 12),
+            ],
         };
         //act
         let c = graph.cycle();
@@ -579,14 +577,14 @@ mod tests {
     fn medium_graph_5_strongly_connected_components() {
         //arrange
         let graph = Graph {
-            nodes: vec![0,1,2,3,4,5,6],
+            nodes: vec![0, 1, 2, 3, 4, 5, 6],
             edges: vec![
-                (0,1),
-                (1,2), (1,3), (1,4), (1,6),
-                (2,0),
-                (3,5),
-                (4,5),
-            ]
+                (0, 1),
+                (1, 2), (1, 3), (1, 4), (1, 6),
+                (2, 0),
+                (3, 5),
+                (4, 5),
+            ],
         };
 
         let expected_comps = vec![
@@ -594,7 +592,7 @@ mod tests {
             vec![3],
             vec![4],
             vec![6],
-            vec![2,1,0]
+            vec![2, 1, 0],
         ];
         //act
         let c = graph.strongly_connected_component();
@@ -606,27 +604,27 @@ mod tests {
     fn big_graph_5_strongly_connected_components() {
         //arrange
         let graph = Graph {
-            nodes: vec![0,1,2,3,4,5,6,7,8,9,10],
+            nodes: vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
             edges: vec![
-                (0,1), (0,3),
-                (1,2), (1,4), (1,6),
-                (2,0), (2,6),
-                (3,2), (3,5),
-                (4,5), (4,6),
-                (5,6), (5,7), (5,8), (5, 9),
+                (0, 1), (0, 3),
+                (1, 2), (1, 4), (1, 6),
+                (2, 0), (2, 6),
+                (3, 2), (3, 5),
+                (4, 5), (4, 6),
+                (5, 6), (5, 7), (5, 8), (5, 9),
                 (6, 4),
-                (7,9),
-                (8,9),
-                (9,8)
-            ]
+                (7, 9),
+                (8, 9),
+                (9, 8),
+            ],
         };
 
         let expected_comps = vec![
-            vec![8,9],
+            vec![8, 9],
             vec![7],
-            vec![5,4,6],
-            vec![3,2,1,0],
-            vec![10]
+            vec![5, 4, 6],
+            vec![3, 2, 1, 0],
+            vec![10],
         ];
         //act
         let c = graph.strongly_connected_component();

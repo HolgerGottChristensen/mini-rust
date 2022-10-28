@@ -1,14 +1,17 @@
 use std::collections::HashMap;
 
-use base_type::BaseType::Int;
+pub use base_type::BaseType::*;
+pub use base_type::*;
 pub use context::*;
 pub use kind_check::*;
-use substitutions::Substitutions;
+pub use kind::*;
+pub use substitutions::Substitutions;
 pub use term::*;
-use type_check::type_of;
-use types::*;
+pub use type_check::type_of;
+pub use types::*;
 pub use unify::*;
 pub use util::*;
+pub use binding::*;
 
 use crate::types::Type::TypeVar;
 
