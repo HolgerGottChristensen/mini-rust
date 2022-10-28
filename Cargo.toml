@@ -3,7 +3,6 @@ resolver = "2"
 
 members = [
     "core",
-    "macros",
-    "system-f-omega",
-    "system-f-omega-macros"
+    "mini-rust-ast",
+    "mini-ir",
 ]
