@@ -33,7 +33,7 @@ impl Substitutions {
                         res = crate::type_util::type_substitution(k, sub.clone(), res);
                     }
                     res
-                }).collect()
+                }).collect(),
             }
         }).collect()
     }

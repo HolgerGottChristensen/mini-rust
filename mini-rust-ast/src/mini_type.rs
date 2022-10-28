@@ -44,7 +44,7 @@ impl ToSystemFOmegaType for MiniType {
                 let mut t = match &p.output {
                     ReturnType::Default => {
                         FType::Base(BaseType::Unit)
-                    },
+                    }
                     ReturnType::Type(_, i) => {
                         MiniType(*i.clone()).convert_type()
                     }
@@ -55,22 +55,22 @@ impl ToSystemFOmegaType for MiniType {
 
                     t = FType::TypeArrow(
                         Box::new(n.convert_type()),
-                        Box::new(t)
+                        Box::new(t),
                     );
                 }
 
                 // Add a single unit parameter to make sure zero argument functions are still functions.
                 t = FType::TypeArrow(
                     Box::new(FType::Base(BaseType::Unit)),
-                    Box::new(t)
+                    Box::new(t),
                 );
 
                 t
-            },
+            }
             Type::Paren(p) => {
                 let t = MiniType(*p.elem.clone());
                 t.convert_type()
-            },
+            }
             Type::Path(p) => {
                 let t = MiniPath(p.path.clone()).as_ident();
 
@@ -89,15 +89,15 @@ impl ToSystemFOmegaType for MiniType {
                 }
 
                 res
-            },
+            }
             Type::Reference(r) => {
                 // Todo: What if we have mutable references.
                 let new = MiniType(*r.elem.clone());
                 FType::Reference(Box::new(new.convert_type()))
-            },
+            }
             Type::Slice(_) => todo!(),
             Type::Tuple(t) => {
-                if t.elems.len() > 0{
+                if t.elems.len() > 0 {
                     let mut types = vec![];
 
                     for elem in &t.elems {
@@ -134,7 +134,7 @@ mod tests {
         let converted = mini.convert_type();
 
         println!("Type: {}", &converted);
-        println!("Kind: {}", kind_of(&Context::new(),converted.clone()));
+        println!("Kind: {}", kind_of(&Context::new(), converted.clone()));
 
         // Assert
         assert_eq!(converted, FType::Base(BaseType::Unit));
@@ -153,7 +153,7 @@ mod tests {
         let converted = mini.convert_type();
 
         println!("Type: {}", &converted);
-        println!("Kind: {}", kind_of(&Context::new(),converted.clone()));
+        println!("Kind: {}", kind_of(&Context::new(), converted.clone()));
 
         // Assert
         assert_eq!(converted, FType::Base(BaseType::Float));
@@ -172,7 +172,7 @@ mod tests {
         let converted = mini.convert_type();
 
         println!("Type: {}", &converted);
-        println!("Kind: {}", kind_of(&Context::new(),converted.clone()));
+        println!("Kind: {}", kind_of(&Context::new(), converted.clone()));
 
         // Assert
         assert_eq!(converted, FType::Base(BaseType::Int));
@@ -191,7 +191,7 @@ mod tests {
         let converted = mini.convert_type();
 
         println!("Type: {}", &converted);
-        println!("Kind: {}", kind_of(&Context::new(),converted.clone()));
+        println!("Kind: {}", kind_of(&Context::new(), converted.clone()));
 
         // Assert
         assert_eq!(converted, FType::Base(BaseType::Bool));
@@ -210,7 +210,7 @@ mod tests {
         let converted = mini.convert_type();
 
         println!("Type: {}", &converted);
-        println!("Kind: {}", kind_of(&Context::new(),converted.clone()));
+        println!("Kind: {}", kind_of(&Context::new(), converted.clone()));
 
         // Assert
         assert_eq!(converted, FType::Reference(Box::new(FType::Base(BaseType::Bool))));
@@ -269,7 +269,7 @@ mod tests {
         let converted = mini.convert_type();
 
         println!("Type: {}", &converted);
-        println!("Kind: {}", kind_of(&Context::new(),converted.clone()));
+        println!("Kind: {}", kind_of(&Context::new(), converted.clone()));
 
         // Assert
         assert_eq!(converted, FType::Tuple(vec![
@@ -292,7 +292,7 @@ mod tests {
         let converted = mini.convert_type();
 
         println!("Type: {}", &converted);
-        println!("Kind: {}", kind_of(&Context::new(),converted.clone()));
+        println!("Kind: {}", kind_of(&Context::new(), converted.clone()));
 
         // Assert
         assert_eq!(converted, FType::TypeArrow(
@@ -314,7 +314,7 @@ mod tests {
         let converted = mini.convert_type();
 
         println!("Type: {}", &converted);
-        println!("Kind: {}", kind_of(&Context::new(),converted.clone()));
+        println!("Kind: {}", kind_of(&Context::new(), converted.clone()));
 
         // Assert
         assert_eq!(converted, FType::TypeArrow(
@@ -339,7 +339,7 @@ mod tests {
         let converted = mini.convert_type();
 
         println!("Type: {}", &converted);
-        println!("Kind: {}", kind_of(&Context::new(),converted.clone()));
+        println!("Kind: {}", kind_of(&Context::new(), converted.clone()));
 
         // Assert
         assert_eq!(converted, FType::TypeArrow(

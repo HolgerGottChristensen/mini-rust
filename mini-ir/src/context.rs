@@ -32,7 +32,6 @@ impl Context {
         }
 
         new
-
     }
 
     /// Checks if 'classname' exists as a super class to any
@@ -84,7 +83,7 @@ impl Context {
         constraints: &[Constraint],
         instance_type: &Type,
         actual_type: &Type,
-        new_constraints: &mut Vec<Constraint>
+        new_constraints: &mut Vec<Constraint>,
     ) -> Result<(), String> {
         println!("Check instance constraints {:?}, actual: {:?}", instance_type, actual_type);
         match (instance_type, actual_type) {
@@ -93,9 +92,7 @@ impl Context {
                 Type::TypeApp(lvar, r),
                 Type::TypeApp(ltype, rtype)
             ) => {
-
                 if let Type::TypeVar(rvar) = &**r {
-
                     let all_upheld = constraints.iter()
                         // Look only at the constraints that includes the variable as the first constraint variable.
                         .filter(|constraint| constraint.vars[0].type_var() == *rvar)
@@ -109,7 +106,7 @@ impl Context {
                                     Type::TypeVar(ref var) => {
                                         new_constraints.push(Constraint {
                                             ident: constraint.ident.clone(),
-                                            vars: vec![TypeVar(var.clone())]
+                                            vars: vec![TypeVar(var.clone())],
                                         });
                                     }
                                     _ => ()
@@ -137,7 +134,7 @@ impl Context {
                 } else {
                     Err("Unknown Base error".to_string())
                 }
-            },
+            }
             _ => Err("Instance constraints did not match".to_string())
         }
     }
@@ -157,7 +154,7 @@ impl Context {
             self.pick_fresh_name(&x)
         } else {
             (self.add_name(x.clone()), x.clone())
-        }
+        };
     }
 
     pub fn get_binding(&self, name: &String) -> Option<Binding> {

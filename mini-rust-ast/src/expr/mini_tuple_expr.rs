@@ -25,6 +25,5 @@ impl ToSystemFOmegaTerm for MiniExprTuple {
 
             Term::Tuple(terms)
         }
-
     }
 }

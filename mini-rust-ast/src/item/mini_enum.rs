@@ -18,7 +18,7 @@ pub struct MiniEnum {
     pub ident: MiniIdent,
     pub generics: MiniGenerics,
     pub brace: Brace,
-    pub fields: Punctuated<MiniEnumVariant, Comma>
+    pub fields: Punctuated<MiniEnumVariant, Comma>,
 }
 
 impl Debug for MiniEnum {
@@ -47,7 +47,7 @@ impl Parse for MiniEnum {
                 ..generics
             },
             brace: brace_token,
-            fields: variants
+            fields: variants,
         })
     }
 }
@@ -131,7 +131,7 @@ impl ToSystemFOmegaTerm for MiniEnum {
                     body = Term::Let(
                         format!("{}::{}", self.ident.0.to_string(), field.ident.0.to_string()),
                         Box::new(function),
-                        Box::new(body)
+                        Box::new(body),
                     );
                 }
                 Some(fields) => {
@@ -164,11 +164,10 @@ impl ToSystemFOmegaTerm for MiniEnum {
                     body = Term::Let(
                         format!("{}::{}", self.ident.0.to_string(), field.ident.0.to_string()),
                         Box::new(function),
-                        Box::new(body)
+                        Box::new(body),
                     );
                 }
             }
-
         }
 
         body = Term::Define(self.ident.0.to_string(), self.convert_type(), Box::new(body));

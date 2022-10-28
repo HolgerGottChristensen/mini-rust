@@ -396,7 +396,6 @@ impl MiniExpr {
                     op,
                     right: Box::new(rhs),
                 });
-
             } else if MiniPrecedence::Assign >= base
                 && input.peek(Token![=])
                 && !input.peek(Token![==])
@@ -418,7 +417,6 @@ impl MiniExpr {
                     eq_token,
                     right: Box::new(rhs),
                 });
-
             } else {
                 break;
             }
@@ -464,7 +462,6 @@ impl MiniExpr {
                 mutability,
                 expr,
             }))
-
         } else if input.peek(Token![box]) {
             parse_expr_box(input, allow_struct).map(MiniExpr::Box)
         } else if input.peek(Token![*]) || input.peek(Token![!]) || input.peek(Token![-]) {
@@ -1080,7 +1077,7 @@ mod tests {
                 Box::new(Type::TypeArrow(
                     Box::new(Type::Base(BaseType::Bool)),
                     Box::new(Type::Base(BaseType::Bool)),
-                ))
+                )),
             )),
         )));
 
@@ -1161,7 +1158,7 @@ mod tests {
             Type::Record(HashMap::from([
                 ("field1".to_string(), Type::Base(BaseType::Int)),
                 ("field2".to_string(), Type::Base(BaseType::Float)),
-            ]))
+            ])),
         ));
 
         println!("\n{:#?}", &mini);
@@ -1339,5 +1336,4 @@ mod tests {
         // Assert
         //assert_eq!(converted, Term::Reference(Box::new(Term::Integer(0))))
     }
-
 }

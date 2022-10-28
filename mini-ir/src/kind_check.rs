@@ -68,7 +68,7 @@ pub fn kind_of(context: &Context, t: Type) -> Kind {
             }
 
             Kind::KindStar
-        },
+        }
         Type::Tuple(types) => {
             for ty in types {
                 // Todo: Is this actually correct?
@@ -78,7 +78,7 @@ pub fn kind_of(context: &Context, t: Type) -> Kind {
             }
 
             Kind::KindStar
-        },
+        }
         Type::Variants(types) |
         Type::Record(types) => {
             for (_, ty) in types {

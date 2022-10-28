@@ -12,6 +12,6 @@ proc-macro = true
 [dependencies]
 quote = "1"
 proc-macro2 = "1.0"
-syn = { version = "1.0", features = ["extra-traits", "full", "visit-mut"]}
+syn = { version = "1.0", features = ["extra-traits", "full", "visit-mut"] }
 paris = "1.5"
 mini-ir = { path = "../mini-ir" }

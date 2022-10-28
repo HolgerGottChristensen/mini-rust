@@ -49,7 +49,7 @@ pub fn unify(context: &Context, subs: &mut Substitutions, left: Type, right: Typ
         }
         (Type::Tuple(t1), Type::Tuple(t2)) => {
             if t1.len() != t2.len() {
-                return Err("The tuples are not equal length".to_string())
+                return Err("The tuples are not equal length".to_string());
             }
 
             let mut res1 = vec![];
@@ -72,7 +72,7 @@ pub fn unify(context: &Context, subs: &mut Substitutions, left: Type, right: Typ
         }
         (Type::Record(h1), Type::Record(h2)) => {
             if h1.len() != h2.len() {
-                return Err("The records are not equal length".to_string())
+                return Err("The records are not equal length".to_string());
             }
 
             let mut h1_new = HashMap::new();
@@ -89,7 +89,7 @@ pub fn unify(context: &Context, subs: &mut Substitutions, left: Type, right: Typ
                         e => return e
                     }
                 } else {
-                    return Err("The fields labels does not match and are therefore not unifiable.".to_string())
+                    return Err("The fields labels does not match and are therefore not unifiable.".to_string());
                 }
             }
 
@@ -98,7 +98,7 @@ pub fn unify(context: &Context, subs: &mut Substitutions, left: Type, right: Typ
         }
         (Type::Variants(h1), Type::Variants(h2)) => {
             if h1.len() != h2.len() {
-                return Err("The records are not equal length".to_string())
+                return Err("The records are not equal length".to_string());
             }
 
             let mut h1_new = HashMap::new();
@@ -114,7 +114,7 @@ pub fn unify(context: &Context, subs: &mut Substitutions, left: Type, right: Typ
                         e => return e
                     }
                 } else {
-                    return Err("The fields label does not match and are therefore not unifiable.".to_string())
+                    return Err("The fields label does not match and are therefore not unifiable.".to_string());
                 }
             }
 
@@ -206,7 +206,6 @@ pub fn unify(context: &Context, subs: &mut Substitutions, left: Type, right: Typ
 }
 
 mod tests {
-
     mod base {
         use crate::{Context, unify};
         use crate::base_type::BaseType::{Float, Int};
@@ -1283,15 +1282,15 @@ mod tests {
                     declarations: HashMap::from([
                         ("clone".to_string(), Type::arrow(Type::reference("T"), "T"))
                     ]),
-                    default_implementations: Default::default()
+                    default_implementations: Default::default(),
                 },
                 Binding::VarBinding(
                     "clone".to_string(),
                     Type::qualified(
-                        vec![Constraint{ ident: "Clone".to_string(), vars: vec![TypeVar("T".to_string())] }],
-                        Type::arrow(Type::reference("T"), "T")
-                    )
-                )
+                        vec![Constraint { ident: "Clone".to_string(), vars: vec![TypeVar("T".to_string())] }],
+                        Type::arrow(Type::reference("T"), "T"),
+                    ),
+                ),
             ]
         }
 
@@ -1322,7 +1321,6 @@ mod tests {
                     ]),
                 },
                 Binding::VarBinding("Vec".to_string(), vec_type),
-
             ]
         }
 
@@ -1331,7 +1329,7 @@ mod tests {
             // Arrange
             let t1 = Type::qualified(
                 vec![Constraint { ident: "Clone".to_string(), vars: vec![TypeVar("T".to_string())] }],
-                Base(Int)
+                Base(Int),
             );
             let t2 = Base(Int);
 
@@ -1357,7 +1355,7 @@ mod tests {
             // Arrange
             let t1 = Type::qualified(
                 vec![Constraint { ident: "Clone".to_string(), vars: vec![TypeVar("T".to_string())] }],
-                Base(Int)
+                Base(Int),
             );
             let t2 = Type::Base(Bool);
 
@@ -1383,7 +1381,7 @@ mod tests {
             // Arrange
             let t1 = Type::qualified(
                 vec![Constraint { ident: "Clone".to_string(), vars: vec![TypeVar("T".to_string())] }],
-                TypeVar("T".to_string())
+                TypeVar("T".to_string()),
             );
             let t2 = Base(Int);
 
@@ -1409,7 +1407,7 @@ mod tests {
             // Arrange
             let t1 = Type::qualified(
                 vec![Constraint { ident: "Clone".to_string(), vars: vec![TypeVar("T".to_string())] }],
-                Type::TypeVar("T".to_string())
+                Type::TypeVar("T".to_string()),
             );
             let t2 = Type::Base(Int);
 
@@ -1435,7 +1433,7 @@ mod tests {
             // Arrange
             let t1 = Type::qualified(
                 vec![Constraint { ident: "Clone".to_string(), vars: vec![TypeVar("T".to_string())] }],
-                Type::TypeVar("U".to_string())
+                Type::TypeVar("U".to_string()),
             );
             let t2 = Type::Base(Int);
 
@@ -1461,7 +1459,7 @@ mod tests {
             // Arrange
             let t1 = Type::qualified(
                 vec![Constraint { ident: "Clone".to_string(), vars: vec![TypeVar("T".to_string())] }],
-                TypeVar("T".to_string())
+                TypeVar("T".to_string()),
             );
             let t2 = TypeVar("U".to_string());
 
@@ -1488,7 +1486,7 @@ mod tests {
             let t1 = TypeVar("U".to_string());
             let t2 = Type::qualified(
                 vec![Constraint { ident: "Clone".to_string(), vars: vec![TypeVar("T".to_string())] }],
-                TypeVar("T".to_string())
+                TypeVar("T".to_string()),
             );
 
             let mut substitutions = Substitutions::new();
@@ -1513,7 +1511,7 @@ mod tests {
             // Arrange
             let t1 = Type::qualified(
                 vec![Constraint { ident: "Clone".to_string(), vars: vec![TypeVar("T".to_string())] }],
-                TypeVar("T".to_string())
+                TypeVar("T".to_string()),
             );
             let t2 = TypeApp(Box::new(TypeVar("Vec".to_string())), Box::new(Type::Base(Int)));
 
@@ -1540,7 +1538,7 @@ mod tests {
             // Arrange
             let t1 = Type::qualified(
                 vec![Constraint { ident: "Clone".to_string(), vars: vec![TypeVar("T".to_string())] }],
-                TypeVar("T".to_string())
+                TypeVar("T".to_string()),
             );
             let t2 = TypeApp(Box::new(TypeVar("Vec".to_string())), Box::new(Type::Base(Bool)));
 
@@ -1567,7 +1565,7 @@ mod tests {
             // Arrange
             let t1 = Type::qualified(
                 vec![Constraint { ident: "Clone".to_string(), vars: vec![TypeVar("T".to_string())] }],
-                TypeVar("T".to_string())
+                TypeVar("T".to_string()),
             );
             let t2 = TypeVar("Vec".to_string());
 

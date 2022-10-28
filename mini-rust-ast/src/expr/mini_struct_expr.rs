@@ -36,7 +36,7 @@ impl Parse for MiniFieldValue {
         Ok(MiniFieldValue {
             name: ident,
             colon_token,
-            expr
+            expr,
         })
     }
 }

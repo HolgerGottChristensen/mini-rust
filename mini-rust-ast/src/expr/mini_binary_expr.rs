@@ -17,9 +17,9 @@ impl ToSystemFOmegaTerm for MiniExprBinary {
         Term::TermApp(
             Box::new(Term::TermApp(
                 Box::new(Term::TermVar(function_name)),
-                Box::new(self.left.convert_term())
+                Box::new(self.left.convert_term()),
             )),
-            Box::new(self.right.convert_term())
+            Box::new(self.right.convert_term()),
         )
     }
 }

@@ -79,7 +79,7 @@ impl Type {
 
     pub fn to_string_type(&self, context: &Context, color: u32) -> String {
         match self {
-            Type::TypeAbs(tyX,knK1,tyT2) => {
+            Type::TypeAbs(tyX, knK1, tyT2) => {
                 // Todo: Fix will not work with pick fresh name. We already require unique names for everything.
                 let (new_context, name) = context.pick_fresh_name(tyX);
 
@@ -119,7 +119,7 @@ impl Type {
 
     fn to_string_arrow(&self, context: &Context, color: u32) -> String {
         match self {
-            Type::TypeArrow(tyT1,tyT2) => {
+            Type::TypeArrow(tyT1, tyT2) => {
                 format!("{} -> {}", tyT1.to_string_app_type(context, color), tyT2.to_string_arrow(context, color))
             }
             t => t.to_string_app_type(context, color),
@@ -128,7 +128,7 @@ impl Type {
 
     fn to_string_app_type(&self, context: &Context, color: u32) -> String {
         match self {
-            Type::TypeApp(tyT1,tyT2) => {
+            Type::TypeApp(tyT1, tyT2) => {
                 format!("{} [{}]", tyT1.to_string_app_type(context, color), tyT2.to_string_atomic(context, color))
             }
             t => t.to_string_atomic(context, color),
@@ -152,7 +152,7 @@ impl Type {
                     s
                 }).collect::<Vec<_>>().join(", ");
                 format!("{}{}{}", get_color(color, "⟨"), r, get_color(color, "⟩")) // We use angle brackets which are non-standard to differentiate between records and tuples.
-            },
+            }
             Type::Variants(terms) => {
                 let mut r = terms.iter().map(|(name, term)| {
                     let mut s = name.clone();
@@ -161,7 +161,7 @@ impl Type {
                     s
                 }).collect::<Vec<_>>().join(", ");
                 format!("{}{}{}", get_color(color, "<"), r, get_color(color, ">"))
-            },
+            }
             Type::Base(b) => format!("{:?}", b),
             Type::Reference(b) => format!("&{}", b.to_string_type(context, color)),
             t => format!("{}{}{}", get_color(color, "("), t.to_string_type(context, color + 1), get_color(color, ")"))

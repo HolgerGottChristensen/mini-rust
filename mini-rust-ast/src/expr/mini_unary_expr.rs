@@ -33,14 +33,14 @@ impl ToSystemFOmegaTerm for MiniExprUnary {
                 // Todo: We need to be able to differentiate between not for the different types
                 Term::TermApp(
                     Box::new(Term::TermVar("not".to_string())),
-                    Box::new(self.expr.convert_term())
+                    Box::new(self.expr.convert_term()),
                 )
             }
             MiniUnOp::Neg(_) => {
                 // Todo: We need to be able to differentiate between neg for the different types
                 Term::TermApp(
                     Box::new(Term::TermVar("neg".to_string())),
-                    Box::new(self.expr.convert_term())
+                    Box::new(self.expr.convert_term()),
                 )
             }
         }

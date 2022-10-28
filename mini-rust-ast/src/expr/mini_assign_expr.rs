@@ -22,7 +22,7 @@ impl ToSystemFOmegaTerm for MiniExprAssign {
                 } else {
                     panic!("The path is not a valid ident.")
                 }
-            },
+            }
             _ => panic!("For now only idents can be assigned to"),
         };
 

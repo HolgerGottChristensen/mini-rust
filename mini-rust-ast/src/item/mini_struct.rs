@@ -17,7 +17,7 @@ pub struct MiniStruct {
     pub ident: MiniIdent,
     pub generics: MiniGenerics,
     pub brace: Brace,
-    pub fields: Punctuated<MiniStructField, Comma>
+    pub fields: Punctuated<MiniStructField, Comma>,
 }
 
 impl Debug for MiniStruct {
@@ -46,7 +46,7 @@ impl Parse for MiniStruct {
                 ..generics
             },
             brace,
-            fields
+            fields,
         })
     }
 }
@@ -63,7 +63,7 @@ pub fn data_struct(
 
     let content;
 
-    let brace =  braced!(content in input);
+    let brace = braced!(content in input);
     let fields = content.parse_terminated(MiniStructField::parse)?;
 
     Ok((where_clause, brace, fields))

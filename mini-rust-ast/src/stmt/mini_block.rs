@@ -24,7 +24,6 @@ impl Debug for MiniBlock {
 
 impl Parse for MiniBlock {
     fn parse(input: ParseStream) -> syn::Result<Self> {
-
         let content;
         Ok(MiniBlock {
             brace_token: braced!(content in input),
@@ -88,7 +87,7 @@ impl ToSystemFOmegaTerm for MiniBlock {
             }
 
             for stmt in self.stmts.iter().rev().skip(1) {
-                body =  replace_inner(stmt.convert_term(), body);
+                body = replace_inner(stmt.convert_term(), body);
             }
 
             // Todo: Check if only the last statement and returns are non-unit.

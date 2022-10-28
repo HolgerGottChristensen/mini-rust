@@ -126,7 +126,6 @@ impl ToSystemFOmegaTerm for MiniImpl {
         let mut body = Term::Unit;
 
         for item in self.items.iter().rev() {
-
             let mut fun = item.convert_term();
 
             // Todo: Is this the best way. We need to introduce generics somehow for each method.

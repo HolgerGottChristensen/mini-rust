@@ -32,15 +32,15 @@ impl Debug for MiniItem {
 impl Parse for MiniItem {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         if input.peek(Token![struct]) {
-            return Ok(MiniItem::Struct(MiniStruct::parse(input)?))
+            return Ok(MiniItem::Struct(MiniStruct::parse(input)?));
         } else if input.peek(Token!(enum)) {
-            return Ok(MiniItem::Enum(MiniEnum::parse(input)?))
+            return Ok(MiniItem::Enum(MiniEnum::parse(input)?));
         } else if input.peek(Token!(fn)) {
-            return Ok(MiniItem::Fn(MiniFn::parse(input)?))
+            return Ok(MiniItem::Fn(MiniFn::parse(input)?));
         } else if input.peek(Token!(impl)) {
-            return Ok(MiniItem::Impl(MiniImpl::parse(input)?))
+            return Ok(MiniItem::Impl(MiniImpl::parse(input)?));
         } else if input.peek(Token!(trait)) {
-            return Ok(MiniItem::Trait(MiniTrait::parse(input)?))
+            return Ok(MiniItem::Trait(MiniTrait::parse(input)?));
         }
 
         Err(Error::new(Span::call_site(), "Could not parse mini-item"))

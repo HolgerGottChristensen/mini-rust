@@ -129,7 +129,7 @@ impl ToSystemFOmegaTerm for MiniStmt {
                 body = Term::Let(
                     pat.to_token_stream().to_string(),
                     Box::new(body),
-                    Box::new(Term::Unit)
+                    Box::new(Term::Unit),
                 );
 
                 body
@@ -140,11 +140,11 @@ impl ToSystemFOmegaTerm for MiniStmt {
                     MiniItem::Struct(s) => s.convert_term(),
                     MiniItem::Fn(f) => {
                         Term::Let(f.ident.0.to_string(), Box::new(f.convert_term()), Box::new(Term::Unit))
-                    },
+                    }
                     MiniItem::Impl(i) => i.convert_term(),
                     _ => todo!()
                 }
-            },
+            }
             MiniStmt::Expr(e) => e.convert_term(),
             MiniStmt::Semi(expr, _) => {
                 let mut body = expr.convert_term();
@@ -152,11 +152,11 @@ impl ToSystemFOmegaTerm for MiniStmt {
                 // Always continue with unit, which will be replaced when having more statements in a row.
                 body = Term::Seq(
                     Box::new(body),
-                    Box::new(Term::Unit)
+                    Box::new(Term::Unit),
                 );
 
                 body
-            },
+            }
         }
     }
 }

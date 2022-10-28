@@ -41,7 +41,7 @@ fn overload() {
         implementations: HashMap::from([
             ("test".to_string(), (Term::TermAbs("x".to_string(), TypeVar("a".to_string()), Box::new(Term::Integer(10))), Type::arrow(Int, Int)))
         ]),
-        continuation: Box::new(body)
+        continuation: Box::new(body),
     };
 
     body = Term::Class {
@@ -52,7 +52,7 @@ fn overload() {
             ("test".to_string(), Type::arrow("a", Int))
         ]),
         default_implementations: Default::default(),
-        continuation: Box::new(body)
+        continuation: Box::new(body),
     };
 
     println!("{}", &body);

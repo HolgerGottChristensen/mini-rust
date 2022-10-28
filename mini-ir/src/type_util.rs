@@ -12,7 +12,7 @@ pub fn compute_type(context: &Context, tyt: Type) -> Result<Type, Type> {
         Type::TypeApp(tyT1, tyT2) => {
             match *tyT1 {
                 Type::TypeAbs(name, _, tyT12) => {
-                    return Ok(type_substitution(&name, *tyT2, *tyT12))
+                    return Ok(type_substitution(&name, *tyT2, *tyT12));
                 }
                 Type::TypeVar(name) => {
                     match context.get_type(&name) {
@@ -31,7 +31,7 @@ pub fn compute_type(context: &Context, tyt: Type) -> Result<Type, Type> {
 
 pub fn simplify_type(context: &Context, tyt: Type) -> Type {
     let tyt_new = match tyt {
-        Type::TypeApp(tyT1,tyT2) =>
+        Type::TypeApp(tyT1, tyT2) =>
             Type::TypeApp(Box::new(simplify_type(context, *tyT1)), tyT2),
         t => t,
     };
@@ -59,23 +59,23 @@ pub fn type_equivalence(context: &Context, tys: Type, tyt: Type) -> bool {
                 (Err(_), Ok(tj)) => type_equivalence(context, Type::TypeVar(i), tj),
                 (Err(_), Err(_)) => i == j, // Todo: This is only correct if all binding names are unique
             }
-        },
+        }
         (ty, Type::TypeVar(i)) | (Type::TypeVar(i), ty) => {
             type_equivalence(context, context.get_type(&i).unwrap(), ty)
         }
-        (Type::TypeAbs(tyX1,knKS1,tyS2), Type::TypeAbs(_,knKT1,tyT2)) => {
+        (Type::TypeAbs(tyX1, knKS1, tyS2), Type::TypeAbs(_, knKT1, tyT2)) => {
             let new_context = context.add_name(tyX1);
 
             knKS1 == knKT1 && type_equivalence(&new_context, *tyS2, *tyT2)
         }
-        (Type::TypeApp(tyS1,tyS2), Type::TypeApp(tyT1,tyT2)) => {
+        (Type::TypeApp(tyS1, tyS2), Type::TypeApp(tyT1, tyT2)) => {
             type_equivalence(context, *tyS1, *tyT1) && type_equivalence(context, *tyS2, *tyT2)
         }
         (Type::Base(b1), Type::Base(b2)) => b1 == b2,
 
-        (Type::TypeAll(tyX1,knK1,tyS2), Type::TypeAll(_,knK2,tyT2)) |
-        (Type::Existential(tyX1,knK1,tyS2), Type::Existential(_,knK2,tyT2)) |
-        (Type::Recursive(tyX1,knK1,tyS2), Type::Recursive(_,knK2,tyT2)) => {
+        (Type::TypeAll(tyX1, knK1, tyS2), Type::TypeAll(_, knK2, tyT2)) |
+        (Type::Existential(tyX1, knK1, tyS2), Type::Existential(_, knK2, tyT2)) |
+        (Type::Recursive(tyX1, knK1, tyS2), Type::Recursive(_, knK2, tyT2)) => {
             let new_context = context.add_name(tyX1);
 
             knK1 == knK2 && type_equivalence(&new_context, *tyS2, *tyT2)
@@ -104,7 +104,7 @@ pub fn type_equivalence(context: &Context, tys: Type, tyt: Type) -> bool {
                     match tyT1.get(&label).cloned() {
                         None => {
                             return false;
-                        },
+                        }
                         Some(ty2) => {
                             if !type_equivalence(context, ty1, ty2) {
                                 return false;
@@ -126,11 +126,11 @@ pub fn type_map(on_var: &dyn Fn(String) -> Type, ty: Type) -> Type {
     match ty {
         Type::TypeVar(s) => on_var(s),
         Type::TypeArrow(ty1, ty2) => Type::TypeArrow(
-            Box::new(type_map(on_var,*ty1)),
-            Box::new(type_map(on_var,*ty2))
+            Box::new(type_map(on_var, *ty1)),
+            Box::new(type_map(on_var, *ty2)),
         ),
         Type::TypeAbs(tyX, knK1, tyT2) =>
-            Type::TypeAbs(tyX, knK1, Box::new(type_map(on_var,*tyT2))),
+            Type::TypeAbs(tyX, knK1, Box::new(type_map(on_var, *tyT2))),
         Type::TypeApp(tyT1, tyT2) => Type::TypeApp(
             Box::new(type_map(on_var, *tyT1)),
             Box::new(type_map(on_var, *tyT2)),
@@ -138,7 +138,7 @@ pub fn type_map(on_var: &dyn Fn(String) -> Type, ty: Type) -> Type {
         Type::TypeAll(tyX, knK1, tyT2) => Type::TypeAll(
             tyX,
             knK1,
-            Box::new(type_map(on_var, *tyT2))
+            Box::new(type_map(on_var, *tyT2)),
         ),
         Type::Base(b) => Type::Base(b),
         Type::Reference(t) => {
@@ -159,17 +159,16 @@ pub fn type_map(on_var: &dyn Fn(String) -> Type, ty: Type) -> Type {
         Type::Existential(tyX, knK1, tyT2) => Type::Existential(
             tyX,
             knK1,
-            Box::new(type_map(on_var, *tyT2))
+            Box::new(type_map(on_var, *tyT2)),
         ),
         Type::Qualified(constraint, rest) => {
             todo!()
-        },
+        }
     }
 }
 
 /// Find all variables with the "name", replace with the type "replacement", in type "original"
 pub fn type_substitution(name: &String, replacement: Type, original: Type) -> Type {
-
     let on_var = move |old_name: String| -> Type {
         if old_name == *name {
             replacement.clone()
@@ -178,7 +177,7 @@ pub fn type_substitution(name: &String, replacement: Type, original: Type) -> Ty
         }
     };
 
-    type_map(&on_var,original)
+    type_map(&on_var, original)
 }
 
 

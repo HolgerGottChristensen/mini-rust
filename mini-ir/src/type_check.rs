@@ -16,7 +16,7 @@ pub fn type_of(context: &Context, term: Term, substitutions: &mut Substitutions)
         // T-Var
         Term::TermVar(name) => {
             context.get_type(&name)
-        },
+        }
         // T-Abs
         Term::TermAbs(x, t1, term2) => {
             //check_kind_star(context, t1.clone()); todo: Re-add
@@ -246,39 +246,38 @@ pub fn type_of(context: &Context, term: Term, substitutions: &mut Substitutions)
         Term::UnFold(ty) => {
             match crate::type_util::simplify_type(context, ty.clone()) {
                 Type::Recursive(label, kn, ty2) => {
-                    Ok(Type::TypeArrow(Box::new(ty.clone()), Box::new(type_substitution(&label,  ty, *ty2))))
+                    Ok(Type::TypeArrow(Box::new(ty.clone()), Box::new(type_substitution(&label, ty, *ty2))))
                 }
                 _ => Err(format!("Only recursive types can be folded"))
             }
         }
         // T-Pack
-        Term::Pack(tyT1,t2,tyT) => {
+        Term::Pack(tyT1, t2, tyT) => {
             crate::check_kind_star(context, tyT.clone());
 
             match crate::type_util::simplify_type(context, tyT.clone()) {
-                Type::Existential(tyY,k,tyT2) => {
+                Type::Existential(tyY, k, tyT2) => {
                     if crate::kind_of(context, tyT1.clone()) != k {
-                        return Err(format!("The type component does not have the correct kind"))
+                        return Err(format!("The type component does not have the correct kind"));
                     }
 
                     let tyU = type_of(context, *t2, substitutions)?;
                     let tyU_new = type_substitution(&tyY, tyT1, *tyT2);
 
                     if !crate::type_util::type_equivalence(context, tyU, tyU_new) {
-                        return Err(format!("The expected existential type does not match the type of the term"))
+                        return Err(format!("The expected existential type does not match the type of the term"));
                     }
 
                     Ok(tyT)
                 }
                 _ => Err(format!("You can only pack existential types"))
             }
-
         }
         // T-UnPack
-        Term::UnPack(tyX,x,t1,t2) => {
+        Term::UnPack(tyX, x, t1, t2) => {
             let tyT1 = type_of(context, *t1, substitutions)?;
             match crate::type_util::simplify_type(context, tyT1) {
-                Type::Existential(tyY,k,tyT11) => {
+                Type::Existential(tyY, k, tyT11) => {
                     // Add X
                     let context_new = context.add_binding(Binding::TyVarBinding(tyX, k));
                     // Add x
@@ -336,7 +335,7 @@ pub fn type_of(context: &Context, term: Term, substitutions: &mut Substitutions)
                     if crate::type_util::type_equivalence(context, *t11, *t12.clone()) {
                         Ok(*t12)
                     } else {
-                        return Err(format!("The result of the body is not compatible with the domain. Expected the types to be equal."))
+                        return Err(format!("The result of the body is not compatible with the domain. Expected the types to be equal."));
                     }
                 }
                 _ => return Err(format!("Only arrow types can be fixed."))
@@ -354,20 +353,20 @@ pub fn type_of(context: &Context, term: Term, substitutions: &mut Substitutions)
                 name: class_name.clone(),
                 vars: vars.clone(),
                 declarations: declarations.clone(),
-                default_implementations
+                default_implementations,
             });
 
             for (name, declaration) in declarations {
                 new_context = new_context.add_binding(Binding::VarBinding(name.clone(), Type::Qualified(
                     vec![Constraint { ident: class_name.clone(), vars: vars.clone() }],
-                    Box::new(declaration)
+                    Box::new(declaration),
                 )))
             }
 
             type_of(&mut new_context, *continuation, substitutions)
         }
         // T-Instance
-        Term::Instance{ constraints, class_name, ty, mut implementations, continuation } => {
+        Term::Instance { constraints, class_name, ty, mut implementations, continuation } => {
             if !context.class_exists(&class_name) {
                 return Err(format!("The class name was missing in context: {:?}", context));
             }
@@ -399,7 +398,6 @@ pub fn type_of(context: &Context, term: Term, substitutions: &mut Substitutions)
                 }
 
 
-
                 // Add the instances constraints to all the implementations constraints.
                 *implementation_type = Type::Qualified(constraints.clone(), Box::new(implementation_type.clone()));
 
@@ -415,11 +413,11 @@ pub fn type_of(context: &Context, term: Term, substitutions: &mut Substitutions)
 
             //check_overload_exists(context, x.clone(), ty.clone());
 
-            let mut new_context = context.add_binding(Binding::InstanceBinding{
+            let mut new_context = context.add_binding(Binding::InstanceBinding {
                 constraints,
                 class_name,
                 ty,
-                implementations
+                implementations,
             });
 
 

@@ -13,7 +13,6 @@ pub struct MiniExprBlock {
 
 impl Parse for MiniExprBlock {
     fn parse(input: ParseStream) -> syn::Result<Self> {
-
         let content;
         let brace_token = braced!(content in input);
 

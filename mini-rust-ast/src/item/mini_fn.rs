@@ -37,7 +37,7 @@ pub enum MiniFnArg {
         pat: MiniIdent,
         colon_token: Colon,
         ty: Box<Type>,
-    }
+    },
 }
 
 impl MiniFn {
@@ -48,22 +48,22 @@ impl MiniFn {
         while !input.is_empty() {
             let mut arg: MiniFnArg = input.parse()?;
             match &mut arg {
-                MiniFnArg::Receiver {..} if has_receiver => {
+                MiniFnArg::Receiver { .. } if has_receiver => {
                     return Err(Error::new(
                         Span::call_site(),
                         "unexpected second method receiver",
                     ));
                 }
-                MiniFnArg::Receiver {..} if !args.is_empty() => {
+                MiniFnArg::Receiver { .. } if !args.is_empty() => {
                     return Err(Error::new(
                         Span::call_site(),
                         "unexpected method receiver",
                     ));
                 }
-                MiniFnArg::Receiver {..} => {
+                MiniFnArg::Receiver { .. } => {
                     has_receiver = true;
                 }
-                MiniFnArg::Typed {..} => (),
+                MiniFnArg::Typed { .. } => (),
             }
             args.push_value(arg);
 
@@ -120,7 +120,7 @@ impl Parse for MiniFn {
             paren_token,
             inputs,
             return_type: output_ty,
-            block: Box::new(input.parse()?)
+            block: Box::new(input.parse()?),
         })
     }
 }
@@ -171,7 +171,7 @@ impl Parse for MiniFnArg {
                 return Ok(MiniFnArg::Receiver {
                     reference,
                     mutability,
-                    self_token
+                    self_token,
                 });
             }
         }
@@ -180,7 +180,7 @@ impl Parse for MiniFnArg {
         Ok(MiniFnArg::Typed {
             pat,
             colon_token: colon,
-            ty: Box::new(ty)
+            ty: Box::new(ty),
         })
     }
 }
@@ -208,11 +208,10 @@ impl ToSystemFOmegaTerm for MiniFn {
         // Ascribe with the return type
         body = Term::Ascribe(
             Box::new(body),
-            TypeVar("#Return".to_string())
+            TypeVar("#Return".to_string()),
         );
 
         body = Term::Define("#Return".to_string(), return_type, Box::new(body));
-
 
 
         for param in self.inputs.iter().rev() {
@@ -228,14 +227,14 @@ impl ToSystemFOmegaTerm for MiniFn {
                     body = Term::TermAbs(
                         "self".to_string(),
                         ty,
-                        Box::new(body)
+                        Box::new(body),
                     );
                 }
                 MiniFnArg::Typed { pat, colon_token, ty } => {
                     body = Term::TermAbs(
                         pat.0.to_string(),
                         MiniType(*ty.clone()).convert_type(),
-                        Box::new(body)
+                        Box::new(body),
                     );
                 }
             }
@@ -245,7 +244,7 @@ impl ToSystemFOmegaTerm for MiniFn {
         body = Term::TermAbs(
             "arg0".to_string(),
             FType::Base(BaseType::Unit),
-            Box::new(body)
+            Box::new(body),
         );
 
         // Todo: How will we handle generic bounds?

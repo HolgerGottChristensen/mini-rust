@@ -17,7 +17,7 @@ impl Display for Kind {
             Kind::KindArrow(k1, k2) => {
                 let colored = format!("{} <bright-blue><b>=></> {}", k1, k2);
                 write!(f, "{}", colorize_string(colored))
-            },
+            }
         }
     }
 }

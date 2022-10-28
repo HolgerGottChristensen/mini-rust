@@ -135,7 +135,7 @@ impl Term {
             Term::TermVar(x) => {
                 //colorize_string(format!("<magenta>{}</>", x))
                 format!("{}", x)
-            },
+            }
             Term::True => colorize_string("<green>true</>"),
             Term::False => colorize_string("<green>false</>"),
             Term::Unit => colorize_string("<green>unit</>"),
@@ -156,11 +156,11 @@ impl Term {
                 let vars_string = vars.iter().map(|t| t.to_string_type(context, color)).collect::<Vec<_>>().join(" ");
                 let declarations = declarations.iter().map(|(name, t)| format!("{} = {}", name, t.to_string_type(context, color))).collect::<Vec<_>>().join(", ");
                 format!("class {} {} where {} in\n{}", name, vars_string, declarations, continuation.to_string_term(context, color))
-            },
+            }
             Term::Instance { constraints, class_name, ty, implementations, continuation } => {
                 let implementations = implementations.iter().map(|(name, (t, _))| format!("{} = {}", name, t.to_string_term(context, color))).collect::<Vec<_>>().join(", ");
                 format!("instance {} {} where {} in\n{}", class_name, ty.to_string_type(context, color), implementations, continuation.to_string_term(context, color))
-            },
+            }
             Term::Fix(t) => format!("fix {}", t.to_string_term(context, color)),
             Term::Fold(t) => format!("fold {}{}{}", get_color(color, "["), t.to_string_type(context, color + 1), get_color(color, "]")),
             Term::UnFold(t) => format!("unfold {}{}{}", get_color(color, "["), t.to_string_type(context, color + 1), get_color(color, "]")),
@@ -171,11 +171,11 @@ impl Term {
             Term::If(t1, t2, t3) =>
                 format!("if {} then {} else {}", t1.to_string_term(context, color), t2.to_string_term(context, color), t3.to_string_term(context, color)),
             Term::Let(x, t1, t2) =>
-                format!("let {} = {}{}{} in {}{}{}", x, get_color(color, "("), t1.to_string_term(context, color + 1), get_color(color, ")"),  get_color(color, "("), t2.to_string_term(context, color + 1), get_color(color, ")")),
+                format!("let {} = {}{}{} in {}{}{}", x, get_color(color, "("), t1.to_string_term(context, color + 1), get_color(color, ")"), get_color(color, "("), t2.to_string_term(context, color + 1), get_color(color, ")")),
             Term::Tuple(terms) => {
                 let mut r = terms.iter().map(|a| a.to_string_term(context, color + 1)).collect::<Vec<_>>().join(", ");
                 format!("{}{}{}", get_color(color, "{"), r, get_color(color, "}"))
-            },
+            }
             Term::Record(terms) => {
                 let mut r = terms.iter().map(|(name, term)| {
                     let mut s = name.clone();
@@ -184,7 +184,7 @@ impl Term {
                     s
                 }).collect::<Vec<_>>().join(", ");
                 format!("{}{}{}", get_color(color, "{"), r, get_color(color, "}"))
-            },
+            }
             Term::TupleProjection(t1, index) => {
                 format!("{}.{}", t1.to_string_term(context, color), index)
             }
@@ -208,12 +208,12 @@ impl Term {
 
     fn to_string_term(&self, context: &Context, color: u32) -> String {
         match self {
-            Term::TermAbs(x,tyT1,t2) => {
+            Term::TermAbs(x, tyT1, t2) => {
                 let (new_context, name) = context.pick_fresh_name(x);
 
                 format!("λ{}: {}. {}", name, tyT1.to_string_type(context, color), t2.to_string_term(&new_context, color))
             }
-            Term::TermTypeAbs(x,knK,t) => {
+            Term::TermTypeAbs(x, knK, t) => {
                 let (new_context, name) = context.pick_fresh_name(x);
 
                 format!("λ{}::{}. {}", name, knK, t.to_string_term(&new_context, color))

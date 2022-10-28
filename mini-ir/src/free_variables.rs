@@ -21,9 +21,9 @@ pub fn free_term_variables(term: Term) -> HashSet<String> {
         Term::Unit => HashSet::new(),
         Term::Reference(r) => free_term_variables(*r),
         Term::If(t1, t2, t3) => {
-            &free_term_variables(*t1)     |
+            &free_term_variables(*t1) |
                 &(&free_term_variables(*t2) |
-                &free_term_variables(*t3))
+                    &free_term_variables(*t3))
         }
         Term::Let(x, l, t) =>
             &free_term_variables(*l) | &(&free_term_variables(*t) - &HashSet::from([x])),
@@ -43,7 +43,7 @@ pub fn free_term_variables(term: Term) -> HashSet<String> {
             }),
         Term::Fold(typ) | Term::UnFold(typ) => free_type_variables(typ),
         Term::Pack(typ1, t, typ2) =>
-            &free_term_variables(*t) | &(&free_type_variables(typ1) | & free_type_variables(typ2)),
+            &free_term_variables(*t) | &(&free_type_variables(typ1) | &free_type_variables(typ2)),
         Term::UnPack(x1, x2, t1, t2) =>
             &free_term_variables(*t1) | &(&free_term_variables(*t2) - &HashSet::from([x1, x2])),
         Term::Ascribe(t, typ) =>
@@ -54,8 +54,8 @@ pub fn free_term_variables(term: Term) -> HashSet<String> {
         Term::Seq(term1, term2) =>
             &free_term_variables(*term1) | &free_term_variables(*term2),
         Term::Fix(t) => free_term_variables(*t),
-        Term::Class{..} => {todo!()}
-        Term::Instance{..} => {todo!()}
+        Term::Class { .. } => { todo!() }
+        Term::Instance { .. } => { todo!() }
         Term::Assignment(_, t) => free_term_variables(*t)
     }
 }

@@ -7,7 +7,6 @@ pub struct Graph<T> {
 
 /// Takes a list of terms as input and return a list of ordered terms by their interdependencies
 pub fn dependency_graph(terms: Vec<Term>) -> Result<Vec<Term>, String> {
-
     /*
     let mut graph = Graph {
         nodes: Vec::new(),
@@ -23,7 +22,6 @@ pub fn dependency_graph(terms: Vec<Term>) -> Result<Vec<Term>, String> {
 }
 
 impl<T> Graph<T> {
-
     fn dfs(&self, s: usize, queue: &mut Vec<usize>, marked: &mut Vec<bool>) {
         marked[s] = true;
         for (from, to) in &self.edges {
@@ -36,7 +34,7 @@ impl<T> Graph<T> {
         queue.push(s);
     }
 
-    fn cycle_dfs(&self, s: usize, on_stack: &mut Vec<bool>, edge_to: &mut Vec<usize>, marked: &mut Vec<bool>) -> Option<Vec<usize>>{
+    fn cycle_dfs(&self, s: usize, on_stack: &mut Vec<bool>, edge_to: &mut Vec<usize>, marked: &mut Vec<bool>) -> Option<Vec<usize>> {
         marked[s] = true;
         on_stack[s] = true;
         for (from, to) in &self.edges {
@@ -82,9 +80,9 @@ impl<T> Graph<T> {
     }
 
     pub fn cycle(&self) -> Option<Vec<usize>> {
-        let mut marked = vec![false;self.nodes.len()];
-        let mut on_stack = vec![false;self.nodes.len()];
-        let mut edge_to = vec![0;self.nodes.len()];
+        let mut marked = vec![false; self.nodes.len()];
+        let mut on_stack = vec![false; self.nodes.len()];
+        let mut edge_to = vec![0; self.nodes.len()];
 
         for i in 0..self.nodes.len() {
             if !marked[i] {
@@ -104,25 +102,24 @@ mod tests {
     fn top_sort_small_graph() {
         //arrange
         let graph = Graph {
-            nodes: vec![0,1,2,3,4,5,6,7,8,9,10,11,12],
+            nodes: vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
             edges: vec![
-                (0,5), (0,1), (0,6),
-                (2,3), (2,0),
-                (3,5),
-                (5,4),
-                (6,9), (6,4),
-                (7,6),
-                (8,7),
-                (9,12), (9,11), (9,10),
-                (11,12)
-            ]
+                (0, 5), (0, 1), (0, 6),
+                (2, 3), (2, 0),
+                (3, 5),
+                (5, 4),
+                (6, 9), (6, 4),
+                (7, 6),
+                (8, 7),
+                (9, 12), (9, 11), (9, 10),
+                (11, 12),
+            ],
         };
 
         //act
         let sorted = graph.depth_first_order();
 
         //assert
-        assert_eq!(sorted, vec![4,5,1,12,11,10,9,6,0,3,2,7,8]);
-
+        assert_eq!(sorted, vec![4, 5, 1, 12, 11, 10, 9, 6, 0, 3, 2, 7, 8]);
     }
 }
