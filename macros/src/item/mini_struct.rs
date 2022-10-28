@@ -475,7 +475,7 @@ mod tests {
 
         // Act
         let converted = mini.convert_term();
-        let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new());
+        let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new()).unwrap();
         //let converted_kind = kind_of(&context, converted_type.clone());
 
         println!("Lambda: {}", &converted);
@@ -511,7 +511,7 @@ mod tests {
 
         // Act
         let converted = mini.convert_term();
-        let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new());
+        let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new()).unwrap();
         //let converted_kind = kind_of(&context, converted_type.clone());
 
         println!("Lambda: {}", &converted);

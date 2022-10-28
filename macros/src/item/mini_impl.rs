@@ -173,7 +173,7 @@ mod tests {
         let converted = mini.convert_term();
         println!("Lambda: {}", &converted);
 
-        let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new());
+        let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new()).unwrap();
         println!("Type: {}", &converted_type);
 
         let converted_kind = kind_of(&context, converted_type.clone());
@@ -202,7 +202,7 @@ mod tests {
         let converted = mini.convert_term();
         println!("Lambda: {}", &converted);
 
-        let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new());
+        let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new()).unwrap();
         println!("Type: {}", &converted_type);
 
         let converted_kind = kind_of(&context, converted_type.clone());
@@ -231,7 +231,7 @@ mod tests {
         let converted = mini.convert_term();
         println!("Lambda: {}", &converted);
 
-        let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new());
+        let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new()).unwrap();
         println!("Type: {}", &converted_type);
 
         let converted_kind = kind_of(&context, converted_type.clone());
@@ -268,7 +268,7 @@ mod tests {
         let converted = mini.convert_term();
         println!("Lambda: {}", &converted);
 
-        let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new());
+        let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new()).unwrap();
         println!("Type: {}", &converted_type);
 
         let converted_kind = kind_of(&context, converted_type.clone());
@@ -306,7 +306,7 @@ mod tests {
         let converted = mini.convert_term();
         println!("Lambda: {}", &converted);
 
-        let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new());
+        let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new()).unwrap();
         println!("Type: {}", &converted_type);
 
         let converted_kind = kind_of(&context, converted_type.clone());

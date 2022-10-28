@@ -185,7 +185,7 @@ impl Parse for MiniFnArg {
 
 impl ToSystemFOmegaType for MiniFn {
     fn convert_type(&self) -> FType {
-        type_of(&Context::new(), ToSystemFOmegaTerm::convert_term(self), &mut Substitutions::new())
+        type_of(&Context::new(), ToSystemFOmegaTerm::convert_term(self), &mut Substitutions::new()).unwrap()
     }
 }
 
@@ -276,7 +276,7 @@ mod tests {
         let converted = mini.convert_term();
 
         println!("\nLambda:\n{}", &converted);
-        println!("\nType:\n{}", type_of(&Context::new(), converted, &mut Substitutions::new()));
+        println!("\nType:\n{}", type_of(&Context::new(), converted, &mut Substitutions::new()).unwrap());
 
         // Assert
         //assert!(matches!(actual, CarbideExpr::Lit(LitExpr {lit: Lit::Int(_)})))
@@ -297,7 +297,7 @@ mod tests {
         let converted = mini.convert_term();
 
         println!("\nLambda:\n{}", &converted);
-        println!("\nType:\n{}", type_of(&Context::new(), converted, &mut Substitutions::new()));
+        println!("\nType:\n{}", type_of(&Context::new(), converted, &mut Substitutions::new()).unwrap());
 
         // Assert
         //assert!(matches!(actual, CarbideExpr::Lit(LitExpr {lit: Lit::Int(_)})))
@@ -318,7 +318,7 @@ mod tests {
         let converted = mini.convert_term();
 
         println!("\nLambda:\n{}", &converted);
-        println!("\nType:\n{}", type_of(&Context::new(), converted, &mut Substitutions::new()));
+        println!("\nType:\n{}", type_of(&Context::new(), converted, &mut Substitutions::new()).unwrap());
 
         // Assert
         //assert!(matches!(actual, CarbideExpr::Lit(LitExpr {lit: Lit::Int(_)})))
@@ -341,7 +341,7 @@ mod tests {
         let converted = mini.convert_term();
 
         println!("\nLambda:\n{}", &converted);
-        println!("\nType:\n{}", type_of(&Context::new(), converted, &mut Substitutions::new()));
+        println!("\nType:\n{}", type_of(&Context::new(), converted, &mut Substitutions::new()).unwrap());
 
         // Assert
         //assert!(matches!(actual, CarbideExpr::Lit(LitExpr {lit: Lit::Int(_)})))
@@ -367,7 +367,7 @@ mod tests {
         let converted = mini.convert_term();
 
         println!("\nLambda:\n{}", &converted);
-        println!("\nType:\n{}", type_of(&Context::new(), converted, &mut Substitutions::new()));
+        println!("\nType:\n{}", type_of(&Context::new(), converted, &mut Substitutions::new()).unwrap());
 
         // Assert
         //assert!(matches!(actual, CarbideExpr::Lit(LitExpr {lit: Lit::Int(_)})))
@@ -386,7 +386,7 @@ mod tests {
         let converted = mini.convert_term();
 
         println!("\nLambda:\n{}", &converted);
-        println!("\nType:\n{}", type_of(&Context::new(), converted, &mut Substitutions::new()));
+        println!("\nType:\n{}", type_of(&Context::new(), converted, &mut Substitutions::new()).unwrap());
 
         // Assert
         //assert!(matches!(actual, CarbideExpr::Lit(LitExpr {lit: Lit::Int(_)})))
@@ -405,7 +405,7 @@ mod tests {
         let converted = mini.convert_term();
 
         println!("\nLambda:\n{}", &converted);
-        println!("\nType:\n{}", type_of(&Context::new(), converted, &mut Substitutions::new()));
+        println!("\nType:\n{}", type_of(&Context::new(), converted, &mut Substitutions::new()).unwrap());
 
         // Assert
         //assert!(matches!(actual, CarbideExpr::Lit(LitExpr {lit: Lit::Int(_)})))
@@ -424,7 +424,7 @@ mod tests {
         let converted = mini.convert_term();
 
         println!("\nLambda:\n{}", &converted);
-        println!("\nType:\n{}", type_of(&Context::new(), converted, &mut Substitutions::new()));
+        println!("\nType:\n{}", type_of(&Context::new(), converted, &mut Substitutions::new()).unwrap());
 
         // Assert
         //assert!(matches!(actual, CarbideExpr::Lit(LitExpr {lit: Lit::Int(_)})))
@@ -449,7 +449,7 @@ mod tests {
         let converted = mini.convert_term();
 
         println!("\nLambda:\n{}", &converted);
-        println!("\nType:\n{}", type_of(&Context::new(), converted, &mut Substitutions::new()));
+        println!("\nType:\n{}", type_of(&Context::new(), converted, &mut Substitutions::new()).unwrap());
 
         // Assert
         //assert!(matches!(actual, CarbideExpr::Lit(LitExpr {lit: Lit::Int(_)})))
@@ -468,7 +468,7 @@ mod tests {
         let converted = mini.convert_term();
 
         println!("\nLambda:\n{}", &converted);
-        println!("\nType:\n{}", type_of(&Context::new(), converted, &mut Substitutions::new()));
+        println!("\nType:\n{}", type_of(&Context::new(), converted, &mut Substitutions::new()).unwrap());
 
         // Assert
         //assert!(matches!(actual, CarbideExpr::Lit(LitExpr {lit: Lit::Int(_)})))
@@ -487,7 +487,7 @@ mod tests {
         let converted = mini.convert_term();
 
         println!("\nLambda:\n{}", &converted);
-        println!("\nType:\n{}", type_of(&Context::new(), converted, &mut Substitutions::new()));
+        println!("\nType:\n{}", type_of(&Context::new(), converted, &mut Substitutions::new()).unwrap());
 
         // Assert
         //assert!(matches!(actual, CarbideExpr::Lit(LitExpr {lit: Lit::Int(_)})))
@@ -506,7 +506,7 @@ mod tests {
         let converted = mini.convert_term();
 
         println!("\nLambda:\n{}", &converted);
-        println!("\nType:\n{}", type_of(&Context::new(), converted, &mut Substitutions::new()));
+        println!("\nType:\n{}", type_of(&Context::new(), converted, &mut Substitutions::new()).unwrap());
 
         // Assert
         //assert!(matches!(actual, CarbideExpr::Lit(LitExpr {lit: Lit::Int(_)})))
@@ -529,7 +529,7 @@ mod tests {
         let converted = mini.convert_term();
 
         println!("\nLambda:\n{}", &converted);
-        println!("\nType:\n{}", type_of(&Context::new(), converted, &mut Substitutions::new()));
+        println!("\nType:\n{}", type_of(&Context::new(), converted, &mut Substitutions::new()).unwrap());
 
         // Assert
         //assert!(matches!(actual, CarbideExpr::Lit(LitExpr {lit: Lit::Int(_)})))
@@ -550,7 +550,7 @@ mod tests {
         let converted = mini.convert_term();
 
         println!("\nLambda:\n{}", &converted);
-        println!("\nType:\n{}", type_of(&Context::new(), converted, &mut Substitutions::new()));
+        println!("\nType:\n{}", type_of(&Context::new(), converted, &mut Substitutions::new()).unwrap());
 
         // Assert
         //assert!(matches!(actual, CarbideExpr::Lit(LitExpr {lit: Lit::Int(_)})))
@@ -571,7 +571,7 @@ mod tests {
         let converted = mini.convert_term();
 
         println!("\nLambda:\n{}", &converted);
-        println!("\nType:\n{}", type_of(&Context::new(), converted, &mut Substitutions::new()));
+        println!("\nType:\n{}", type_of(&Context::new(), converted, &mut Substitutions::new()).unwrap());
 
         // Assert
         //assert!(matches!(actual, CarbideExpr::Lit(LitExpr {lit: Lit::Int(_)})))

@@ -178,7 +178,7 @@ mod tests {
         let converted = mini.convert_term();
 
         println!("\nLambda:\n{}", &converted);
-        println!("\nType:\n{}", type_of(&Context::new(), converted, &mut Substitutions::new()));
+        println!("\nType:\n{}", type_of(&Context::new(), converted, &mut Substitutions::new()).unwrap());
 
         // Assert
         //assert!(matches!(actual, CarbideExpr::Lit(LitExpr {lit: Lit::Int(_)})))

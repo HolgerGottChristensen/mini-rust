@@ -119,7 +119,7 @@ pub fn type_equivalence(context: &Context, tys: Type, tyt: Type) -> bool {
             }
         },
         (ty, Type::TypeVar(i)) | (Type::TypeVar(i), ty) => {
-            type_equivalence(context, get_type(context, &i), ty)
+            type_equivalence(context, get_type(context, &i).unwrap(), ty)
         }
         (Type::TypeAbs(tyX1,knKS1,tyS2), Type::TypeAbs(_,knKT1,tyT2)) => {
             let new_context = add_name(context, tyX1);
@@ -291,16 +291,11 @@ pub fn check_kind_star(context: &Context, tyt: Type) {
 // TYPING
 /// Check the type of a given term with the context. We need all classes to be the first,
 /// and instances to be the second.
-pub fn type_of(context: &Context, term: Term, substitutions: &mut Substitutions) -> Type {
+pub fn type_of(context: &Context, term: Term, substitutions: &mut Substitutions) -> Result<Type, String> {
     match term {
         // T-Var
         Term::TermVar(name) => {
             get_type(context, &name)
-            /*match context.potential_candidates(&name) {
-                ZeroOneMore::Zero => panic!("Unbound variable in context: {:?}", context),
-                ZeroOneMore::One(t) => t,
-                ZeroOneMore::More(_) => panic!("Multiple potential candidates. Context: {:?}", context)
-            }*/
         },
         // T-Abs
         Term::TermAbs(x, t1, term2) => {
@@ -308,24 +303,23 @@ pub fn type_of(context: &Context, term: Term, substitutions: &mut Substitutions)
 
             let mut new_context = context.add_binding(Binding::VarBinding(x, t1.clone()));
 
-            let t2 = type_of(&mut new_context, *term2, substitutions);
-            Type::TypeArrow(Box::new(t1), Box::new(t2))
+            let t2 = type_of(&mut new_context, *term2, substitutions)?;
+            Ok(Type::TypeArrow(Box::new(t1), Box::new(t2)))
         }
         // T-App
         Term::TermApp(term1, term2) => {
             println!("trying to type check {:?} {:?}", term1, term2);
-            let mut t2 = type_of(context, *term2, substitutions);
-            let mut t1 = type_of(context, *term1, substitutions);
+            let mut t2 = type_of(context, *term2, substitutions)?;
+            let mut t1 = type_of(context, *term1, substitutions)?;
 
-            let mut result = Type::TypeArrow(Box::new(t2.clone()), Box::new(Type::TypeVar("#NEW".to_string())));
+            let mut result = TypeArrow(Box::new(t2.clone()), Box::new(TypeVar("#NEW".to_string())));
 
-            result = unify(context, substitutions, t1, result, vec![], vec![]).unwrap();
+            result = unify(context, substitutions, t1, result, vec![], vec![])?;
 
-            result = match result {
-                TypeArrow(_, x) => *x,
-                _ => panic!("Must be a type application (should be a function type), found {:?}", result)
-            };
-            result
+            match result {
+                TypeArrow(_, x) => Ok(*x),
+                _ => Err(format!("Must be a type application (should be a function type), found {:?}", result))
+            }
 
             /*match simplify_type(context, t1) {
                 Type::TypeArrow(t11, t12) => {
@@ -344,94 +338,94 @@ pub fn type_of(context: &Context, term: Term, substitutions: &mut Substitutions)
         Term::TermTypeAbs(x, k1, term2) => {
             let mut new_context = context.add_binding(Binding::TyVarBinding(x.clone(), k1.clone()));
 
-            let t2 = type_of(&mut new_context, *term2, substitutions);
+            let t2 = type_of(&mut new_context, *term2, substitutions)?;
 
-            Type::TypeAll(x, k1, Box::new(t2))
+            Ok(Type::TypeAll(x, k1, Box::new(t2)))
         }
         // T-TApp
         Term::TermTypeApp(term1, t2) => {
             let k2 = kind_of(context, t2.clone());
-            let t1 = type_of(context, *term1, substitutions);
+            let t1 = type_of(context, *term1, substitutions)?;
             match simplify_type(context, t1) {
                 Type::TypeAll(name, k11, t12) => {
                     if k11 != k2 {
-                        panic!("Type argument has wrong kind")
+                        Err(format!("Type argument has wrong kind"))
                     } else {
-                        type_substitution(&name, t2, *t12)
+                        Ok(type_substitution(&name, t2, *t12))
                     }
                 }
-                _ => panic!("universal type expected")
+                _ => Err(format!("universal type expected"))
             }
         }
         // T-If
         Term::If(term1, term2, term3) => {
-            let t1 = type_of(context, *term1, substitutions);
+            let t1 = type_of(context, *term1, substitutions)?;
             let t1 = simplify_type(context, t1);
 
             if !type_equivalence(context, t1, Type::Base(BaseType::Bool)) {
-                panic!("The type of the guard needs to be a Bool");
+                return Err(format!("The type of the guard needs to be a Bool"));
             }
 
-            let t2 = type_of(context, *term2, substitutions);
+            let t2 = type_of(context, *term2, substitutions)?;
             let t2 = simplify_type(context, t2);
 
-            let t3 = type_of(context, *term3, substitutions);
+            let t3 = type_of(context, *term3, substitutions)?;
             let t3 = simplify_type(context, t3);
 
             if !type_equivalence(context, t2.clone(), t3) {
-                panic!("The type of the terms of the branches do not match");
+                return Err(format!("The type of the terms of the branches do not match"));
             }
 
-            t2
+            Ok(t2)
         }
         // T-True, T-False
-        Term::True | Term::False => Type::Base(BaseType::Bool),
+        Term::True | Term::False => Ok(Type::Base(BaseType::Bool)),
         // T-Integer
-        Term::Integer(_) => Type::Base(BaseType::Int),
+        Term::Integer(_) => Ok(Type::Base(BaseType::Int)),
         // T-Float
-        Term::Float(_) => Type::Base(BaseType::Float),
+        Term::Float(_) => Ok(Type::Base(BaseType::Float)),
         // T-Unit
-        Term::Unit => Type::Base(BaseType::Unit),
+        Term::Unit => Ok(Type::Base(BaseType::Unit)),
         Term::Reference(term) => {
-            let t1 = type_of(context, *term, substitutions);
+            let t1 = type_of(context, *term, substitutions)?;
             let t1 = simplify_type(context, t1);
 
-            Type::Reference(Box::new(t1))
+            Ok(Type::Reference(Box::new(t1)))
         }
         // T-Let
         Term::Let(x, term1, term2) => {
-            let t1 = type_of(context, *term1, substitutions);
+            let t1 = type_of(context, *term1, substitutions)?;
             let t1 = simplify_type(context, t1);
 
             let mut new_context = context.add_binding(Binding::VarBinding(x, t1));
 
-            let t2 = type_of(&mut new_context, *term2, substitutions);
+            let t2 = type_of(&mut new_context, *term2, substitutions)?;
 
-            t2
+            Ok(t2)
         }
         // T-Tuple
         Term::Tuple(terms) => {
             let mut types = Vec::new();
 
             for term in terms {
-                let t = type_of(context, term, substitutions);
+                let t = type_of(context, term, substitutions)?;
                 let t = simplify_type(context, t);
                 types.push(t);
             }
 
-            Type::Tuple(types)
+            Ok(Type::Tuple(types))
         }
         // T-TupleProj
         Term::TupleProjection(term, index) => {
-            let t = type_of(context, *term, substitutions);
+            let t = type_of(context, *term, substitutions)?;
             match simplify_type(context, t) {
                 Type::Tuple(types) => {
                     if index >= types.len() {
-                        panic!("Trying to project a tuple with an index out of range")
+                        return Err(format!("Trying to project a tuple with an index out of range"));
                     }
-                    types[index].clone()
+                    Ok(types[index].clone())
                 }
-                _ => panic!("Only Tuples can be projected with indexes")
+                _ => Err(format!("Only Tuples can be projected with indexes"))
             }
         }
         // T-Rcd
@@ -439,29 +433,29 @@ pub fn type_of(context: &Context, term: Term, substitutions: &mut Substitutions)
             let mut types = HashMap::new();
 
             for (label, term) in terms {
-                let t = type_of(context, term, substitutions);
+                let t = type_of(context, term, substitutions)?;
                 let t = simplify_type(context, t);
                 types.insert(label, t);
             }
 
-            Type::Record(types)
+            Ok(Type::Record(types))
         }
         // T-Proj
         Term::RecordProjection(term, label) => {
-            let t = type_of(context, *term, substitutions);
+            let t = type_of(context, *term, substitutions)?;
             match simplify_type(context, t) {
                 Type::Record(types) => {
                     match types.get(&label) {
-                        None => panic!("Projected with a label not in the record"),
-                        Some(t) => t.clone(),
+                        None => Err(format!("Projected with a label not in the record")),
+                        Some(t) => Ok(t.clone()),
                     }
                 }
-                t => panic!("Only records can be projected with labels, found: {:?}", t)
+                t => Err(format!("Only records can be projected with labels, found: {:?}", t))
             }
         }
         // T-Variant
         Term::Tagging(tag, term, t1) => {
-            let t = type_of(context, *term, substitutions);
+            let t = type_of(context, *term, substitutions)?;
             let t = simplify_type(context, t);
 
             match simplify_type(context, t1.clone()) {
@@ -472,20 +466,20 @@ pub fn type_of(context: &Context, term: Term, substitutions: &mut Substitutions)
                         Some(case) => {
                             // We need the type of the term to be the same as specified in the variants.
                             if type_equivalence(context, case, t) {
-                                t1
+                                Ok(t1)
                             } else {
-                                panic!("The type does not match the type specified by the variant with the same label")
+                                Err(format!("The type does not match the type specified by the variant with the same label"))
                             }
                         }
-                        None => panic!("The label used is not a member of the variant")
+                        None => Err(format!("The label used is not a member of the variant"))
                     }
                 }
-                _ => panic!("A tagging need to be tagged with a variant type, or something that simplifies to a variant type")
+                _ => Err(format!("A tagging need to be tagged with a variant type, or something that simplifies to a variant type"))
             }
         }
         // T-Case
         Term::Case(term, cases) => {
-            let t = type_of(context, *term, substitutions);
+            let t = type_of(context, *term, substitutions)?;
             match simplify_type(context, t) {
                 Type::Variants(types) => {
                     let mut case_types = Vec::new();
@@ -495,11 +489,11 @@ pub fn type_of(context: &Context, term: Term, substitutions: &mut Substitutions)
                             Some(ty) => {
                                 let mut new_context = context.add_binding(Binding::VarBinding(binding, ty.clone()));
 
-                                let t = type_of(&mut new_context, inner_term, substitutions);
+                                let t = type_of(&mut new_context, inner_term, substitutions)?;
                                 let inner_term_type = simplify_type(&new_context, t);
                                 case_types.push(inner_term_type);
                             }
-                            None => panic!("The case label is not specified in the type of the term, and can therefore not match")
+                            None => return Err(format!("The case label is not specified in the type of the term, and can therefore not match"))
                         }
                     }
 
@@ -507,33 +501,33 @@ pub fn type_of(context: &Context, term: Term, substitutions: &mut Substitutions)
                     if let Some(first) = case_types.first() {
                         let equal = case_types.iter().cloned().all(|a| type_equivalence(context, first.clone(), a));
                         if equal {
-                            first.clone()
+                            Ok(first.clone())
                         } else {
-                            panic!("Not all cases in the case term return the same type as required")
+                            Err(format!("Not all cases in the case term return the same type as required"))
                         }
                     } else {
-                        panic!("The case term needs at least one case to type check")
+                        Err(format!("The case term needs at least one case to type check"))
                     }
                 }
-                _ => panic!("You can only use a case on a term that is a variant.")
+                _ => Err(format!("You can only use a case on a term that is a variant."))
             }
         }
         // T-Fold
         Term::Fold(ty) => {
             match simplify_type(context, ty.clone()) {
                 Type::Recursive(label, kn, ty2) => {
-                    Type::TypeArrow(Box::new(type_substitution(&label, ty.clone(), *ty2)), Box::new(ty))
+                    Ok(Type::TypeArrow(Box::new(type_substitution(&label, ty.clone(), *ty2)), Box::new(ty)))
                 }
-                _ => panic!("Only recursive types can be folded")
+                _ => Err(format!("Only recursive types can be folded"))
             }
         }
         // T-UnFold
         Term::UnFold(ty) => {
             match simplify_type(context, ty.clone()) {
                 Type::Recursive(label, kn, ty2) => {
-                    Type::TypeArrow(Box::new(ty.clone()), Box::new(type_substitution(&label,  ty, *ty2)))
+                    Ok(Type::TypeArrow(Box::new(ty.clone()), Box::new(type_substitution(&label,  ty, *ty2))))
                 }
-                _ => panic!("Only recursive types can be folded")
+                _ => Err(format!("Only recursive types can be folded"))
             }
         }
         // T-Pack
@@ -543,25 +537,25 @@ pub fn type_of(context: &Context, term: Term, substitutions: &mut Substitutions)
             match simplify_type(context, tyT.clone()) {
                 Type::Existential(tyY,k,tyT2) => {
                     if kind_of(context, tyT1.clone()) != k {
-                        panic!("The type component does not have the correct kind")
+                        return Err(format!("The type component does not have the correct kind"))
                     }
 
-                    let tyU = type_of(context, *t2, substitutions);
+                    let tyU = type_of(context, *t2, substitutions)?;
                     let tyU_new = type_substitution(&tyY, tyT1, *tyT2);
 
                     if !type_equivalence(context, tyU, tyU_new) {
-                        panic!("The expected existential type does not match the type of the term")
+                        return Err(format!("The expected existential type does not match the type of the term"))
                     }
 
-                    tyT
+                    Ok(tyT)
                 }
-                _ => panic!("You can only pack existential types")
+                _ => Err(format!("You can only pack existential types"))
             }
 
         }
         // T-UnPack
         Term::UnPack(tyX,x,t1,t2) => {
-            let tyT1 = type_of(context, *t1, substitutions);
+            let tyT1 = type_of(context, *t1, substitutions)?;
             match simplify_type(context, tyT1) {
                 Type::Existential(tyY,k,tyT11) => {
                     // Add X
@@ -571,26 +565,26 @@ pub fn type_of(context: &Context, term: Term, substitutions: &mut Substitutions)
 
                     type_of(&mut context_new, *t2, substitutions)
                 }
-                _ => panic!("You can only pack existential types")
+                _ => Err(format!("You can only pack existential types"))
             }
         }
         // T-Ascribe
         Term::Ascribe(t, ty) => {
             //check_kind_star(context, ty.clone()); // Todo: We might need to re-add this, but it will fail if we try to ascribe with a defined type, because we cant check the kind of that.
 
-            let term_type = type_of(context, *t, substitutions);
+            let term_type = type_of(context, *t, substitutions)?;
 
             if type_equivalence(context, term_type.clone(), ty.clone()) {
-                term_type //ty // <- The ty was there before. The two have two different semantics.
+                Ok(term_type) //ty // <- The ty was there before. The two have two different semantics.
                 // If ty then if we ascribe with a tyVar which is common, we will return a TyVar which is not fun for those
                 // checking the type like TupleProjection and friends.
             } else {
                 // Todo: Consider extracting this to a try_get_type
                 let t = match ty {
-                    Type::TypeVar(i) => get_type(context, &i),
+                    Type::TypeVar(i) => get_type(context, &i)?,
                     l => l,
                 };
-                panic!("The ascription expected the type to be: {}, but it was: {}, in Context: {:?}", t.to_string_type(context, 0), term_type.to_string_type(context, 0), context)
+                Err(format!("The ascription expected the type to be: {}, but it was: {}, in Context: {:?}", t.to_string_type(context, 0), term_type.to_string_type(context, 0), context))
             }
         }
         // T-Define
@@ -605,33 +599,33 @@ pub fn type_of(context: &Context, term: Term, substitutions: &mut Substitutions)
         }
         // T-Seq
         Term::Seq(term1, term2) => {
-            let t1 = type_of(context, *term1, substitutions); // Todo: If we convert to result, we need to handle that here.
+            let t1 = type_of(context, *term1, substitutions)?; // Todo: If we convert to result, we need to handle that here.
             let _ = simplify_type(context, t1);
 
-            let t2 = type_of(context, *term2, substitutions);
-            simplify_type(context, t2)
+            let t2 = type_of(context, *term2, substitutions)?;
+            Ok(simplify_type(context, t2))
         }
         // T-Fix
         Term::Fix(t) => {
-            let t = type_of(context, *t, substitutions);
+            let t = type_of(context, *t, substitutions)?;
             let t1 = simplify_type(context, t);
 
             match t1 {
                 Type::TypeArrow(t11, t12) => {
                     if type_equivalence(context, *t11, *t12.clone()) {
-                        *t12
+                        Ok(*t12)
                     } else {
-                        panic!("The result of the body is not compatible with the domain. Expected the types to be equal.")
+                        return Err(format!("The result of the body is not compatible with the domain. Expected the types to be equal."))
                     }
                 }
-                _ => panic!("Only arrow types can be fixed.")
+                _ => return Err(format!("Only arrow types can be fixed."))
             }
         }
         // T-Class
         Term::Class { constraints, name: class_name, vars, declarations, default_implementations, continuation } => {
             // Assert that there is no existing overloaded binding in the context
             if class_exists(context, &class_name) {
-                panic!("The type already has a overload with the label. Shadowing is not allowed for type-classes.")
+                return Err(format!("The type already has a overload with the label. Shadowing is not allowed for type-classes."));
             }
 
             let mut new_context = context.add_binding(Binding::ClassBinding {
@@ -654,7 +648,7 @@ pub fn type_of(context: &Context, term: Term, substitutions: &mut Substitutions)
         // T-Instance
         Term::Instance{ constraints, class_name, ty, mut implementations, continuation } => {
             if !class_exists(context, &class_name) {
-                panic!("The class name was missing in context: {:?}", context)
+                return Err(format!("The class name was missing in context: {:?}", context));
             }
 
             // Todo: What about kinds?
@@ -712,11 +706,11 @@ pub fn type_of(context: &Context, term: Term, substitutions: &mut Substitutions)
         }
         // T-Assign
         Term::Assignment(x, term) => {
-            let ty = get_type(context, &x);
-            if !type_equivalence(context, type_of(context, *term, substitutions), ty.clone()) {
+            let ty = get_type(context, &x)?;
+            if !type_equivalence(context, type_of(context, *term, substitutions)?, ty.clone()) {
                 panic!("The assigned term needs to have the same type as the variable assigned to.")
             }
-            ty
+            Ok(ty)
         }
     }
 }

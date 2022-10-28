@@ -571,10 +571,10 @@ pub fn get_binding(context: &Context, name: &String) -> Option<Binding> {
     context.typing_context.get(name)
 }
 
-pub fn get_type(context: &Context, name: &String) -> Type {
+pub fn get_type(context: &Context, name: &String) -> Result<Type, String> {
     match get_binding(context, name) {
-        Some(Binding::VarBinding(_, ty)) => ty,
-        _ => panic!("Binding with ident '{}' is not a VarBinding in the current Context: {:#?}", name, context)
+        Some(Binding::VarBinding(_, ty)) => Ok(ty),
+        _ => Err(format!("Binding with ident '{}' is not a VarBinding in the current Context: {:#?}", name, context))
     }
 }
 
