@@ -3,8 +3,8 @@ use crate::Context;
 use crate::constraint::Constraint;
 use crate::types::Type;
 use crate::substitutions::Substitutions;
+use crate::type_util::bind_variable;
 use crate::types::Type::{Qualified, TypeApp, TypeArrow, TypeVar};
-use crate::type_check::bind_variable;
 
 pub fn unify(context: &Context, subs: &mut Substitutions, left: Type, right: Type, left_constraints: Vec<Constraint>, right_constraints: Vec<Constraint>) -> Result<Type, String> {
     println!("Try-Unify: {} ⊔ {}", left.to_string_type(context, 0), right.to_string_type(context, 0));

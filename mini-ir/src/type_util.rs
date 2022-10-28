@@ -1,6 +1,9 @@
 use std::collections::HashMap;
 use crate::{Context};
+use crate::constraint::Constraint;
+use crate::substitutions::Substitutions;
 use crate::types::Type;
+use crate::types::Type::TypeVar;
 
 pub fn compute_type(context: &Context, tyt: Type) -> Result<Type, Type> {
     match tyt.clone() {
@@ -175,4 +178,66 @@ pub fn type_substitution(name: &String, replacement: Type, original: Type) -> Ty
     };
 
     type_map(&on_var,original)
+}
+
+
+pub fn bind_variable(context: &Context, subs: &mut Substitutions, var: &String, typ: &Type, constraints: Vec<Constraint>) -> Result<(), String> {
+    println!("Bind var {} to {}, with constraints {:?}", var, typ.to_string_type(context, 0), &constraints);
+    //println!("{:#?}", context);
+    match typ {
+        TypeVar(var2) => {
+            if var != var2 {
+                subs.insert(var.clone(), typ.clone());
+                /*subs.insert(
+                    var.clone(),
+                    Type::qualified(subs.apply_consts(constraints), typ.clone())
+                );*/
+
+                /*
+                // In all substitutions replace the old var with the new type
+                for (_, v) in &mut subs.subs {
+                    replace_var(v, var, typ);
+                }
+                */
+
+                /*let cons = {
+                    let con = &mut *context.constraints.borrow_mut();
+                    con.remove(var)
+                };
+
+                match cons {
+                    Some(constraints) => {
+                        for c in constraints.iter() {
+                            context.insert_constraint(var2, c);
+                        }
+                    }
+                    None => ()
+                }*/
+            }
+            Ok(())
+        }
+        _ => {
+            for (_, replaced) in &subs.subs {
+                println!("replace_var {} with {} in {}", replaced, var, typ.to_string_type(context, 0));
+                //replace_var(replaced, var, typ);
+            }
+
+            subs.insert(var.clone(), typ.clone());
+
+            let mut new_constraints = Vec::new();
+
+
+            for c in constraints.iter() {
+                // Only check constraints that are related directly to the variable currently being bound
+                if c.vars.contains(&TypeVar(var.clone())) {
+                    context.has_instance(&c.ident, typ, &mut new_constraints)?;
+                }
+            }
+            for constraint in new_constraints {
+                // Todo: Add transitive constraints.
+                //context.insert_constraint(&constraint.variables[0], constraint.class)
+            }
+            Ok(())
+        }
+    }
 }
