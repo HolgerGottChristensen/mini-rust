@@ -113,9 +113,9 @@ pub enum Term {
         /// The name of the class
         class_name: String,
         /// The implementation is for this type
-        ty: Type,
+        ty: Vec<Type>,
         /// Implementations of this instance
-        implementations: HashMap<String, (Term, Type)>,
+        implementations: HashMap<String, Term>,
         /// The Term after the "in"
         continuation: Box<Term>,
     },
@@ -126,6 +126,12 @@ pub enum Term {
 impl Display for Term {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.to_string_term(&Context::new(), 0))
+    }
+}
+
+impl Term {
+    pub fn app(t1: impl Into<Term>, t2: impl Into<Term>) -> Term {
+        Term::TermApp(Box::new(t1.into()), Box::new(t2.into()))
     }
 }
 
@@ -154,12 +160,23 @@ impl Term {
                 constraints, name, vars, declarations, default_implementations, continuation
             } => {
                 let vars_string = vars.iter().map(|t| t.to_string_type(context, color)).collect::<Vec<_>>().join(" ");
-                let declarations = declarations.iter().map(|(name, t)| format!("{} = {}", name, t.to_string_type(context, color))).collect::<Vec<_>>().join(", ");
-                format!("class {} {} where {} in\n{}", name, vars_string, declarations, continuation.to_string_term(context, color))
+                if declarations.len() > 0 {
+                    let declarations = declarations.iter().map(|(name, t)| format!("\t{} = {}", name, t.to_string_type(context, color))).collect::<Vec<_>>().join(",\n");
+                    format!("class {} {} where\n{} in\n{}", name, vars_string, declarations, continuation.to_string_term(context, color))
+                } else {
+                    format!("class {} {} in\n{}", name, vars_string, continuation.to_string_term(context, color))
+                }
             }
             Term::Instance { constraints, class_name, ty, implementations, continuation } => {
-                let implementations = implementations.iter().map(|(name, (t, _))| format!("{} = {}", name, t.to_string_term(context, color))).collect::<Vec<_>>().join(", ");
-                format!("instance {} {} where {} in\n{}", class_name, ty.to_string_type(context, color), implementations, continuation.to_string_term(context, color))
+                let tys_string = ty.iter().map(|t| t.to_string_type(context, color)).collect::<Vec<_>>().join(" ");
+
+                if implementations.len() > 0 {
+                    let implementations = implementations.iter().map(|(name, t)| format!("\t{} = {}", name, t.to_string_term(context, color))).collect::<Vec<_>>().join(",\n");
+                    format!("instance {} {} where\n{} in\n{}", class_name, tys_string, implementations, continuation.to_string_term(context, color))
+                } else {
+                    format!("instance {} {} in\n{}", class_name, tys_string, continuation.to_string_term(context, color))
+
+                }
             }
             Term::Fix(t) => format!("fix {}", t.to_string_term(context, color)),
             Term::Fold(t) => format!("fold {}{}{}", get_color(color, "["), t.to_string_type(context, color + 1), get_color(color, "]")),

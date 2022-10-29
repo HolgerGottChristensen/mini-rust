@@ -129,7 +129,7 @@ impl MiniBinOp {
             MiniBinOp::BitOr(_) => "bit_or".to_string(),
             MiniBinOp::Shl(_) => "left_shift".to_string(),
             MiniBinOp::Shr(_) => "right_shift".to_string(),
-            MiniBinOp::Eq(_) => "eq".to_string(),
+            MiniBinOp::Eq(_) => "PartialEq::eq".to_string(),
             MiniBinOp::Lt(_) => "lt".to_string(),
             MiniBinOp::Le(_) => "le".to_string(),
             MiniBinOp::Ne(_) => "ne".to_string(),

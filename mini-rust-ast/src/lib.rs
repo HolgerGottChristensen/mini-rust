@@ -26,6 +26,7 @@ mod mini_ident;
 mod mini_type;
 mod mini_path;
 mod mini_generics;
+mod util;
 
 pub(crate) const IDENT_COLOR: &'static str = "<magenta><i>";
 pub(crate) const TYPE_COLOR: &'static str = "<blue><b>";

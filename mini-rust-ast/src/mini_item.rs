@@ -64,9 +64,9 @@ impl ToMiniIrTerm for MiniItem {
         match self {
             MiniItem::Enum(f) => f.convert_term(),
             MiniItem::Fn(f) => f.convert_term(),
-            MiniItem::Impl(_) => todo!(),
+            MiniItem::Impl(f) => f.convert_term(),
             MiniItem::Struct(f) => f.convert_term(),
-            MiniItem::Trait(_) => todo!(),
+            MiniItem::Trait(f) => f.convert_term(),
         }
     }
 }

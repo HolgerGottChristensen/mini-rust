@@ -1,11 +1,14 @@
+use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 
 use syn::{braced, Path, token, Token};
 use syn::parse::{Parse, ParseStream};
 use syn::punctuated::Punctuated;
 use syn::token::{Add, Brace, Colon, Trait};
+use mini_ir::Term;
+use mini_ir::Type::TypeVar;
 
-use crate::{MiniFn, MiniGenerics, MiniIdent};
+use crate::{MiniFn, MiniGenerics, MiniIdent, ToMiniIrTerm, ToMiniIrType};
 use crate::mini_path::MiniPath;
 
 #[derive(PartialEq, Clone)]
@@ -47,6 +50,7 @@ impl Parse for MiniTrait {
         let trait_token: Token![trait] = input.parse()?;
         let ident: MiniIdent = input.parse()?;
         let generics: MiniGenerics = input.parse()?;
+
         parse_rest_of_trait(
             input,
             trait_token,
@@ -85,7 +89,7 @@ fn parse_rest_of_trait(
 
     let mut items = Vec::new();
     while !content.is_empty() {
-        items.push(content.parse()?);
+        items.push(MiniFn::parse_fn(&content, true)?);
     }
 
     Ok(MiniTrait {
@@ -144,5 +148,171 @@ impl Parse for TraitBound {
             paren_token: None,
             path,
         })
+    }
+}
+
+impl ToMiniIrTerm for MiniTrait {
+    fn convert_term(&self) -> Term {
+        Term::Class {
+            constraints: vec![],
+            name: self.ident.to_string(),
+            vars: vec![
+                TypeVar("#Self".to_string())
+            ].into_iter()
+                .chain(self.generics.params.iter()
+                    .map(|a| TypeVar(a.ident.to_string()))
+                ).collect(),
+            declarations: HashMap::from_iter(self.items.iter().map(|f| {
+                (format!("{}::{}", self.ident.to_string(), f.ident.to_string()), f.convert_type())
+            })),
+            default_implementations: HashMap::from_iter(self.items.iter().filter(|a| a.block.is_ok()).map(|f| {
+                (format!("{}::{}", self.ident.to_string(), f.ident.to_string()), f.convert_term())
+            })),
+            continuation: Box::new(Term::Unit)
+        }
+    }
+}
+
+mod tests {
+    use paris::log;
+    use syn::parse_quote;
+    use mini_ir::{Context, Substitutions, type_of};
+    use crate::ToMiniIrTerm;
+    use mini_ir::Type as IRType;
+    use mini_ir::BaseType;
+    use crate::mini_item::MiniItem;
+
+    #[test]
+    fn empty_trait() {
+        // Arrange
+        let mini: MiniItem = parse_quote!(
+            trait Test {}
+        );
+        let context = Context::new();
+
+        log!("<blue>======== AST =======</>");
+        println!("{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+        log!("<blue>====== Lambda ======</>");
+        println!("{}", &converted);
+        log!("<blue>======= Type =======</>");
+
+        let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new());
+        println!("{}", &converted_type.as_ref().map(|r| r.to_string_type(&context, 0)).unwrap_or_else(|w| w.to_string()));
+
+        log!("<blue>====================</>\n");
+        // Assert
+        assert!(matches!(converted_type, Ok(IRType::Base(BaseType::Unit))))
+    }
+
+    #[test]
+    fn single_simple_function() {
+        // Arrange
+        let mini: MiniItem = parse_quote!(
+            trait Test {
+                fn test();
+            }
+        );
+        let context = Context::new();
+
+        log!("<blue>======== AST =======</>");
+        println!("{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+        log!("<blue>====== Lambda ======</>");
+        println!("{}", &converted);
+        log!("<blue>======= Type =======</>");
+
+        let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new());
+        println!("{}", &converted_type.as_ref().map(|r| r.to_string_type(&context, 0)).unwrap_or_else(|w| w.to_string()));
+
+        log!("<blue>====================</>\n");
+        // Assert
+        assert!(matches!(converted_type, Ok(IRType::Base(BaseType::Unit))))
+    }
+
+    #[test]
+    fn single_simple_function_return() {
+        // Arrange
+        let mini: MiniItem = parse_quote!(
+            trait Test {
+                fn test(t: bool) -> bool;
+            }
+        );
+        let context = Context::new();
+
+        log!("<blue>======== AST =======</>");
+        println!("{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+        log!("<blue>====== Lambda ======</>");
+        println!("{}", &converted);
+        log!("<blue>======= Type =======</>");
+
+        let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new());
+        println!("{}", &converted_type.as_ref().map(|r| r.to_string_type(&context, 0)).unwrap_or_else(|w| w.to_string()));
+
+        log!("<blue>====================</>\n");
+        // Assert
+        assert!(matches!(converted_type, Ok(IRType::Base(BaseType::Unit))))
+    }
+
+    #[test]
+    fn multiple_simple_function_return() {
+        // Arrange
+        let mini: MiniItem = parse_quote!(
+            trait Test {
+                fn test(t: bool) -> bool;
+                fn test2(t: bool) -> bool;
+            }
+        );
+        let context = Context::new();
+
+        log!("<blue>======== AST =======</>");
+        println!("{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+        log!("<blue>====== Lambda ======</>");
+        println!("{}", &converted);
+        log!("<blue>======= Type =======</>");
+
+        let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new());
+        println!("{}", &converted_type.as_ref().map(|r| r.to_string_type(&context, 0)).unwrap_or_else(|w| w.to_string()));
+
+        log!("<blue>====================</>\n");
+        // Assert
+        assert!(matches!(converted_type, Ok(IRType::Base(BaseType::Unit))))
+    }
+
+    #[test]
+    fn generics() {
+        // Arrange
+        let mini: MiniItem = parse_quote!(
+            trait Test<T> {
+                fn test(self, other: T) -> Self;
+            }
+        );
+        let context = Context::new();
+
+        log!("<blue>======== AST =======</>");
+        println!("{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+        log!("<blue>====== Lambda ======</>");
+        println!("{}", &converted);
+        log!("<blue>======= Type =======</>");
+
+        let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new());
+        println!("{}", &converted_type.as_ref().map(|r| r.to_string_type(&context, 0)).unwrap_or_else(|w| w.to_string()));
+
+        log!("<blue>====================</>\n");
+        // Assert
+        assert!(matches!(converted_type, Ok(IRType::Base(BaseType::Unit))))
     }
 }

@@ -1299,7 +1299,7 @@ mod tests {
                 Binding::InstanceBinding {
                     constraints: vec![],
                     class_name: "Clone".to_string(),
-                    ty,
+                    ty: vec![ty],
                     implementations: HashMap::from([
                         ("clone".to_string(), (Term::Unit, Type::arrow(Type::reference("T"), "T")))
                     ]),
@@ -1315,7 +1315,7 @@ mod tests {
                         Constraint { ident: "Clone".to_string(), vars: vec![TypeVar("Y".to_string())] }
                     ],
                     class_name: "Clone".to_string(),
-                    ty: TypeApp(Box::new(TypeVar("Vec".to_string())), Box::new(TypeVar("Y".to_string()))),
+                    ty: vec![TypeApp(Box::new(TypeVar("Vec".to_string())), Box::new(TypeVar("Y".to_string())))],
                     implementations: HashMap::from([
                         ("clone".to_string(), (Term::Unit, Type::arrow(Type::reference("T"), "T")))
                     ]),

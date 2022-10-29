@@ -14,12 +14,6 @@ impl ToMiniIrTerm for MiniExprBinary {
     fn convert_term(&self) -> Term {
         let function_name = self.op.name();
 
-        Term::TermApp(
-            Box::new(Term::TermApp(
-                Box::new(Term::TermVar(function_name)),
-                Box::new(self.left.convert_term()),
-            )),
-            Box::new(self.right.convert_term()),
-        )
+        Term::app(Term::app(Term::app(Term::TermVar(function_name), Term::Unit), self.left.convert_term()), self.right.convert_term())
     }
 }

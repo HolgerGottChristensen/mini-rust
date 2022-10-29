@@ -79,6 +79,7 @@ impl ToMiniIrType for MiniType {
                     "f64" => FType::Base(BaseType::Float),
                     "bool" => FType::Base(BaseType::Bool),
                     "()" => FType::Base(BaseType::Unit),
+                    "Self" => FType::TypeVar("#Self".to_string()),
                     t => {
                         FType::TypeVar(t.to_string())
                     } // Todo: We need to lookup the type of user defined structs and more.

@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 
 use syn::{braced, Path, Token, Type, TypePath};
@@ -7,7 +8,7 @@ use syn::token::{Brace, For, Impl};
 use mini_ir::{Kind, Term};
 use mini_ir::Type::{TypeApp, TypeVar};
 
-use crate::{MiniFn, MiniGenerics, MiniType, ToMiniIrKind, ToMiniIrTerm};
+use crate::{MiniFn, MiniGenerics, MiniType, ToMiniIrKind, ToMiniIrTerm, ToMiniIrType};
 use crate::mini_path::MiniPath;
 
 #[derive(PartialEq, Clone)]
@@ -120,200 +121,339 @@ fn parse_impl(input: ParseStream, allow_verbatim_impl: bool) -> syn::Result<Opti
 
 impl ToMiniIrTerm for MiniImpl {
     fn convert_term(&self) -> Term {
-        let name = MiniType(*self.self_ty.clone()).path().as_ident();
-        let generics = MiniType(*self.self_ty.clone()).path().generics();
+        if let Some((p, _)) = &self.trait_ {
 
-        let mut body = Term::Unit;
+            let class_name = MiniPath(p.clone()).as_ident();
 
-        for item in self.items.iter().rev() {
-            let mut fun = item.convert_term();
+            Term::Instance {
+                constraints: vec![],
+                class_name: class_name.clone(),
+                ty: vec![MiniType(*self.self_ty.clone()).convert_type()].into_iter()
+                    .chain(MiniPath(p.clone()).generics()).collect(),
+                implementations: HashMap::from_iter(self.items.iter().map(|item| {
+                    (format!("{}::{}", class_name, item.ident.to_string()), item.convert_term())
+                })),
+                continuation: Box::new(Term::Unit)
+            }
+        } else {
+            let name = MiniType(*self.self_ty.clone()).path().as_ident();
+            let generics = MiniType(*self.self_ty.clone()).path().generics();
 
-            // Todo: Is this the best way. We need to introduce generics somehow for each method.
-            for param in &self.generics.params {
-                fun = Term::TermTypeAbs(param.ident.to_string(), param.ident.convert_kind(), Box::new(fun));
+            let mut body = Term::Unit;
+
+            for item in self.items.iter().rev() {
+                let mut fun = item.convert_term();
+
+                // Todo: Is this the best way. We need to introduce generics somehow for each method.
+                for param in &self.generics.params {
+                    fun = Term::TermTypeAbs(param.ident.to_string(), param.ident.convert_kind(), Box::new(fun));
+                }
+
+                body = Term::Let(format!("{}::{}", &name, item.ident.to_string()), Box::new(fun), Box::new(body));
             }
 
-            body = Term::Let(format!("{}::{}", &name, item.ident.to_string()), Box::new(fun), Box::new(body));
+            let mut self_type = TypeVar(name);
+
+            // For each generic app it to the self type
+            for generic in generics {
+                self_type = TypeApp(Box::new(self_type), Box::new(generic));
+            }
+
+            // Define the self type for use within the body
+            Term::Define("#Self".to_string(), self_type, Box::new(body))
         }
-
-        let mut self_type = TypeVar(name);
-
-        // For each generic app it to the self type
-        for generic in generics {
-            self_type = TypeApp(Box::new(self_type), Box::new(generic));
-        }
-
-        // Define the self type for use within the body
-        Term::Define("#Self".to_string(), self_type, Box::new(body))
     }
 }
 
 mod tests {
-    use syn::parse_quote;
 
-    use mini_ir::{Context, kind_of, Substitutions, type_of};
 
-    use crate::item::MiniImpl;
-    use crate::stmt::MiniBlock;
-    use crate::ToMiniIrTerm;
+    mod impls {
+        use paris::log;
+        use syn::parse_quote;
 
-    #[test]
-    fn simple_impl() {
-        // Arrange
-        let mini: MiniImpl = parse_quote!(
-            impl Test {
+        use mini_ir::{Context, kind_of, Substitutions, type_of};
 
-            }
-        );
+        use crate::item::MiniImpl;
+        use crate::mini_item::MiniItem;
+        use crate::stmt::MiniBlock;
+        use crate::ToMiniIrTerm;
 
-        let context = Context::new();
-
-        println!("\n{:#?}", &mini);
-
-        // Act
-        let converted = mini.convert_term();
-        println!("Lambda: {}", &converted);
-
-        let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new()).unwrap();
-        println!("Type: {}", &converted_type);
-
-        let converted_kind = kind_of(&context, converted_type.clone());
-        println!("Kind: {}", &converted_kind);
-
-        // Assert
-        //assert_eq!(converted, Term::Reference(Box::new(Term::Integer(0))))
-    }
-
-    #[test]
-    fn simple_impl_fn() {
-        // Arrange
-        let mini: MiniImpl = parse_quote!(
-            impl Test {
-                fn hello(self) -> Test {
-                    self
-                }
-            }
-        );
-
-        let context = Context::new();
-
-        println!("\n{:#?}", &mini);
-
-        // Act
-        let converted = mini.convert_term();
-        println!("Lambda: {}", &converted);
-
-        let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new()).unwrap();
-        println!("Type: {}", &converted_type);
-
-        let converted_kind = kind_of(&context, converted_type.clone());
-        println!("Kind: {}", &converted_kind);
-
-        // Assert
-        //assert_eq!(converted, Term::Reference(Box::new(Term::Integer(0))))
-    }
-
-    #[test]
-    fn impl_fn_generics() {
-        // Arrange
-        let mini: MiniImpl = parse_quote!(
-            impl<T> Test<T> {
-                fn hello(self) -> Test<T> {
-                    self
-                }
-            }
-        );
-
-        let context = Context::new();
-
-        println!("\n{:#?}", &mini);
-
-        // Act
-        let converted = mini.convert_term();
-        println!("Lambda: {}", &converted);
-
-        let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new()).unwrap();
-        println!("Type: {}", &converted_type);
-
-        let converted_kind = kind_of(&context, converted_type.clone());
-        println!("Kind: {}", &converted_kind);
-
-        // Assert
-        //assert_eq!(converted, Term::Reference(Box::new(Term::Integer(0))))
-    }
-
-    #[test]
-    fn impl_fn_multiple() {
-        // Arrange
-        let mini: MiniImpl = parse_quote!(
-            impl Test {
-                fn hello(self) -> Test {
-                    self
-                }
-
-                fn hello2(t: i64, q: bool) -> bool {
-                    q
-                }
-
-                fn hello3(v: bool) -> (bool, bool) {
-                    (v, v)
-                }
-            }
-        );
-
-        let context = Context::new();
-
-        println!("\n{:#?}", &mini);
-
-        // Act
-        let converted = mini.convert_term();
-        println!("Lambda: {}", &converted);
-
-        let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new()).unwrap();
-        println!("Type: {}", &converted_type);
-
-        let converted_kind = kind_of(&context, converted_type.clone());
-        println!("Kind: {}", &converted_kind);
-
-        // Assert
-        //assert_eq!(converted, Term::Reference(Box::new(Term::Integer(0))))
-    }
-
-    #[test]
-    fn simple_struct_impl() {
-        // Arrange
-        let mini: MiniBlock = parse_quote!(
-            {
-                struct Test {
-
-                }
-
+        #[test]
+        fn simple_impl() {
+            // Arrange
+            let mini: MiniImpl = parse_quote!(
                 impl Test {
-                    fn hello(&self) {
+
+                }
+            );
+
+            let context = Context::new();
+
+            println!("\n{:#?}", &mini);
+
+            // Act
+            let converted = mini.convert_term();
+            println!("Lambda: {}", &converted);
+
+            let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new()).unwrap();
+            println!("Type: {}", &converted_type);
+
+            let converted_kind = kind_of(&context, converted_type.clone());
+            println!("Kind: {}", &converted_kind);
+
+            // Assert
+            //assert_eq!(converted, Term::Reference(Box::new(Term::Integer(0))))
+        }
+
+        #[test]
+        fn simple_impl_fn() {
+            // Arrange
+            let mini: MiniImpl = parse_quote!(
+                impl Test {
+                    fn hello(self) -> Test {
+                        self
+                    }
+                }
+            );
+
+            let context = Context::new();
+
+            println!("\n{:#?}", &mini);
+
+            // Act
+            let converted = mini.convert_term();
+            println!("Lambda: {}", &converted);
+
+            let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new()).unwrap();
+            println!("Type: {}", &converted_type);
+
+            let converted_kind = kind_of(&context, converted_type.clone());
+            println!("Kind: {}", &converted_kind);
+
+            // Assert
+            //assert_eq!(converted, Term::Reference(Box::new(Term::Integer(0))))
+        }
+
+        #[test]
+        fn impl_fn_generics() {
+            // Arrange
+            let mini: MiniImpl = parse_quote!(
+                impl<T> Test<T> {
+                    fn hello(self) -> Test<T> {
+                        self
+                    }
+                }
+            );
+
+            let context = Context::new();
+
+            println!("\n{:#?}", &mini);
+
+            // Act
+            let converted = mini.convert_term();
+            println!("Lambda: {}", &converted);
+
+            let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new()).unwrap();
+            println!("Type: {}", &converted_type);
+
+            let converted_kind = kind_of(&context, converted_type.clone());
+            println!("Kind: {}", &converted_kind);
+
+            // Assert
+            //assert_eq!(converted, Term::Reference(Box::new(Term::Integer(0))))
+        }
+
+        #[test]
+        fn impl_fn_multiple() {
+            // Arrange
+            let mini: MiniImpl = parse_quote!(
+                impl Test {
+                    fn hello(self) -> Test {
+                        self
+                    }
+
+                    fn hello2(t: i64, q: bool) -> bool {
+                        q
+                    }
+
+                    fn hello3(v: bool) -> (bool, bool) {
+                        (v, v)
+                    }
+                }
+            );
+
+            let context = Context::new();
+
+            println!("\n{:#?}", &mini);
+
+            // Act
+            let converted = mini.convert_term();
+            println!("Lambda: {}", &converted);
+
+            let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new()).unwrap();
+            println!("Type: {}", &converted_type);
+
+            let converted_kind = kind_of(&context, converted_type.clone());
+            println!("Kind: {}", &converted_kind);
+
+            // Assert
+            //assert_eq!(converted, Term::Reference(Box::new(Term::Integer(0))))
+        }
+
+        #[test]
+        fn simple_struct_impl() {
+            // Arrange
+            let mini: MiniBlock = parse_quote!(
+                {
+                    struct Test {
+
+                    }
+
+                    impl Test {
+                        fn hello(&self) {
+                        }
+                    }
+
+                    fn test(t: Test) {
+                        Test::hello(&t)
+                    }
+                }
+            );
+
+            let context = Context::new();
+
+            println!("\n{:#?}", &mini);
+
+            // Act
+            let converted = mini.convert_term();
+            println!("Lambda: {}", &converted);
+
+            let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new()).unwrap();
+            println!("Type: {}", &converted_type);
+
+            let converted_kind = kind_of(&context, converted_type.clone());
+            println!("Kind: {}", &converted_kind);
+
+            // Assert
+            //assert_eq!(converted, Term::Reference(Box::new(Term::Integer(0))))
+        }
+    }
+
+    mod traits {
+        use paris::log;
+        use syn::parse_quote;
+        use mini_ir::{Context, Substitutions, type_of};
+        use crate::mini_item::MiniItem;
+        use crate::ToMiniIrTerm;
+        use mini_ir::Type as IRType;
+        use mini_ir::BaseType;
+        use crate::mini_file::MiniFile;
+
+        #[test]
+        fn impl_trait_empty() {
+            // Arrange
+            let mini: MiniFile = parse_quote!(
+                trait Test {
+
+                }
+
+                impl Test for bool {
+
+                }
+            );
+            let context = Context::new();
+
+            log!("<blue>======== AST =======</>");
+            println!("{:#?}", &mini);
+
+            // Act
+            let converted = mini.convert_term();
+            log!("<blue>====== Lambda ======</>");
+            println!("{}", &converted);
+            log!("<blue>======= Type =======</>");
+
+            let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new());
+            println!("{}", &converted_type.as_ref().map(|r| r.to_string_type(&context, 0)).unwrap_or_else(|w| w.to_string()));
+
+            log!("<blue>====================</>\n");
+            // Assert
+            assert!(matches!(converted_type, Ok(..)))
+        }
+
+        #[test]
+        fn impl_clone() {
+            // Arrange
+            let mini: MiniFile = parse_quote!(
+                trait Clone {
+                    fn clone(&self) -> Self;
+                }
+
+                impl Clone for bool {
+                    // Todo: This should actually panic because the type is not the same as specified in the class
+                    fn clone(self) -> Self {
+                        self
                     }
                 }
 
-                fn test(t: Test) {
-                    Test::hello(&t)
+                fn main() -> bool {
+                    Clone::clone(&true)
                 }
-            }
-        );
+            );
+            let context = Context::new();
 
-        let context = Context::new();
+            log!("<blue>======== AST =======</>");
+            println!("{:#?}", &mini);
 
-        println!("\n{:#?}", &mini);
+            // Act
+            let converted = mini.convert_term();
+            log!("<blue>====== Lambda ======</>");
+            println!("{}", &converted);
+            log!("<blue>======= Type =======</>");
 
-        // Act
-        let converted = mini.convert_term();
-        println!("Lambda: {}", &converted);
+            let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new());
+            println!("{}", &converted_type.as_ref().map(|r| r.to_string_type(&context, 0)).unwrap_or_else(|w| w.to_string()));
 
-        let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new()).unwrap();
-        println!("Type: {}", &converted_type);
+            log!("<blue>====================</>\n");
+            // Assert
+            assert!(matches!(converted_type, Ok(..)))
+        }
 
-        let converted_kind = kind_of(&context, converted_type.clone());
-        println!("Kind: {}", &converted_kind);
+        #[test]
+        fn impl_partial_eq() {
+            // Arrange
+            let mini: MiniFile = parse_quote!(
+                trait PartialEq<T> {
+                    fn eq(&self, other: &T) -> bool;
+                }
 
-        // Assert
-        //assert_eq!(converted, Term::Reference(Box::new(Term::Integer(0))))
+                impl PartialEq<bool> for bool {
+                    fn eq(&self, other: &bool) -> bool {
+                        false
+                    }
+                }
+
+                fn main() -> bool {
+                    &true == &false
+                }
+            );
+            let context = Context::new();
+
+            log!("<blue>======== AST =======</>");
+            println!("{:#?}", &mini);
+
+            // Act
+            let converted = mini.convert_term();
+            log!("<blue>====== Lambda ======</>");
+            println!("{}", &converted);
+            log!("<blue>======= Type =======</>");
+
+            let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new());
+            println!("{}", &converted_type.as_ref().map(|r| r.to_string_type(&context, 0)).unwrap_or_else(|w| w.to_string()));
+
+            log!("<blue>====================</>\n");
+            // Assert
+            assert!(matches!(converted_type, Ok(..)))
+        }
     }
 }

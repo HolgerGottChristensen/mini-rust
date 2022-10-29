@@ -6,6 +6,7 @@ use syn::parse::{Parse, ParseStream};
 use mini_ir::Term;
 
 use crate::{MiniStmt, parse_stmt, ToMiniIrTerm};
+use crate::util::replace_inner;
 
 #[derive(PartialEq, Clone)]
 pub struct MiniBlock {
@@ -64,27 +65,6 @@ impl ToMiniIrTerm for MiniBlock {
             // Todo: But not in the case where the Item is last: https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&gist=eed9e46426ec7c4a2804ba26e1d124ac
             // Todo: Personally I think we should do the first, and note the other in the report.
             let mut body = self.stmts[self.stmts.len() - 1].convert_term();
-
-            fn replace_inner(term: Term, with: Term) -> Term {
-                match term {
-                    Term::Define(x, ty, inner) => {
-                        Term::Define(x, ty, Box::new(replace_inner(*inner, with)))
-                    }
-                    Term::Let(a, ty, inner) => {
-                        Term::Let(a, ty, Box::new(replace_inner(*inner, with)))
-                    }
-                    Term::Unit => {
-                        with
-                    }
-                    Term::Seq(term1, term2) => {
-                        Term::Seq(term1, Box::new(replace_inner(*term2, with)))
-                    }
-                    Term::TermTypeAbs(s, k, inner) => {
-                        Term::TermTypeAbs(s, k, Box::new(replace_inner(*inner, with)))
-                    }
-                    a => panic!("Expressions need to be the last in the block")
-                }
-            }
 
             for stmt in self.stmts.iter().rev().skip(1) {
                 body = replace_inner(stmt.convert_term(), body);

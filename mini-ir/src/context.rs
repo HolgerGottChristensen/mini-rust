@@ -63,12 +63,13 @@ impl Context {
                 // If the name is the name of the class we are looking for
                 if class == class_name {
                     // We need to check the instances constraints.
-                    let result = self.check_instance_constraints(&**constraints, ty, searched_type, new_constraints);
+                    // Todo: Dont take first element
+                    let result = self.check_instance_constraints(&**constraints, &ty[0], searched_type, new_constraints);
 
                     // If the instances constraints are upheld, then we can return the instance.
                     // Otherwise we keep on searching.
                     if result.is_ok() {
-                        println!("Found and instance of: {} for {:?}", class, searched_type);
+                        println!("{} {} {} {}", colorize_string("<blue>Found and instance of: </>"), class, colorize_string("<blue>for</>"), searched_type.to_string_type(&self, 0));
                         return result;
                     }
                 }

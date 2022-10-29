@@ -2,15 +2,15 @@ use std::fmt::{Debug, Formatter};
 
 use paris::formatter::colorize_string;
 use proc_macro2::Span;
-use syn::{Error, parenthesized, token, Token, Type};
+use syn::{Error, parenthesized, token, Token, Type, ItemTrait};
 use syn::parse::{Parse, ParseStream};
 use syn::parse::discouraged::Speculative;
 use syn::punctuated::Punctuated;
-use syn::token::{And, Colon, Comma, Mut, Paren, RArrow, SelfValue};
+use syn::token::{And, Colon, Comma, Mut, Paren, RArrow, SelfValue, Semi};
 
-use mini_ir::{BaseType, Context, Kind, Substitutions, Term, type_of};
-use mini_ir::Type as FType;
-use mini_ir::Type::TypeVar;
+use mini_ir::{BaseType, Context, Substitutions, Term, type_of};
+use mini_ir::Type as IRType;
+use mini_ir::Type::{TypeAbs, TypeArrow, TypeVar};
 
 use crate::{MiniGenerics, MiniIdent, MiniType, ToMiniIrKind, ToMiniIrTerm, ToMiniIrType};
 use crate::stmt::MiniBlock;
@@ -23,7 +23,7 @@ pub struct MiniFn {
     pub paren_token: Paren,
     pub inputs: Punctuated<MiniFnArg, Comma>,
     pub return_type: Option<(RArrow, Box<MiniType>)>,
-    pub block: Box<MiniBlock>,
+    pub block: Result<Box<MiniBlock>, Semi>,
 }
 
 #[derive(PartialEq, Clone)]
@@ -77,6 +77,44 @@ impl MiniFn {
 
         Ok(args)
     }
+
+    pub fn parse_fn(input: ParseStream, allow_empty: bool) -> syn::Result<Self> {
+        let fn_token: Token![fn] = input.parse()?;
+        let ident: MiniIdent = input.parse()?;
+        let mut generics: MiniGenerics = input.parse()?;
+
+        let content;
+        let paren_token = parenthesized!(content in input);
+        let mut inputs = MiniFn::parse_fn_args(&content)?;
+
+        let output_ty = if input.peek(RArrow) {
+            Some((RArrow::parse(input)?, Box::new(MiniType::parse(input)?)))
+        } else {
+            None
+        };
+
+        generics.where_clause = input.parse()?;
+
+        let block = if allow_empty {
+            if input.peek(Semi) {
+                Err(input.parse()?)
+            } else {
+                Ok(Box::new(input.parse()?))
+            }
+        } else {
+            Ok(Box::new(input.parse()?))
+        };
+
+        Ok(MiniFn {
+            fn_token,
+            ident,
+            generics,
+            paren_token,
+            inputs,
+            return_type: output_ty,
+            block,
+        })
+    }
 }
 
 impl Debug for MiniFn {
@@ -97,31 +135,7 @@ impl Debug for MiniFn {
 
 impl Parse for MiniFn {
     fn parse(input: ParseStream) -> syn::Result<Self> {
-        let fn_token: Token![fn] = input.parse()?;
-        let ident: MiniIdent = input.parse()?;
-        let mut generics: MiniGenerics = input.parse()?;
-
-        let content;
-        let paren_token = parenthesized!(content in input);
-        let mut inputs = MiniFn::parse_fn_args(&content)?;
-
-        let output_ty = if input.peek(RArrow) {
-            Some((RArrow::parse(input)?, Box::new(MiniType::parse(input)?)))
-        } else {
-            None
-        };
-
-        generics.where_clause = input.parse()?;
-
-        Ok(MiniFn {
-            fn_token,
-            ident,
-            generics,
-            paren_token,
-            inputs,
-            return_type: output_ty,
-            block: Box::new(input.parse()?),
-        })
+        MiniFn::parse_fn(input, false)
     }
 }
 
@@ -186,18 +200,56 @@ impl Parse for MiniFnArg {
 }
 
 impl ToMiniIrType for MiniFn {
-    fn convert_type(&self) -> FType {
-        type_of(&Context::new(), ToMiniIrTerm::convert_term(self), &mut Substitutions::new()).unwrap()
+    fn convert_type(&self) -> IRType {
+        let mut ty = match &self.return_type {
+            None => {
+                IRType::Base(BaseType::Unit)
+            }
+            Some((_, return_type)) => {
+                return_type.convert_type()
+            }
+        };
+
+
+        for param in self.inputs.iter().rev() {
+            match param {
+                MiniFnArg::Receiver { reference, .. } => {
+
+                    // Todo: How do we handle mutability of the receiver?
+                    let mut temp = TypeVar("#Self".to_string());
+                    if reference.is_some() {
+                        temp = IRType::Reference(Box::new(temp));
+                    }
+
+                    ty = TypeArrow(Box::new(temp), Box::new(ty));
+                }
+                MiniFnArg::Typed { pat, ty: t , ..} => {
+                    ty = TypeArrow(Box::new(MiniType(*t.clone()).convert_type()), Box::new(ty));
+                }
+            }
+        }
+
+        // By default we add a one parameter abstraction, to make functions with 0 arguments to valid abstractions.
+        ty = TypeArrow(Box::new(IRType::Base(BaseType::Unit)), Box::new(ty));
+
+        // Todo: How will we handle generic bounds?
+        // Add generics as TypeAbs
+        for generic in self.generics.params.iter().rev() {
+            ty = TypeAbs(generic.ident.to_string(), generic.ident.convert_kind(), Box::new(ty));
+        }
+
+        ty
+
     }
 }
 
 impl ToMiniIrTerm for MiniFn {
     fn convert_term(&self) -> Term {
-        let mut body = self.block.convert_term();
+        let mut body = self.block.as_ref().unwrap().convert_term();
 
         let return_type = match &self.return_type {
             None => {
-                FType::Base(BaseType::Unit)
+                IRType::Base(BaseType::Unit)
             }
             Some((_, return_type)) => {
                 return_type.convert_type()
@@ -216,12 +268,12 @@ impl ToMiniIrTerm for MiniFn {
 
         for param in self.inputs.iter().rev() {
             match param {
-                MiniFnArg::Receiver { reference, mutability, self_token } => {
+                MiniFnArg::Receiver { reference, .. } => {
 
                     // Todo: How do we handle mutability of the receiver?
-                    let mut ty = FType::TypeVar("#Self".to_string());
+                    let mut ty = TypeVar("#Self".to_string());
                     if reference.is_some() {
-                        ty = FType::Reference(Box::new(ty));
+                        ty = IRType::Reference(Box::new(ty));
                     }
 
                     body = Term::TermAbs(
@@ -230,7 +282,7 @@ impl ToMiniIrTerm for MiniFn {
                         Box::new(body),
                     );
                 }
-                MiniFnArg::Typed { pat, colon_token, ty } => {
+                MiniFnArg::Typed { pat, ty , ..} => {
                     body = Term::TermAbs(
                         pat.0.to_string(),
                         MiniType(*ty.clone()).convert_type(),
@@ -243,7 +295,7 @@ impl ToMiniIrTerm for MiniFn {
         // By default we add a one parameter abstraction, to make functions with 0 arguments to valid abstractions.
         body = Term::TermAbs(
             "arg0".to_string(),
-            FType::Base(BaseType::Unit),
+            IRType::Base(BaseType::Unit),
             Box::new(body),
         );
 
@@ -433,7 +485,7 @@ mod tests {
     }
 
     #[test]
-    fn parse_fn_HKT() {
+    fn parse_fn_hkt() {
         // Arrange
         let mini: MiniFn = parse_quote!(
              fn hello<T<U>>() {}
@@ -452,7 +504,26 @@ mod tests {
     }
 
     #[test]
-    fn parse_fn_HKT_nested() {
+    fn parse_fn_hkt_bounds() {
+        // Arrange
+        let mini: MiniFn = parse_quote!(
+             fn hello<T<U>: Clone>() {}
+        );
+
+        println!("\n{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+
+        println!("\nLambda:\n{}", &converted);
+        println!("\nType:\n{}", type_of(&Context::new(), converted, &mut Substitutions::new()).unwrap());
+
+        // Assert
+        //assert!(matches!(actual, CarbideExpr::Lit(LitExpr {lit: Lit::Int(_)})))
+    }
+
+    #[test]
+    fn parse_fn_hkt_nested() {
         // Arrange
         let mini: MiniFn = parse_quote!(
              fn hello<T<U<I>>>() {}
@@ -471,7 +542,7 @@ mod tests {
     }
 
     #[test]
-    fn parse_fn_HKT_multiple() {
+    fn parse_fn_hkt_multiple() {
         // Arrange
         let mini: MiniFn = parse_quote!(
              fn hello<T<U, I>>() {}

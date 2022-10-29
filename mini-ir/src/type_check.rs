@@ -36,23 +36,15 @@ pub fn type_of(context: &Context, term: Term, substitutions: &mut Substitutions)
 
             result = unify(context, substitutions, t1, result, vec![], vec![])?;
 
-            match result {
-                TypeArrow(_, x) => Ok(*x),
-                _ => Err(format!("Must be a type application (should be a function type), found {:?}", result))
+            fn extract_arrow(ty: Type) -> Result<Type, String> {
+                match ty {
+                    TypeArrow(_, x) => Ok(*x),
+                    Type::Qualified(_, t) => extract_arrow(*t),
+                    _ => Err(format!("Must be a type application (should be a function type), found {:?}", ty)),
+                }
             }
 
-            /*match simplify_type(context, t1) {
-                Type::TypeArrow(t11, t12) => {
-                    if type_equivalence(context, t2.clone(), *t11.clone()) {
-                        *t12
-                    } else {
-                        panic!("Cannot apply: {}, to function of type: {}", t2.to_string_type(context, 0),
-                               Type::TypeArrow(t11, t12).to_string_type(context, 0)
-                        )
-                    }
-                }
-                _ => panic!("arrow type expected")
-            }*/
+            extract_arrow(result)
         }
         // T-TAbs
         Term::TermTypeAbs(x, k1, term2) => {
@@ -374,7 +366,9 @@ pub fn type_of(context: &Context, term: Term, substitutions: &mut Substitutions)
             // Todo: What about kinds?
             let (class_constraints, class_vars, class_declarations) = context.class_items(&class_name);
 
-            for (name, (implementation_term, implementation_type)) in &mut implementations {
+            let mut impls = HashMap::new();
+
+            for (name, term) in &mut implementations {
                 // Check that the class declarations and implementations match and that all required methods are implemented
                 match class_declarations.get(name) {
                     None => panic!("Could not find {:?} in class {:?}", name, &class_name),
@@ -399,14 +393,16 @@ pub fn type_of(context: &Context, term: Term, substitutions: &mut Substitutions)
 
 
                 // Add the instances constraints to all the implementations constraints.
-                *implementation_type = Type::Qualified(constraints.clone(), Box::new(implementation_type.clone()));
+                let implementation_type = Type::Qualified(constraints.clone(), Box::new(type_of(context, term.clone(), substitutions)?));
 
                 // Check that all the class constraints are valid for the type of the implementation
                 // This means we can not create an instance of a type-class for a type that does not
                 // uphold the constraints of the class declaration
                 for class_constraint in &class_constraints {
-                    context.has_instance(&class_constraint.ident, &ty, &mut Vec::new()).unwrap()
+                    // Todo: context.has_instance(&class_constraint.ident, &ty, &mut Vec::new()).unwrap()
                 }
+
+                impls.insert(name.clone(), (term.clone(), implementation_type));
             }
 
             // Todo: Check for colliding implementations of the same Overload
@@ -417,7 +413,7 @@ pub fn type_of(context: &Context, term: Term, substitutions: &mut Substitutions)
                 constraints,
                 class_name,
                 ty,
-                implementations,
+                implementations: impls,
             });
 
 

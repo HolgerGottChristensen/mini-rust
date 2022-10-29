@@ -28,7 +28,7 @@ pub enum Binding {
         /// The name of the class
         class_name: String,
         /// The implementation is for this type
-        ty: Type,
+        ty: Vec<Type>,
         /// Implementations of this instance
         implementations: HashMap<String, (Term, Type)>,
     },
