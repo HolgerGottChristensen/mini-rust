@@ -150,7 +150,7 @@ impl Term {
 
             Term::Ascribe(t, ty) => format!("{}{}{} as {}", get_color(color, "("), t.to_string_term(context, color + 1), get_color(color, ")"), ty.to_string_type(context, color)),
 
-            Term::Define(x, ty, term) => format!("define {}{} = {}{} in {}", get_color(color, "("), x, ty.to_string_type(context, color + 1), get_color(color, ")"), term.to_string_term(context, color)),
+            Term::Define(x, ty, term) => format!("define {}{} = {}{} in\n{}", get_color(color, "("), x, ty.to_string_type(context, color + 1), get_color(color, ")"), term.to_string_term(context, color)),
             Term::Scope(term) => format!("{}{}{}{}", get_color(color, "<b>scope"), get_color(color, "<b>("), term.to_string_term(context, color + 1), get_color(color, "<b>)")),
             Term::Seq(term1, term2) => format!("{}; {}", term1.to_string_term(context, color), term2.to_string_term(context, color)),
             Term::Assignment(x, term) => {
@@ -223,7 +223,7 @@ impl Term {
         }
     }
 
-    fn to_string_term(&self, context: &Context, color: u32) -> String {
+    pub fn to_string_term(&self, context: &Context, color: u32) -> String {
         match self {
             Term::TermAbs(x, tyT1, t2) => {
                 let (new_context, name) = context.pick_fresh_name(x);

@@ -1,8 +1,10 @@
 use std::collections::HashMap;
+use std::fmt::{Debug, Display, Formatter};
+use paris::formatter::colorize_string;
 
 use crate::constraint::Constraint;
 use crate::kind::Kind;
-use crate::Term;
+use crate::{Context, Term};
 use crate::types::Type;
 
 #[derive(Clone, Debug)]
@@ -55,6 +57,20 @@ impl PartialEq<Binding> for String {
             Binding::TyVarBinding(s, _) => s == self,
             Binding::ClassBinding { name, .. } => name == self,
             _ => false,
+        }
+    }
+}
+
+pub enum BindingDebug {
+    Var(String, Type),
+    TyVar(String, Kind),
+}
+
+impl Debug for BindingDebug {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            BindingDebug::Var(n, v) => {write!(f, "{} ↦ ({})", colorize_string(format!("<bright-white>{}</>", n)), v.to_string_type(&Context::new(), 0))}
+            BindingDebug::TyVar(n, v) => {write!(f, "{} ↦ ({})", colorize_string(format!("<bright-white>{}</>", n)), v.to_string_kind())}
         }
     }
 }

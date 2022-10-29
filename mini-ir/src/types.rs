@@ -102,7 +102,11 @@ impl Type {
                     format!("{} {}", constraint.ident, vars)
                 }).collect::<Vec<_>>().join(", ");
 
-                format!("{} => {}", formatted, rest.to_string_type(&context, color))
+                if constraints.len() > 0 {
+                    format!("{} => {}", formatted, rest.to_string_type(&context, color))
+                } else {
+                    format!("_ => {}", rest.to_string_type(&context, color))
+                }
             }
             Type::Recursive(tyX, knK1, tyT2) => {
                 let (new_context, name) = context.pick_fresh_name(tyX);

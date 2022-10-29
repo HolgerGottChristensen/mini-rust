@@ -11,7 +11,7 @@ pub enum Kind {
 }
 
 impl Kind {
-    fn to_string_kind(&self) -> String {
+    pub fn to_string_kind(&self) -> String {
         match self {
             Kind::KindStar => self.to_string_atomic(),
             Kind::KindArrow(k1, k2) => {

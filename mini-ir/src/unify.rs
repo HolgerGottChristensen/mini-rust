@@ -7,26 +7,26 @@ use crate::type_util::bind_variable;
 use crate::types::Type;
 use crate::types::Type::{Qualified, TypeApp, TypeArrow, TypeVar};
 
-pub fn unify(context: &Context, subs: &mut Substitutions, left: Type, right: Type, left_constraints: Vec<Constraint>, right_constraints: Vec<Constraint>) -> Result<Type, String> {
-    println!("Try-Unify: {} ⊔ {}", left.to_string_type(context, 0), right.to_string_type(context, 0));
+pub fn unify(context: &Context, subs: &mut Substitutions, left: Type, right: Type, constraints: Vec<Constraint>) -> Result<Type, String> {
+    println!("Try-Unify: \n\t{} ⊔ {}, \n\tsubs: {:?}, \n\tconstraints: {:?}, \n\tcontext: {}", left.to_string_type(context, 0), right.to_string_type(context, 0), subs, constraints, context);
 
     match (left, right) {
         (Qualified(c1, t1), t2) => {
-            let mut new_left = left_constraints.clone();
-            new_left.extend(c1.clone());
+            let mut new_constraints = constraints.clone();
+            new_constraints.extend(c1.clone());
 
-            let t1 = unify(context, subs, *t1, t2, new_left, right_constraints)?;
+            let t1 = unify(context, subs, *t1, t2, new_constraints)?;
 
             let t1 = Type::qualified(subs.apply_consts(c1.clone()), t1);
 
             Ok(t1.clone())
         }
         (t1, Qualified(c2, t2)) => {
-            let mut new_right = left_constraints.clone();
-            new_right.extend(c2.clone());
+            let mut new_constraints = constraints.clone();
+            new_constraints.extend(c2.clone());
 
 
-            let t1 = unify(context, subs, t1, *t2, left_constraints, new_right)?;
+            let t1 = unify(context, subs, t1, *t2, new_constraints)?;
 
             let t1 = Type::qualified(subs.apply_consts(c2.clone()), t1);
 
@@ -42,7 +42,7 @@ pub fn unify(context: &Context, subs: &mut Substitutions, left: Type, right: Typ
             todo!("How do we unify two forall types")
         }
         (Type::Reference(t1), Type::Reference(t2)) => {
-            unify(context, subs, *t1, *t2, left_constraints, right_constraints)
+            unify(context, subs, *t1, *t2, constraints)
                 .map(|t1| {
                     Type::Reference(Box::new(t1))
                 })
@@ -58,7 +58,7 @@ pub fn unify(context: &Context, subs: &mut Substitutions, left: Type, right: Typ
                 let g1 = subs.apply(g1);
                 let g2 = subs.apply(g2);
 
-                match unify(context, subs, g1, g2, left_constraints.clone(), right_constraints.clone()) {
+                match unify(context, subs, g1, g2, constraints.clone()) {
                     Ok(f1) => {
                         res1.push(f1);
                     }
@@ -82,7 +82,7 @@ pub fn unify(context: &Context, subs: &mut Substitutions, left: Type, right: Typ
                     let v1 = subs.apply(v1.clone());
                     let v2 = subs.apply(v2.clone());
 
-                    match unify(context, subs, v1, v2, left_constraints.clone(), right_constraints.clone()) {
+                    match unify(context, subs, v1, v2, constraints.clone()) {
                         Ok(l1) => {
                             h1_new.insert(k1.clone(), l1);
                         }
@@ -107,7 +107,7 @@ pub fn unify(context: &Context, subs: &mut Substitutions, left: Type, right: Typ
                 if let Some(v2) = h2.get(k1) {
                     let v1 = subs.apply(v1.clone());
                     let v2 = subs.apply(v2.clone());
-                    match unify(context, subs, v1, v2, left_constraints.clone(), right_constraints.clone()) {
+                    match unify(context, subs, v1, v2, constraints.clone()) {
                         Ok(l1) => {
                             h1_new.insert(k1.clone(), l1);
                         }
@@ -123,22 +123,23 @@ pub fn unify(context: &Context, subs: &mut Substitutions, left: Type, right: Typ
             Ok(rec1)
         }
         (TypeArrow(l1, r1), TypeArrow(l2, r2)) => {
-            unify(context, subs, *l1, *l2, left_constraints.clone(), right_constraints.clone())
+            unify(context, subs, *l1, *l2, constraints.clone())
                 .and_then(|l1| {
                     let r1 = subs.apply(*r1);
                     let r2 = subs.apply(*r2);
-                    unify(context, subs, r1, r2, left_constraints, right_constraints)
+                    unify(context, subs, r1, r2, constraints)
                         .map(|r1| {
                             TypeArrow(Box::new(l1), Box::new(r1))
                         })
                 })
         }
         (TypeApp(l1, r1), TypeApp(l2, r2)) => {
-            unify(context, subs, *l1, *l2, left_constraints.clone(), right_constraints.clone())
+            unify(context, subs, *l1, *l2, constraints.clone())
                 .and_then(|l1| {
                     let r1 = subs.apply(*r1);
                     let r2 = subs.apply(*r2);
-                    unify(context, subs, r1, r2, left_constraints, right_constraints)
+
+                    unify(context, subs, r1, r2, constraints)
                         .map(|r1| {
                             TypeApp(Box::new(l1), Box::new(r1))
                         })
@@ -168,36 +169,17 @@ pub fn unify(context: &Context, subs: &mut Substitutions, left: Type, right: Typ
         }
         (TypeVar(x1), TypeVar(x2)) => {
             // Todo: Consider variable age like haskell-compiler
-            let res = bind_variable(context, subs, &x1, &TypeVar(x2.clone()), left_constraints);
-            match res {
-                Ok(_) => {
-                    let res = subs.apply(TypeVar(x1));
-                    Ok(res)
-                }
-                Err(e) => Err(e)
-            }
+            bind_variable(context, subs, &x1, &TypeVar(x2.clone()), constraints)
         }
         (TypeVar(lab1), t2) => {
-            let res = bind_variable(context, subs, &lab1, &t2, left_constraints);
-            match res {
-                Ok(_) => {
-                    Ok(t2)
-                }
-                Err(e) => {
-                    Err(e)
-                }
-            }
+            //let t2 = Qualified(right_constraints, Box::new(t2));
+
+            bind_variable(context, subs, &lab1, &t2, constraints)
         }
         (t1, TypeVar(lab2)) => {
-            let res = bind_variable(context, subs, &lab2, &t1, right_constraints);
-            match res {
-                Ok(_) => {
-                    Ok(t1)
-                }
-                Err(e) => {
-                    Err(e)
-                }
-            }
+            //let t1 = Qualified(left_constraints, Box::new(t1));
+
+            bind_variable(context, subs, &lab2, &t1, constraints)
         }
         (t1, t2) => {
             Err(format!("The type: {} could not be unified with {}", t1.to_string_type(context, 0), t2.to_string_type(context, 0)))
@@ -223,7 +205,7 @@ mod tests {
 
             // Act
             println!("Unify: {} ⊔ {}", t1.to_string_type(&context, 0), t2.to_string_type(&context, 0));
-            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![], vec![]);
+            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![]);
 
             // Assert
             println!();
@@ -243,7 +225,7 @@ mod tests {
 
             // Act
             println!("Unify: {} ⊔ {}", t1.to_string_type(&context, 0), t2.to_string_type(&context, 0));
-            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![], vec![]);
+            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![]);
 
             // Assert
             println!();
@@ -271,7 +253,7 @@ mod tests {
 
             // Act
             println!("Unify: {} ⊔ {}", t1.to_string_type(&context, 0), t2.to_string_type(&context, 0));
-            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![], vec![]);
+            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![]);
 
             // Assert
             println!();
@@ -291,7 +273,7 @@ mod tests {
 
             // Act
             println!("Unify: {} ⊔ {}", t1.to_string_type(&context, 0), t2.to_string_type(&context, 0));
-            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![], vec![]);
+            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![]);
 
             // Assert
             println!();
@@ -311,7 +293,7 @@ mod tests {
 
             // Act
             println!("Unify: {} ⊔ {}", t1.to_string_type(&context, 0), t2.to_string_type(&context, 0));
-            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![], vec![]);
+            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![]);
 
             // Assert
             println!();
@@ -331,7 +313,7 @@ mod tests {
 
             // Act
             println!("Unify: {} ⊔ {}", t1.to_string_type(&context, 0), t2.to_string_type(&context, 0));
-            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![], vec![]);
+            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![]);
 
             // Assert
             println!();
@@ -358,7 +340,7 @@ mod tests {
 
             // Act
             println!("Unify: {} ⊔ {}", t1.to_string_type(&context, 0), t2.to_string_type(&context, 0));
-            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![], vec![]);
+            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![]);
 
             // Assert
             println!();
@@ -378,7 +360,7 @@ mod tests {
 
             // Act
             println!("Unify: {} ⊔ {}", t1.to_string_type(&context, 0), t2.to_string_type(&context, 0));
-            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![], vec![]);
+            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![]);
 
             // Assert
             println!();
@@ -398,7 +380,7 @@ mod tests {
 
             // Act
             println!("Unify: {} ⊔ {}", t1.to_string_type(&context, 0), t2.to_string_type(&context, 0));
-            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![], vec![]);
+            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![]);
 
             // Assert
             println!();
@@ -418,7 +400,7 @@ mod tests {
 
             // Act
             println!("Unify: {} ⊔ {}", t1.to_string_type(&context, 0), t2.to_string_type(&context, 0));
-            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![], vec![]);
+            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![]);
 
             // Assert
             println!();
@@ -438,7 +420,7 @@ mod tests {
 
             // Act
             println!("Unify: {} ⊔ {}", t1.to_string_type(&context, 0), t2.to_string_type(&context, 0));
-            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![], vec![]);
+            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![]);
 
             // Assert
             println!();
@@ -458,7 +440,7 @@ mod tests {
 
             // Act
             println!("Unify: {} ⊔ {}", t1.to_string_type(&context, 0), t2.to_string_type(&context, 0));
-            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![], vec![]);
+            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![]);
 
             // Assert
             println!();
@@ -478,7 +460,7 @@ mod tests {
 
             // Act
             println!("Unify: {} ⊔ {}", t1.to_string_type(&context, 0), t2.to_string_type(&context, 0));
-            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![], vec![]);
+            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![]);
 
             // Assert
             println!();
@@ -498,7 +480,7 @@ mod tests {
 
             // Act
             println!("Unify: {} ⊔ {}", t1.to_string_type(&context, 0), t2.to_string_type(&context, 0));
-            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![], vec![]);
+            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![]);
 
             // Assert
             println!();
@@ -525,7 +507,7 @@ mod tests {
 
             // Act
             println!("Unify: {} ⊔ {}", t1.to_string_type(&context, 0), t2.to_string_type(&context, 0));
-            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![], vec![]);
+            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![]);
 
             // Assert
             println!();
@@ -545,7 +527,7 @@ mod tests {
 
             // Act
             println!("Unify: {} ⊔ {}", t1.to_string_type(&context, 0), t2.to_string_type(&context, 0));
-            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![], vec![]);
+            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![]);
 
             // Assert
             println!();
@@ -571,7 +553,7 @@ mod tests {
             println!("Unify: {} ⊔ {}", t1.to_string_type(&Context::new(), 0), t2.to_string_type(&Context::new(), 0));
 
             // Act
-            let unification = unify(&mut Context::new(), &mut Substitutions::new(), t1, t2, vec![], vec![]);
+            let unification = unify(&mut Context::new(), &mut Substitutions::new(), t1, t2, vec![]);
 
             // Assert
             println!();
@@ -597,7 +579,7 @@ mod tests {
 
             // Act
             println!("Unify: {} ⊔ {}", t1.to_string_type(&context, 0), t2.to_string_type(&context, 0));
-            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![], vec![]);
+            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![]);
 
             // Assert
             println!();
@@ -617,7 +599,7 @@ mod tests {
 
             // Act
             println!("Unify: {} ⊔ {}", t1.to_string_type(&context, 0), t2.to_string_type(&context, 0));
-            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![], vec![]);
+            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![]);
 
             // Assert
             println!();
@@ -637,7 +619,7 @@ mod tests {
 
             // Act
             println!("Unify: {} ⊔ {}", t1.to_string_type(&context, 0), t2.to_string_type(&context, 0));
-            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![], vec![]);
+            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![]);
 
             // Assert
             println!();
@@ -657,7 +639,7 @@ mod tests {
 
             // Act
             println!("Unify: {} ⊔ {}", t1.to_string_type(&context, 0), t2.to_string_type(&context, 0));
-            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![], vec![]);
+            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![]);
 
             // Assert
             println!();
@@ -677,7 +659,7 @@ mod tests {
 
             // Act
             println!("Unify: {} ⊔ {}", t1.to_string_type(&context, 0), t2.to_string_type(&context, 0));
-            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![], vec![]);
+            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![]);
 
             // Assert
             println!();
@@ -697,7 +679,7 @@ mod tests {
 
             // Act
             println!("Unify: {} ⊔ {}", t1.to_string_type(&context, 0), t2.to_string_type(&context, 0));
-            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![], vec![]);
+            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![]);
 
             // Assert
             println!();
@@ -717,7 +699,7 @@ mod tests {
 
             // Act
             println!("Unify: {} ⊔ {}", t1.to_string_type(&context, 0), t2.to_string_type(&context, 0));
-            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![], vec![]);
+            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![]);
 
             // Assert
             println!();
@@ -737,7 +719,7 @@ mod tests {
 
             // Act
             println!("Unify: {} ⊔ {}", t1.to_string_type(&context, 0), t2.to_string_type(&context, 0));
-            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![], vec![]);
+            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![]);
 
             // Assert
             println!();
@@ -766,7 +748,7 @@ mod tests {
 
             // Act
             println!("Unify: {} ⊔ {}", t1.to_string_type(&context, 0), t2.to_string_type(&context, 0));
-            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![], vec![]);
+            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![]);
 
             // Assert
             println!();
@@ -786,7 +768,7 @@ mod tests {
 
             // Act
             println!("Unify: {} ⊔ {}", t1.to_string_type(&context, 0), t2.to_string_type(&context, 0));
-            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![], vec![]);
+            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![]);
 
             // Assert
             println!();
@@ -806,7 +788,7 @@ mod tests {
 
             // Act
             println!("Unify: {} ⊔ {}", t1.to_string_type(&context, 0), t2.to_string_type(&context, 0));
-            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![], vec![]);
+            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![]);
 
             // Assert
             println!();
@@ -826,7 +808,7 @@ mod tests {
 
             // Act
             println!("Unify: {} ⊔ {}", t1.to_string_type(&context, 0), t2.to_string_type(&context, 0));
-            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![], vec![]);
+            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![]);
 
             // Assert
             println!();
@@ -846,7 +828,7 @@ mod tests {
 
             // Act
             println!("Unify: {} ⊔ {}", t1.to_string_type(&context, 0), t2.to_string_type(&context, 0));
-            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![], vec![]);
+            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![]);
 
             // Assert
             println!();
@@ -866,7 +848,7 @@ mod tests {
 
             // Act
             println!("Unify: {} ⊔ {}", t1.to_string_type(&context, 0), t2.to_string_type(&context, 0));
-            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![], vec![]);
+            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![]);
 
             // Assert
             println!();
@@ -886,7 +868,7 @@ mod tests {
 
             // Act
             println!("Unify: {} ⊔ {}", t1.to_string_type(&context, 0), t2.to_string_type(&context, 0));
-            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![], vec![]);
+            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![]);
 
             // Assert
             println!();
@@ -906,7 +888,7 @@ mod tests {
 
             // Act
             println!("Unify: {} ⊔ {}", t1.to_string_type(&context, 0), t2.to_string_type(&context, 0));
-            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![], vec![]);
+            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![]);
 
             // Assert
             println!();
@@ -932,7 +914,7 @@ mod tests {
 
             // Act
             println!("Unify: {} ⊔ {}", t1.to_string_type(&context, 0), t2.to_string_type(&context, 0));
-            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![], vec![]);
+            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![]);
 
             // Assert
             println!();
@@ -960,7 +942,7 @@ mod tests {
 
             // Act
             println!("Unify: {} ⊔ {}", t1.to_string_type(&context, 0), t2.to_string_type(&context, 0));
-            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![], vec![]);
+            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![]);
 
             // Assert
             println!();
@@ -988,7 +970,7 @@ mod tests {
 
             // Act
             println!("Unify: {} ⊔ {}", t1.to_string_type(&context, 0), t2.to_string_type(&context, 0));
-            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![], vec![]);
+            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![]);
 
             // Assert
             println!();
@@ -1023,7 +1005,7 @@ mod tests {
 
             // Act
             println!("Unify: {} ⊔ {}", t1.to_string_type(&context, 0), t2.to_string_type(&context, 0));
-            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![], vec![]);
+            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![]);
 
             // Assert
             println!();
@@ -1043,7 +1025,7 @@ mod tests {
 
             // Act
             println!("Unify: {} ⊔ {}", t1.to_string_type(&context, 0), t2.to_string_type(&context, 0));
-            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![], vec![]);
+            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![]);
 
             // Assert
             println!();
@@ -1063,7 +1045,7 @@ mod tests {
 
             // Act
             println!("Unify: {} ⊔ {}", t1.to_string_type(&context, 0), t2.to_string_type(&context, 0));
-            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![], vec![]);
+            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![]);
 
             // Assert
             println!();
@@ -1083,7 +1065,7 @@ mod tests {
 
             // Act
             println!("Unify: {} ⊔ {}", t1.to_string_type(&context, 0), t2.to_string_type(&context, 0));
-            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![], vec![]);
+            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![]);
 
             // Assert
             println!();
@@ -1103,7 +1085,7 @@ mod tests {
 
             // Act
             println!("Unify: {} ⊔ {}", t1.to_string_type(&context, 0), t2.to_string_type(&context, 0));
-            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![], vec![]);
+            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![]);
 
             // Assert
             println!();
@@ -1123,7 +1105,7 @@ mod tests {
 
             // Act
             println!("Unify: {} ⊔ {}", t1.to_string_type(&context, 0), t2.to_string_type(&context, 0));
-            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![], vec![]);
+            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![]);
 
             // Assert
             println!();
@@ -1143,7 +1125,7 @@ mod tests {
 
             // Act
             println!("Unify: {} ⊔ {}", t1.to_string_type(&context, 0), t2.to_string_type(&context, 0));
-            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![], vec![]);
+            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![]);
 
             // Assert
             println!();
@@ -1163,7 +1145,7 @@ mod tests {
 
             // Act
             println!("Unify: {} ⊔ {}", t1.to_string_type(&context, 0), t2.to_string_type(&context, 0));
-            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![], vec![]);
+            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![]);
 
             // Assert
             println!();
@@ -1189,7 +1171,7 @@ mod tests {
 
             // Act
             println!("Unify: {} ⊔ {}", t1.to_string_type(&context, 0), t2.to_string_type(&context, 0));
-            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![], vec![]);
+            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![]);
 
             // Assert
             println!();
@@ -1217,7 +1199,7 @@ mod tests {
 
             // Act
             println!("Unify: {} ⊔ {}", t1.to_string_type(&context, 0), t2.to_string_type(&context, 0));
-            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![], vec![]);
+            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![]);
 
             // Assert
             println!();
@@ -1245,7 +1227,7 @@ mod tests {
 
             // Act
             println!("Unify: {} ⊔ {}", t1.to_string_type(&context, 0), t2.to_string_type(&context, 0));
-            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![], vec![]);
+            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![]);
 
             // Assert
             println!();
@@ -1340,7 +1322,7 @@ mod tests {
 
             // Act
             println!("Unify: {} ⊔ {}", t1.to_string_type(&context, 0), t2.to_string_type(&context, 0));
-            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![], vec![]);
+            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![]);
 
             // Assert
             println!();
@@ -1366,7 +1348,7 @@ mod tests {
 
             // Act
             println!("Unify: {} ⊔ {}", t1.to_string_type(&context, 0), t2.to_string_type(&context, 0));
-            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![], vec![]);
+            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![]);
 
             // Assert
             println!();
@@ -1392,7 +1374,7 @@ mod tests {
 
             // Act
             println!("Unify: {} ⊔ {}", t1.to_string_type(&context, 0), t2.to_string_type(&context, 0));
-            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![], vec![]);
+            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![]);
 
             // Assert
             println!();
@@ -1418,7 +1400,7 @@ mod tests {
 
             // Act
             println!("Unify: {} ⊔ {}", t1.to_string_type(&context, 0), t2.to_string_type(&context, 0));
-            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![], vec![]);
+            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![]);
 
             // Assert
             println!();
@@ -1444,7 +1426,7 @@ mod tests {
 
             // Act
             println!("Unify: {} ⊔ {}", t1.to_string_type(&context, 0), t2.to_string_type(&context, 0));
-            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![], vec![]);
+            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![]);
 
             // Assert
             println!();
@@ -1470,7 +1452,7 @@ mod tests {
 
             // Act
             println!("Unify: {} ⊔ {}", t1.to_string_type(&context, 0), t2.to_string_type(&context, 0));
-            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![], vec![]);
+            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![]);
 
             // Assert
             println!();
@@ -1496,7 +1478,7 @@ mod tests {
 
             // Act
             println!("Unify: {} ⊔ {}", t1.to_string_type(&context, 0), t2.to_string_type(&context, 0));
-            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![], vec![]);
+            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![]);
 
             // Assert
             println!();
@@ -1523,7 +1505,7 @@ mod tests {
 
             // Act
             println!("Unify: {} ⊔ {}", t1.to_string_type(&context, 0), t2.to_string_type(&context, 0));
-            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![], vec![]);
+            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![]);
 
             // Assert
             println!();
@@ -1550,7 +1532,7 @@ mod tests {
 
             // Act
             println!("Unify: {} ⊔ {}", t1.to_string_type(&context, 0), t2.to_string_type(&context, 0));
-            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![], vec![]);
+            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![]);
 
             // Assert
             println!();
@@ -1577,7 +1559,7 @@ mod tests {
 
             // Act
             println!("Unify: {} ⊔ {}", t1.to_string_type(&context, 0), t2.to_string_type(&context, 0));
-            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![], vec![]);
+            let unification = unify(&mut context, &mut substitutions, t1, t2, vec![]);
 
             // Assert
             println!();

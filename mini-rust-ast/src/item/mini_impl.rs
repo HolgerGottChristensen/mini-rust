@@ -371,9 +371,10 @@ mod tests {
             let converted = mini.convert_term();
             log!("<blue>====== Lambda ======</>");
             println!("{}", &converted);
-            log!("<blue>======= Type =======</>");
+            log!("<blue>==== Type-Check ====</>");
 
             let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new());
+            log!("<blue>======= Type =======</>");
             println!("{}", &converted_type.as_ref().map(|r| r.to_string_type(&context, 0)).unwrap_or_else(|w| w.to_string()));
 
             log!("<blue>====================</>\n");
@@ -409,9 +410,99 @@ mod tests {
             let converted = mini.convert_term();
             log!("<blue>====== Lambda ======</>");
             println!("{}", &converted);
-            log!("<blue>======= Type =======</>");
+            log!("<blue>==== Type-Check ====</>");
 
             let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new());
+            log!("<blue>======= Type =======</>");
+            println!("{}", &converted_type.as_ref().map(|r| r.to_string_type(&context, 0)).unwrap_or_else(|w| w.to_string()));
+
+            log!("<blue>====================</>\n");
+            // Assert
+            assert!(matches!(converted_type, Ok(..)))
+        }
+
+        #[test]
+        fn impl_clone_generic_vec() {
+            // Arrange
+            let mini: MiniFile = parse_quote!(
+                trait Clone {
+                    fn clone(&self) -> Self;
+                }
+
+                struct Vec<T> {
+                    t: T,
+                }
+
+                impl Clone for bool {
+                    // Todo: This should actually panic because the type is not the same as specified in the class
+                    fn clone(self) -> Self {
+                        self
+                    }
+                }
+
+                impl Clone for Vec<T> {
+                    fn clone(self) -> Self {
+                        self
+                    }
+                }
+
+                fn main() -> Vec<bool> {
+                    let v = Vec::<bool>{t: true};
+                    Clone::clone(&v)
+                }
+            );
+            let context = Context::new();
+
+            log!("<blue>======== AST =======</>");
+            println!("{:#?}", &mini);
+
+            // Act
+            let converted = mini.convert_term();
+            log!("<blue>====== Lambda ======</>");
+            println!("{}", &converted);
+            log!("<blue>==== Type-Check ====</>");
+
+            let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new());
+            log!("<blue>======= Type =======</>");
+            println!("{}", &converted_type.as_ref().map(|r| r.to_string_type(&context, 0)).unwrap_or_else(|w| w.to_string()));
+
+            log!("<blue>====================</>\n");
+            // Assert
+            assert!(matches!(converted_type, Ok(..)))
+        }
+
+        #[test]
+        fn impl_clone_fail() {
+            // Arrange
+            let mini: MiniFile = parse_quote!(
+                trait Clone {
+                    fn clone(&self) -> Self;
+                }
+
+                impl Clone for i64 {
+                    // Todo: This should actually panic because the type is not the same as specified in the class
+                    fn clone(self) -> Self {
+                        self
+                    }
+                }
+
+                fn main() -> bool {
+                    Clone::clone(&true)
+                }
+            );
+            let context = Context::new();
+
+            log!("<blue>======== AST =======</>");
+            println!("{:#?}", &mini);
+
+            // Act
+            let converted = mini.convert_term();
+            log!("<blue>====== Lambda ======</>");
+            println!("{}", &converted);
+            log!("<blue>==== Type-Check ====</>");
+
+            let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new());
+            log!("<blue>======= Type =======</>");
             println!("{}", &converted_type.as_ref().map(|r| r.to_string_type(&context, 0)).unwrap_or_else(|w| w.to_string()));
 
             log!("<blue>====================</>\n");
@@ -446,9 +537,10 @@ mod tests {
             let converted = mini.convert_term();
             log!("<blue>====== Lambda ======</>");
             println!("{}", &converted);
-            log!("<blue>======= Type =======</>");
+            log!("<blue>==== Type-Check ====</>");
 
             let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new());
+            log!("<blue>======= Type =======</>");
             println!("{}", &converted_type.as_ref().map(|r| r.to_string_type(&context, 0)).unwrap_or_else(|w| w.to_string()));
 
             log!("<blue>====================</>\n");

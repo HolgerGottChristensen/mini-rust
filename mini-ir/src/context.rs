@@ -1,10 +1,12 @@
 use std::collections::HashMap;
-use std::fmt::Debug;
+use std::fmt::{Debug, Display, Formatter};
 
 use im_rc::{Vector, vector};
 use paris::formatter::colorize_string;
+use paris::log;
 
 use crate::binding::Binding;
+use crate::BindingDebug;
 use crate::constraint::Constraint;
 use crate::kind::Kind;
 use crate::types::Type;
@@ -12,6 +14,22 @@ use crate::types::Type::TypeVar;
 
 #[derive(Debug)]
 pub struct Context(Vector<Binding>);
+
+impl Display for Context {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_list()
+            .entries(self.0.iter().filter_map(|binding| {
+                match binding {
+                    Binding::NameBinding(_) => None,
+                    Binding::VarBinding(v, b) => Some(BindingDebug::Var(v.clone(), b.clone())),
+                    Binding::TyVarBinding(v, k) => Some(BindingDebug::TyVar(v.clone(), k.clone())),
+                    Binding::ClassBinding { .. } => None,
+                    Binding::InstanceBinding { .. } => None,
+                }
+            }))
+            .finish()
+    }
+}
 
 impl Context {
     pub fn new() -> Context {
@@ -55,7 +73,7 @@ impl Context {
     /// Returns whether the type 'searched_type' has an instance for 'class'
     /// If no instance was found, return the instance which was missing
     pub fn has_instance(&self, class: &String, searched_type: &Type, new_constraints: &mut Vec<Constraint>) -> Result<(), String> {
-        println!("{} {} {} {}", colorize_string("<blue>Search after instance:</>"), class, colorize_string("<blue>for</>"), searched_type.to_string_type(&self, 0));
+        log!("<blue>Search after instance:</> {} <blue>for</> {}", class, searched_type.to_string_type(&self, 0));
 
         // Loop through each instance in our local typing environment.
         for ref binding in self.0.clone().into_iter() {
@@ -69,14 +87,15 @@ impl Context {
                     // If the instances constraints are upheld, then we can return the instance.
                     // Otherwise we keep on searching.
                     if result.is_ok() {
-                        println!("{} {} {} {}", colorize_string("<blue>Found and instance of: </>"), class, colorize_string("<blue>for</>"), searched_type.to_string_type(&self, 0));
+                        log!("<green>Found and instance of:</> {} <green>for</> {}", class, searched_type.to_string_type(&self, 0));
                         return result;
                     }
                 }
             }
         }
 
-        Err(format!("Could not find instance of: {} for {:?}", class, searched_type))
+        log!("<red>Could not find instance of:</> {} <red>for</> {}", class, searched_type.to_string_type(&self, 0));
+        Err(format!("Could not find instance of: {} for {}", class, searched_type.to_string_type(&self, 0)))
     }
 
     fn check_instance_constraints(
@@ -86,7 +105,7 @@ impl Context {
         actual_type: &Type,
         new_constraints: &mut Vec<Constraint>,
     ) -> Result<(), String> {
-        println!("Check instance constraints {:?}, actual: {:?}", instance_type, actual_type);
+        println!("\tCheck instance constraints {:?}, actual: {:?}", instance_type, actual_type);
         match (instance_type, actual_type) {
             // If the instance and the actual type are both type applications
             (

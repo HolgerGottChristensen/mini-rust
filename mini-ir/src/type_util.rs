@@ -49,6 +49,13 @@ pub fn type_equivalence(context: &Context, tys: Type, tyt: Type) -> bool {
     //println!("Test equivalence between: {} and {} with context: {:?}", simple_tyt.to_string_type(context, 0), simple_tys.to_string_type(context, 0), context);
 
     match (simple_tys, simple_tyt) {
+        // Todo: The two qualified below might not be correct behavior
+        (Type::Qualified(c1, t1), t2) => {
+            type_equivalence(context, *t1, t2)
+        }
+        (t1, Type::Qualified(c2, t2)) => {
+            type_equivalence(context, t1, *t2)
+        }
         (Type::TypeArrow(s1, s2), Type::TypeArrow(t1, t2)) => {
             type_equivalence(context, *s1, *t1) && type_equivalence(context, *s2, *t2)
         }
@@ -181,13 +188,16 @@ pub fn type_substitution(name: &String, replacement: Type, original: Type) -> Ty
 }
 
 
-pub fn bind_variable(context: &Context, subs: &mut Substitutions, var: &String, typ: &Type, constraints: Vec<Constraint>) -> Result<(), String> {
-    println!("Bind var {} to {}, with constraints {:?}", var, typ.to_string_type(context, 0), &constraints);
+pub fn bind_variable(context: &Context, subs: &mut Substitutions, var: &String, typ: &Type, constraints: Vec<Constraint>) -> Result<Type, String> {
+    println!("Bind-Variable:\n\t{} to {},\n\tsubs: {:?}\n\tconstraints: {:?}", var, typ.to_string_type(context, 0), subs, &constraints);
     //println!("{:#?}", context);
+
+    let subbed = typ.clone();
+    //let subbed = Type::qualified(constraints.clone(), typ.clone());
     match typ {
         TypeVar(var2) => {
             if var != var2 {
-                subs.insert(var.clone(), typ.clone());
+                subs.insert(var.clone(), subbed.clone());
                 /*subs.insert(
                     var.clone(),
                     Type::qualified(subs.apply_consts(constraints), typ.clone())
@@ -214,15 +224,15 @@ pub fn bind_variable(context: &Context, subs: &mut Substitutions, var: &String, 
                     None => ()
                 }*/
             }
-            Ok(())
+            Ok(subbed)
         }
         _ => {
-            for (_, replaced) in &subs.subs {
-                println!("replace_var {} with {} in {}", replaced, var, typ.to_string_type(context, 0));
-                //replace_var(replaced, var, typ);
+            for (key, replaced) in subs.subs.clone() {
+                //println!("replace_var {} with {} in {}", var, typ.to_string_type(context, 0), replaced);
+                subs.insert(key, type_substitution(var, typ.clone(), replaced));
             }
 
-            subs.insert(var.clone(), typ.clone());
+            subs.insert(var.clone(), subbed.clone());
 
             let mut new_constraints = Vec::new();
 
@@ -237,7 +247,7 @@ pub fn bind_variable(context: &Context, subs: &mut Substitutions, var: &String, 
                 // Todo: Add transitive constraints.
                 //context.insert_constraint(&constraint.variables[0], constraint.class)
             }
-            Ok(())
+            Ok(subbed)
         }
     }
 }

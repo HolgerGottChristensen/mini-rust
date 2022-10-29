@@ -40,9 +40,9 @@ fn overload() {
     body = Term::Instance {
         constraints: vec![],
         class_name: "Test".to_string(),
-        ty: Type::Base(Int),
+        ty: vec![Type::Base(Int)],
         implementations: HashMap::from([
-            ("test".to_string(), (Term::TermAbs("x".to_string(), TypeVar("a".to_string()), Box::new(Term::Integer(10))), Type::arrow(Int, Int)))
+            ("test".to_string(), Term::TermAbs("x".to_string(), TypeVar("a".to_string()), Box::new(Term::Integer(10))))
         ]),
         continuation: Box::new(body),
     };

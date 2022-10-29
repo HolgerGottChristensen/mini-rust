@@ -1,17 +1,19 @@
 use std::collections::HashMap;
+use paris::log;
 
 use crate::{Context, Term, unify};
 use crate::base_type::BaseType;
 use crate::binding::Binding;
 use crate::constraint::Constraint;
 use crate::substitutions::Substitutions;
-use crate::type_util::type_substitution;
+use crate::type_util::{type_equivalence, type_substitution};
 use crate::types::Type;
 use crate::types::Type::{TypeArrow, TypeVar};
 
 /// Check the type of a given term with the context. We need all classes to be the first,
 /// and instances to be the second.
 pub fn type_of(context: &Context, term: Term, substitutions: &mut Substitutions) -> Result<Type, String> {
+    //log!("Check type of:\n\t{:?},\n\tsubs: {:?},\n\tcontext: {}", term, substitutions, context);
     match term {
         // T-Var
         Term::TermVar(name) => {
@@ -28,23 +30,26 @@ pub fn type_of(context: &Context, term: Term, substitutions: &mut Substitutions)
         }
         // T-App
         Term::TermApp(term1, term2) => {
-            println!("trying to type check {:?} {:?}", term1, term2);
+            //println!("trying to type check {:?} {:?}", term1, term2);
             let mut t2 = type_of(context, *term2, substitutions)?;
             let mut t1 = type_of(context, *term1, substitutions)?;
 
             let mut result = TypeArrow(Box::new(t2.clone()), Box::new(Type::new_unique_var()));
 
-            result = unify(context, substitutions, t1, result, vec![], vec![])?;
+            result = unify(context, substitutions, t1, result, vec![])?;
+            log!("<green>Unification result:</> {}", result.to_string_type(context, 0));
 
             fn extract_arrow(ty: Type) -> Result<Type, String> {
                 match ty {
                     TypeArrow(_, x) => Ok(*x),
-                    Type::Qualified(_, t) => extract_arrow(*t),
+                    Type::Qualified(c, t) => Ok(Type::qualified(c, extract_arrow(*t)?)),
                     _ => Err(format!("Must be a type application (should be a function type), found {:?}", ty)),
                 }
             }
 
-            extract_arrow(result)
+            let extracted = extract_arrow(result)?;
+            log!("<yellow>Extracted result:</> {}", extracted.to_string_type(context, 0));
+            Ok(extracted)
         }
         // T-TAbs
         Term::TermTypeAbs(x, k1, term2) => {
@@ -286,7 +291,7 @@ pub fn type_of(context: &Context, term: Term, substitutions: &mut Substitutions)
 
             let term_type = type_of(context, *t, substitutions)?;
 
-            if crate::type_util::type_equivalence(context, term_type.clone(), ty.clone()) {
+            if type_equivalence(context, term_type.clone(), ty.clone()) {
                 Ok(term_type) //ty // <- The ty was there before. The two have two different semantics.
                 // If ty then if we ascribe with a tyVar which is common, we will return a TyVar which is not fun for those
                 // checking the type like TupleProjection and friends.
