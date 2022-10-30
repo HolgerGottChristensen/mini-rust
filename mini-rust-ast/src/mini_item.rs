@@ -63,7 +63,7 @@ impl ToMiniIrTerm for MiniItem {
     fn convert_term(&self) -> Term {
         match self {
             MiniItem::Enum(f) => f.convert_term(),
-            MiniItem::Fn(f) => f.convert_term(),
+            MiniItem::Fn(f) => Term::Let(f.ident.to_string(), Box::new(f.convert_term()), Box::new(Term::Replacement)),
             MiniItem::Impl(f) => f.convert_term(),
             MiniItem::Struct(f) => f.convert_term(),
             MiniItem::Trait(f) => f.convert_term(),

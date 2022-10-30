@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use paris::log;
 
 use crate::constraint::Constraint;
 use crate::Context;
@@ -8,7 +9,7 @@ use crate::types::Type;
 use crate::types::Type::{Qualified, TypeApp, TypeArrow, TypeVar};
 
 pub fn unify(context: &Context, subs: &mut Substitutions, left: Type, right: Type, constraints: Vec<Constraint>) -> Result<Type, String> {
-    println!("Try-Unify: \n\t{} ⊔ {}, \n\tsubs: {:?}, \n\tconstraints: {:?}, \n\tcontext: {}", left.to_string_type(context, 0), right.to_string_type(context, 0), subs, constraints, context);
+    log!("Try-Unify: \n\t{} <bright-white>⊔</> {}, \n\tsubs: {:?}, \n\tconstraints: {:?}, \n\tcontext: {}", left.to_string_type(context, 0), right.to_string_type(context, 0), subs, constraints, context);
 
     match (left, right) {
         (Qualified(c1, t1), t2) => {
@@ -169,7 +170,13 @@ pub fn unify(context: &Context, subs: &mut Substitutions, left: Type, right: Typ
         }
         (TypeVar(x1), TypeVar(x2)) => {
             // Todo: Consider variable age like haskell-compiler
-            bind_variable(context, subs, &x2, &TypeVar(x1.clone()), constraints)
+            if x1.starts_with("#NEW") {
+                bind_variable(context, subs, &x1, &TypeVar(x2.clone()), constraints)
+            } else if x2.starts_with("#NEW") {
+                bind_variable(context, subs, &x2, &TypeVar(x1.clone()), constraints)
+            } else {
+                bind_variable(context, subs, &x1, &TypeVar(x2.clone()), constraints)
+            }
         }
         (TypeVar(lab1), t2) => {
             //let t2 = Qualified(right_constraints, Box::new(t2));

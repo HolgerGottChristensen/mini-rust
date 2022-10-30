@@ -119,8 +119,9 @@ pub enum Term {
         /// The Term after the "in"
         continuation: Box<Term>,
     },
-    // /// require (x : Type) for Term
-    // Predicate(Box<Term>, String, Type),
+    /// require ... in Term
+    Qualified(Vec<Constraint>, Box<Term>),
+    Replacement,
 }
 
 impl Display for Term {
@@ -142,6 +143,7 @@ impl Term {
                 //colorize_string(format!("<magenta>{}</>", x))
                 format!("{}", x)
             }
+            Term::Replacement => colorize_string("<red>REPLACEMENT</>"),
             Term::True => colorize_string("<green>true</>"),
             Term::False => colorize_string("<green>false</>"),
             Term::Unit => colorize_string("<green>unit</>"),
@@ -150,6 +152,9 @@ impl Term {
 
             Term::Ascribe(t, ty) => format!("{}{}{} as {}", get_color(color, "("), t.to_string_term(context, color + 1), get_color(color, ")"), ty.to_string_type(context, color)),
 
+            Term::Qualified(constraints, term) => {
+                format!("require {:?} in\n{}", constraints, term.to_string_term(context, color))
+            },
             Term::Define(x, ty, term) => format!("define {}{} = {}{} in\n{}", get_color(color, "("), x, ty.to_string_type(context, color + 1), get_color(color, ")"), term.to_string_term(context, color)),
             Term::Scope(term) => format!("{}{}{}{}", get_color(color, "<b>scope"), get_color(color, "<b>("), term.to_string_term(context, color + 1), get_color(color, "<b>)")),
             Term::Seq(term1, term2) => format!("{}; {}", term1.to_string_term(context, color), term2.to_string_term(context, color)),

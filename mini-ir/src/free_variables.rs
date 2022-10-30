@@ -56,7 +56,9 @@ pub fn free_term_variables(term: Term) -> HashSet<String> {
         Term::Fix(t) => free_term_variables(*t),
         Term::Class { .. } => { todo!() }
         Term::Instance { .. } => { todo!() }
-        Term::Assignment(_, t) => free_term_variables(*t)
+        Term::Assignment(_, t) => free_term_variables(*t),
+        Term::Qualified(_, t) => free_term_variables(*t),
+        Term::Replacement => panic!("Cannot find free variables of a replacement")
     }
 }
 

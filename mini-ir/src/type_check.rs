@@ -1,11 +1,12 @@
 use std::collections::HashMap;
 use paris::log;
 
-use crate::{check_kind_star, Context, Term, unify};
+use crate::{check_kind_star, Context, Kind, kind_of, Term, unify};
 use crate::base_type::BaseType;
 use crate::binding::Binding;
 use crate::constraint::Constraint;
 use crate::substitutions::Substitutions;
+use crate::Type::TypeAll;
 use crate::type_util::{simplify_type, type_equivalence, type_substitution};
 use crate::types::Type;
 use crate::types::Type::{TypeArrow, TypeVar};
@@ -61,18 +62,34 @@ pub fn type_of(context: &Context, term: Term, substitutions: &mut Substitutions)
         }
         // T-TApp
         Term::TermTypeApp(term1, t2) => {
-            let k2 = crate::kind_of(context, t2.clone());
+            let k2 = kind_of(context, t2.clone());
             let t1 = type_of(context, *term1, substitutions)?;
-            match simplify_type(context, t1) {
-                Type::TypeAll(name, k11, t12) => {
-                    if k11 != k2 {
-                        Err(format!("Type argument has wrong kind"))
-                    } else {
-                        Ok(type_substitution(&name, t2, *t12))
-                    }
+
+            fn extract_all(context: &Context, ty: Type, k2: Kind, t2: Type, substitutions: &mut Substitutions) -> Result<Type, String> {
+                match ty {
+                    TypeAll(name, k11, t12) => {
+                        if k11 != k2 {
+                            Err(format!("Type argument has wrong kind"))
+                        } else {
+                            substitutions.insert(name.clone(), t2.clone());
+                            Ok(type_substitution(&name, t2, *t12))
+                        }
+                    },
+                    Type::Qualified(c, t) => {
+
+                        let extracted = extract_all(context, *t, k2, t2, substitutions)?;
+
+                        for constraint in &c {
+                            context.has_instance(&constraint.ident, &substitutions.apply(constraint.vars[0].clone()), &mut vec![])?;
+                        }
+
+                        Ok(Type::qualified(c,extracted))
+                    },
+                    _ => Err(format!("Must be a universal type, found {:?}", ty)),
                 }
-                _ => Err(format!("universal type expected"))
             }
+
+            extract_all(context, simplify_type(context, t1), k2, t2, substitutions)
         }
         // T-If
         Term::If(term1, term2, term3) => {
@@ -420,5 +437,10 @@ pub fn type_of(context: &Context, term: Term, substitutions: &mut Substitutions)
             }
             Ok(ty)
         }
+        Term::Qualified(c, t) => {
+            let ty = type_of(context, *t, substitutions);
+            ty.map(|a| Type::Qualified(c, Box::new(a)))
+        }
+        Term::Replacement => Ok(Type::Base(BaseType::Unit))
     }
 }

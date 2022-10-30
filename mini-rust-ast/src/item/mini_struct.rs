@@ -99,7 +99,7 @@ impl Parse for MiniStructField {
 
 impl ToMiniIrTerm for MiniStruct {
     fn convert_term(&self) -> Term {
-        Term::Define(self.ident.0.to_string(), self.convert_type(), Box::new(Term::Unit))
+        Term::Define(self.ident.0.to_string(), self.convert_type(), Box::new(Term::Replacement))
     }
 }
 

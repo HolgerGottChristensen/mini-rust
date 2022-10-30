@@ -8,12 +8,13 @@ use syn::parse::discouraged::Speculative;
 use syn::punctuated::Punctuated;
 use syn::token::{And, Colon, Comma, Mut, Paren, RArrow, SelfValue, Semi};
 
-use mini_ir::{BaseType, Context, Substitutions, Term, type_of};
+use mini_ir::{BaseType, Constraint, Context, Substitutions, Term, type_of};
 use mini_ir::Type as IRType;
 use mini_ir::Type::{TypeAbs, TypeArrow, TypeVar};
 
 use crate::{MiniGenerics, MiniIdent, MiniType, ToMiniIrKind, ToMiniIrTerm, ToMiniIrType};
 use crate::mini_generics::MiniWhere;
+use crate::mini_path::MiniPath;
 use crate::stmt::MiniBlock;
 
 #[derive(PartialEq, Clone)]
@@ -233,10 +234,42 @@ impl ToMiniIrType for MiniFn {
         // By default we add a one parameter abstraction, to make functions with 0 arguments to valid abstractions.
         ty = TypeArrow(Box::new(IRType::Base(BaseType::Unit)), Box::new(ty));
 
-        // Todo: How will we handle generic bounds?
         // Add generics as TypeAbs
         for generic in self.generics.params.iter().rev() {
             ty = TypeAbs(generic.ident.to_string(), generic.ident.convert_kind(), Box::new(ty));
+        }
+
+        let mut constraints = vec![];
+
+        // Add constraints from the generic params
+        for param in &self.generics.params {
+            for bound in &param.bounds {
+                constraints.push(Constraint {
+                    ident: MiniPath(bound.path.clone()).as_ident(),
+                    vars: vec![
+                        TypeVar(param.ident.to_string())
+                    ]
+                });
+            }
+        }
+
+        // Add constraints from the where clause
+        if let Some(a) = &self.generics.where_clause {
+            for predicate in &a.predicates {
+                for bound in &predicate.bounds {
+                    constraints.push(Constraint {
+                        ident: MiniPath(bound.path.clone()).as_ident(),
+                        vars: vec![
+                            TypeVar(predicate.ident.to_string())
+                        ]
+                    });
+                }
+            }
+        }
+
+
+        if !constraints.is_empty() {
+            ty = IRType::qualified(constraints, ty);
         }
 
         ty
@@ -300,10 +333,42 @@ impl ToMiniIrTerm for MiniFn {
             Box::new(body),
         );
 
-        // Todo: How will we handle generic bounds?
         // Add generics as TypeAbs
         for generic in self.generics.params.iter().rev() {
             body = Term::TermTypeAbs(generic.ident.to_string(), generic.ident.convert_kind(), Box::new(body));
+        }
+
+        let mut constraints = vec![];
+
+        // Add constraints from the generic params
+        for param in &self.generics.params {
+            for bound in &param.bounds {
+                constraints.push(Constraint {
+                    ident: MiniPath(bound.path.clone()).as_ident(),
+                    vars: vec![
+                        TypeVar(param.ident.to_string())
+                    ]
+                });
+            }
+        }
+
+        // Add constraints from the where clause
+        if let Some(a) = &self.generics.where_clause {
+            for predicate in &a.predicates {
+                for bound in &predicate.bounds {
+                    constraints.push(Constraint {
+                        ident: MiniPath(bound.path.clone()).as_ident(),
+                        vars: vec![
+                            TypeVar(predicate.ident.to_string())
+                        ]
+                    });
+                }
+            }
+        }
+
+
+        if !constraints.is_empty() {
+            body = Term::Qualified(constraints, Box::new(body));
         }
 
         body
@@ -311,11 +376,13 @@ impl ToMiniIrTerm for MiniFn {
 }
 
 mod tests {
+    use paris::log;
     use syn::parse_quote;
 
     use mini_ir::{Context, Substitutions, type_of};
 
     use crate::{MiniFn, ToMiniIrTerm};
+    use crate::mini_file::MiniFile;
     use crate::stmt::MiniBlock;
 
     #[test]
@@ -464,6 +531,176 @@ mod tests {
 
         // Assert
         //assert!(matches!(actual, CarbideExpr::Lit(LitExpr {lit: Lit::Int(_)})))
+    }
+
+    #[test]
+    fn generic_with_bound() {
+        // Arrange
+        let mini: MiniFile = parse_quote!(
+            trait Clone {
+                fn clone(&self) -> Self;
+            }
+
+            fn hello<T: Clone>(arg1: &T) {
+                let v = Clone::clone(arg1);
+            }
+
+            fn main() {
+                hello::<bool>(&false);
+            }
+        );
+        let context = Context::new();
+
+        log!("<blue>======== AST =======</>");
+        println!("{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+        log!("<blue>====== Lambda ======</>");
+        println!("{}", &converted);
+        log!("<blue>==== Type-Check ====</>");
+
+        let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new());
+        log!("<blue>======= Type =======</>");
+        println!("{}", &converted_type.as_ref().map(|r| r.to_string_type(&context, 0)).unwrap_or_else(|w| w.to_string()));
+
+        log!("<blue>====================</>\n");
+        // Assert
+        assert!(matches!(converted_type, Err(..)))
+    }
+
+    #[test]
+    fn generic_with_bound2() {
+        // Arrange
+        let mini: MiniFile = parse_quote!(
+            trait Clone {
+                fn clone(&self) -> Self;
+            }
+
+            impl Clone for bool {
+                fn clone(self) -> Self {
+                    self
+                }
+            }
+
+            fn hello<T: Clone>(arg1: &T) {
+                let v = Clone::clone(arg1);
+            }
+
+            fn main() {
+                hello::<bool>(&false);
+            }
+        );
+        let context = Context::new();
+
+        log!("<blue>======== AST =======</>");
+        println!("{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+        log!("<blue>====== Lambda ======</>");
+        println!("{}", &converted);
+        log!("<blue>==== Type-Check ====</>");
+
+        let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new());
+        log!("<blue>======= Type =======</>");
+        println!("{}", &converted_type.as_ref().map(|r| r.to_string_type(&context, 0)).unwrap_or_else(|w| w.to_string()));
+
+        log!("<blue>====================</>\n");
+        // Assert
+        assert!(matches!(converted_type, Ok(..)))
+    }
+
+    #[test]
+    fn generic_with_bound3() {
+        // Arrange
+        let mini: MiniFile = parse_quote!(
+            trait Clone {
+                fn clone(&self) -> Self;
+            }
+
+            impl Clone for bool {
+                fn clone(self) -> Self {
+                    self
+                }
+            }
+
+            fn hello<T: Clone>(arg1: &T) {
+                let v = Clone::clone(arg1);
+            }
+
+            fn hello2<T: Clone>(arg1: &T) {
+                hello::<T>(arg1);
+            }
+
+            fn main() {
+                hello2::<bool>(&false);
+            }
+        );
+        let context = Context::new();
+
+        log!("<blue>======== AST =======</>");
+        println!("{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+        log!("<blue>====== Lambda ======</>");
+        println!("{}", &converted);
+        log!("<blue>==== Type-Check ====</>");
+
+        let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new());
+        log!("<blue>======= Type =======</>");
+        println!("{}", &converted_type.as_ref().map(|r| r.to_string_type(&context, 0)).unwrap_or_else(|w| w.to_string()));
+
+        log!("<blue>====================</>\n");
+        // Assert
+        assert!(matches!(converted_type, Ok(..)))
+    }
+
+    #[test]
+    fn generic_with_bound4() {
+        // Arrange
+        let mini: MiniFile = parse_quote!(
+            trait Clone {
+                fn clone(&self) -> Self;
+            }
+
+            impl Clone for i64 {
+                fn clone(self) -> Self {
+                    self
+                }
+            }
+
+            fn hello<T: Clone>(arg1: &T) {
+                let v = Clone::clone(arg1);
+            }
+
+            fn hello2<T: Clone>(arg1: &T) {
+                hello::<T>(arg1);
+            }
+
+            fn main() {
+                hello2::<bool>(&false);
+            }
+        );
+        let context = Context::new();
+
+        log!("<blue>======== AST =======</>");
+        println!("{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+        log!("<blue>====== Lambda ======</>");
+        println!("{}", &converted);
+        log!("<blue>==== Type-Check ====</>");
+
+        let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new());
+        log!("<blue>======= Type =======</>");
+        println!("{}", &converted_type.as_ref().map(|r| r.to_string_type(&context, 0)).unwrap_or_else(|w| w.to_string()));
+
+        log!("<blue>====================</>\n");
+        // Assert
+        assert!(matches!(converted_type, Err(..)))
     }
 
     #[test]

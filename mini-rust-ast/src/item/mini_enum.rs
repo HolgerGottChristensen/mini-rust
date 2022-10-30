@@ -110,7 +110,7 @@ impl Parse for MiniEnumVariant {
 impl ToMiniIrTerm for MiniEnum {
     fn convert_term(&self) -> Term {
         let variants = self.convert_type();
-        let mut body = Term::Unit;
+        let mut body = Term::Replacement;
         // Todo: We probably also need to for all cases in the enum define a "let" function that takes the correct params and creates an enum case.
 
         for field in &self.fields {

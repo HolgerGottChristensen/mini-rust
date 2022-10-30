@@ -47,7 +47,7 @@ impl ToMiniIrTerm for MiniFile {
         };
 
         for stmt in self.items.iter().rev().filter(|i| !is_main(*i)) {
-            body = replace_inner(stmt.convert_term(), body);
+            body = replace_inner(stmt.convert_term(), body).unwrap();
         }
 
         body

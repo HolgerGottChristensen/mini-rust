@@ -67,10 +67,12 @@ impl ToMiniIrTerm for MiniBlock {
             let mut body = self.stmts[self.stmts.len() - 1].convert_term();
 
             for stmt in self.stmts.iter().rev().skip(1) {
-                body = replace_inner(stmt.convert_term(), body);
+                body = replace_inner(stmt.convert_term(), body).unwrap();
             }
 
             // Todo: Check if only the last statement and returns are non-unit.
+
+            body = replace_inner(body.clone(), Term::Unit).unwrap_or(body);
 
             // Because of scoping we need to hide all things from the body.
             Term::Scope(Box::new(body))

@@ -141,13 +141,13 @@ impl ToMiniIrTerm for MiniImpl {
                 implementations: HashMap::from_iter(self.items.iter().map(|item| {
                     (format!("{}::{}", class_name, item.ident.to_string()), item.convert_term())
                 })),
-                continuation: Box::new(Term::Unit)
+                continuation: Box::new(Term::Replacement)
             }
         } else {
             let name = MiniType(*self.self_ty.clone()).path().as_ident();
             let generics = MiniType(*self.self_ty.clone()).path().generics();
 
-            let mut body = Term::Unit;
+            let mut body = Term::Replacement;
 
             for item in self.items.iter().rev() {
                 let mut fun = item.convert_term();

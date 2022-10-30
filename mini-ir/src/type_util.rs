@@ -69,7 +69,11 @@ pub fn type_equivalence(context: &Context, tys: Type, tyt: Type) -> bool {
             }
         }
         (ty, Type::TypeVar(i)) | (Type::TypeVar(i), ty) => {
-            type_equivalence(context, context.get_type(&i).unwrap(), ty)
+            println!("{}", context);
+            println!("{:?}", ty);
+            println!("{:?}", i);
+            // Todo: How do we handle KindVars?
+            context.get_type(&i).map(|a| type_equivalence(context, a, ty)).unwrap_or(false)
         }
         (Type::TypeAbs(tyX1, knKS1, tyS2), Type::TypeAbs(_, knKT1, tyT2)) => {
             let new_context = context.add_name(tyX1);
@@ -169,8 +173,17 @@ pub fn type_map(on_var: &dyn Fn(String) -> Type, ty: Type) -> Type {
             knK1,
             Box::new(type_map(on_var, *tyT2)),
         ),
-        Type::Qualified(constraint, rest) => {
-            todo!()
+        Type::Qualified(constraints, rest) => {
+            let new_constraints = constraints.iter().map(|c| {
+                Constraint {
+                    ident: c.ident.clone(),
+                    vars: c.vars.iter().map(|a| {
+                        type_map(on_var, a.clone())
+                    }).collect::<Vec<_>>()
+                }
+            }).collect::<Vec<_>>();
+
+            Type::qualified(new_constraints, type_map(on_var, *rest))
         }
     }
 }

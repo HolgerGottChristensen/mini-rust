@@ -168,7 +168,7 @@ impl ToMiniIrTerm for MiniTrait {
             default_implementations: HashMap::from_iter(self.items.iter().filter(|a| a.block.is_ok()).map(|f| {
                 (format!("{}::{}", self.ident.to_string(), f.ident.to_string()), f.convert_term())
             })),
-            continuation: Box::new(Term::Unit)
+            continuation: Box::new(Term::Replacement)
         }
     }
 }

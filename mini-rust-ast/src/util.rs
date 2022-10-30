@@ -1,21 +1,21 @@
 use mini_ir::Term;
 
-pub fn replace_inner(term: Term, with: Term) -> Term {
+pub fn replace_inner(term: Term, with: Term) -> Result<Term, String> {
     match term {
         Term::Define(x, ty, inner) => {
-            Term::Define(x, ty, Box::new(replace_inner(*inner, with)))
+            Ok(Term::Define(x, ty, Box::new(replace_inner(*inner, with)?)))
         }
         Term::Let(a, ty, inner) => {
-            Term::Let(a, ty, Box::new(replace_inner(*inner, with)))
+            Ok(Term::Let(a, ty, Box::new(replace_inner(*inner, with)?)))
         }
-        Term::Unit => {
-            with
+        Term::Replacement => {
+            Ok(with)
         }
         Term::Seq(term1, term2) => {
-            Term::Seq(term1, Box::new(replace_inner(*term2, with)))
+            Ok(Term::Seq(term1, Box::new(replace_inner(*term2, with)?)))
         }
         Term::TermTypeAbs(s, k, inner) => {
-            Term::TermTypeAbs(s, k, Box::new(replace_inner(*inner, with)))
+            Ok(Term::TermTypeAbs(s, k, Box::new(replace_inner(*inner, with)?)))
         }
         Term::Class {
             constraints,
@@ -25,14 +25,14 @@ pub fn replace_inner(term: Term, with: Term) -> Term {
             default_implementations,
             continuation
         } => {
-            Term::Class {
+            Ok(Term::Class {
                 constraints,
                 name,
                 vars,
                 declarations,
                 default_implementations,
-                continuation: Box::new(replace_inner(*continuation, with))
-            }
+                continuation: Box::new(replace_inner(*continuation, with)?)
+            })
         }
         Term::Instance {
             constraints,
@@ -41,14 +41,14 @@ pub fn replace_inner(term: Term, with: Term) -> Term {
             implementations,
             continuation
         } => {
-            Term::Instance {
+            Ok(Term::Instance {
                 constraints,
                 class_name,
                 ty,
                 implementations,
-                continuation: Box::new(replace_inner(*continuation, with))
-            }
+                continuation: Box::new(replace_inner(*continuation, with)?)
+            })
         }
-        a => panic!("Expressions need to be the last in the block")
+        a => Err("Expressions need to be the last in the block".to_string())
     }
 }

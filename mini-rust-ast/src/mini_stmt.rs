@@ -129,7 +129,7 @@ impl ToMiniIrTerm for MiniStmt {
                 body = Term::Let(
                     pat.to_token_stream().to_string(),
                     Box::new(body),
-                    Box::new(Term::Unit),
+                    Box::new(Term::Replacement),
                 );
 
                 body
@@ -139,7 +139,7 @@ impl ToMiniIrTerm for MiniStmt {
                     MiniItem::Enum(e) => e.convert_term(),
                     MiniItem::Struct(s) => s.convert_term(),
                     MiniItem::Fn(f) => {
-                        Term::Let(f.ident.0.to_string(), Box::new(f.convert_term()), Box::new(Term::Unit))
+                        Term::Let(f.ident.0.to_string(), Box::new(f.convert_term()), Box::new(Term::Replacement))
                     }
                     MiniItem::Impl(i) => i.convert_term(),
                     _ => todo!()
@@ -152,7 +152,7 @@ impl ToMiniIrTerm for MiniStmt {
                 // Always continue with unit, which will be replaced when having more statements in a row.
                 body = Term::Seq(
                     Box::new(body),
-                    Box::new(Term::Unit),
+                    Box::new(Term::Replacement),
                 );
 
                 body
