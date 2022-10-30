@@ -23,6 +23,7 @@ pub fn compute_type(context: &Context, tyt: Type) -> Result<Type, Type> {
                 _ => ()
             }
         }
+        Type::TypeVar(x) => return context.get_type(&x).map_err(|_| TypeVar(x)),
         _ => ()
     }
 

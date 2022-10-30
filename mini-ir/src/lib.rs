@@ -3,6 +3,7 @@ use std::collections::HashMap;
 pub use base_type::BaseType::*;
 pub use base_type::*;
 pub use context::*;
+pub use constraint::*;
 pub use kind_check::*;
 pub use kind::*;
 pub use substitutions::Substitutions;

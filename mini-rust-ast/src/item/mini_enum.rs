@@ -11,6 +11,7 @@ use mini_ir::{BaseType, Kind, Term};
 use mini_ir::Type as FType;
 
 use crate::{MiniGenerics, MiniIdent, MiniType, ToMiniIrKind, ToMiniIrTerm, ToMiniIrType};
+use crate::mini_generics::MiniWhere;
 
 #[derive(PartialEq, Clone)]
 pub struct MiniEnum {
@@ -52,8 +53,8 @@ impl Parse for MiniEnum {
     }
 }
 
-pub fn data_enum(input: ParseStream) -> syn::Result<(Option<WhereClause>, token::Brace, Punctuated<MiniEnumVariant, Token![,]>)> {
-    let where_clause = input.parse()?;
+pub fn data_enum(input: ParseStream) -> syn::Result<(Option<MiniWhere>, token::Brace, Punctuated<MiniEnumVariant, Token![,]>)> {
+    let where_clause = input.parse().ok();
 
     let content;
     let brace = braced!(content in input);

@@ -5,7 +5,7 @@ use syn::{braced, Path, Token, Type, TypePath};
 use syn::parse::{Parse, ParseStream};
 use syn::token::{Brace, For, Impl};
 
-use mini_ir::{Kind, Term};
+use mini_ir::{Constraint, Kind, Term};
 use mini_ir::Type::{TypeApp, TypeVar};
 
 use crate::{MiniFn, MiniGenerics, MiniType, ToMiniIrKind, ToMiniIrTerm, ToMiniIrType};
@@ -95,7 +95,7 @@ fn parse_impl(input: ParseStream, allow_verbatim_impl: bool) -> syn::Result<Opti
         self_ty = first_ty;
     }
 
-    generics.where_clause = input.parse()?;
+    generics.where_clause = input.parse().ok();
 
     let content;
     let brace_token = braced!(content in input);
@@ -125,8 +125,16 @@ impl ToMiniIrTerm for MiniImpl {
 
             let class_name = MiniPath(p.clone()).as_ident();
 
+            let constraints = self.generics.where_clause.as_ref().map_or(vec![], |w| {
+                w.predicates.iter().map(|p| {
+                    p.bounds.iter().map(|b| {
+                        Constraint { ident: MiniPath(b.path.clone()).as_ident(), vars: vec![TypeVar(p.ident.to_string())] }
+                    }).collect::<Vec<_>>()
+                }).flatten().collect::<Vec<_>>()
+            });
+
             Term::Instance {
-                constraints: vec![],
+                constraints,
                 class_name: class_name.clone(),
                 ty: vec![MiniType(*self.self_ty.clone()).convert_type()].into_iter()
                     .chain(MiniPath(p.clone()).generics()).collect(),
@@ -351,38 +359,6 @@ mod tests {
         use crate::mini_file::MiniFile;
 
         #[test]
-        fn impl_trait_empty() {
-            // Arrange
-            let mini: MiniFile = parse_quote!(
-                trait Test {
-
-                }
-
-                impl Test for bool {
-
-                }
-            );
-            let context = Context::new();
-
-            log!("<blue>======== AST =======</>");
-            println!("{:#?}", &mini);
-
-            // Act
-            let converted = mini.convert_term();
-            log!("<blue>====== Lambda ======</>");
-            println!("{}", &converted);
-            log!("<blue>==== Type-Check ====</>");
-
-            let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new());
-            log!("<blue>======= Type =======</>");
-            println!("{}", &converted_type.as_ref().map(|r| r.to_string_type(&context, 0)).unwrap_or_else(|w| w.to_string()));
-
-            log!("<blue>====================</>\n");
-            // Assert
-            assert!(matches!(converted_type, Ok(..)))
-        }
-
-        #[test]
         fn impl_clone() {
             // Arrange
             let mini: MiniFile = parse_quote!(
@@ -440,7 +416,7 @@ mod tests {
                     }
                 }
 
-                impl Clone for Vec<T> {
+                impl Clone for Vec<T> where T: Clone {
                     fn clone(self) -> Self {
                         self
                     }
@@ -507,8 +483,41 @@ mod tests {
 
             log!("<blue>====================</>\n");
             // Assert
+            assert!(matches!(converted_type, Err(..)))
+        }
+
+        #[test]
+        fn impl_trait_empty() {
+            // Arrange
+            let mini: MiniFile = parse_quote!(
+                trait Test {
+
+                }
+
+                impl Test for bool {
+
+                }
+            );
+            let context = Context::new();
+
+            log!("<blue>======== AST =======</>");
+            println!("{:#?}", &mini);
+
+            // Act
+            let converted = mini.convert_term();
+            log!("<blue>====== Lambda ======</>");
+            println!("{}", &converted);
+            log!("<blue>==== Type-Check ====</>");
+
+            let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new());
+            log!("<blue>======= Type =======</>");
+            println!("{}", &converted_type.as_ref().map(|r| r.to_string_type(&context, 0)).unwrap_or_else(|w| w.to_string()));
+
+            log!("<blue>====================</>\n");
+            // Assert
             assert!(matches!(converted_type, Ok(..)))
         }
+
 
         #[test]
         fn impl_partial_eq() {

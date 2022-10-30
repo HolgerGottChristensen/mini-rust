@@ -1,7 +1,7 @@
 use std::fmt::{Debug, Formatter};
 
 use proc_macro2::Ident;
-use syn::{Token, WhereClause};
+use syn::{Token, token, WhereClause};
 use syn::ext::IdentExt;
 use syn::parse::{Parse, ParseStream};
 use syn::punctuated::Punctuated;
@@ -13,7 +13,43 @@ pub struct MiniGenerics {
     pub lt_token: Option<Token![<]>,
     pub params: Punctuated<MiniTypeParam, Token![,]>,
     pub gt_token: Option<Token![>]>,
-    pub where_clause: Option<WhereClause>,
+    pub where_clause: Option<MiniWhere>,
+}
+
+#[derive(PartialEq, Clone, Debug)]
+pub struct MiniWhere {
+    pub where_token: Token![where],
+    pub predicates: Punctuated<MiniTypeParam, Token![,]>,
+}
+
+impl Parse for MiniWhere {
+    fn parse(input: ParseStream) -> syn::Result<Self> {
+        Ok(MiniWhere {
+            where_token: input.parse()?,
+            predicates: {
+                let mut predicates = Punctuated::new();
+                loop {
+                    if input.is_empty()
+                        || input.peek(token::Brace)
+                        || input.peek(Token![,])
+                        || input.peek(Token![;])
+                        || input.peek(Token![:]) && !input.peek(Token![::])
+                        || input.peek(Token![=])
+                    {
+                        break;
+                    }
+                    let value = input.parse()?;
+                    predicates.push_value(value);
+                    if !input.peek(Token![,]) {
+                        break;
+                    }
+                    let punct = input.parse()?;
+                    predicates.push_punct(punct);
+                }
+                predicates
+            },
+        })
+    }
 }
 
 impl Debug for MiniGenerics {

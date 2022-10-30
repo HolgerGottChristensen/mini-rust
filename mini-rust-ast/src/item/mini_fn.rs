@@ -13,6 +13,7 @@ use mini_ir::Type as IRType;
 use mini_ir::Type::{TypeAbs, TypeArrow, TypeVar};
 
 use crate::{MiniGenerics, MiniIdent, MiniType, ToMiniIrKind, ToMiniIrTerm, ToMiniIrType};
+use crate::mini_generics::MiniWhere;
 use crate::stmt::MiniBlock;
 
 #[derive(PartialEq, Clone)]
@@ -93,7 +94,7 @@ impl MiniFn {
             None
         };
 
-        generics.where_clause = input.parse()?;
+        generics.where_clause = MiniWhere::parse(input).ok();
 
         let block = if allow_empty {
             if input.peek(Semi) {

@@ -169,7 +169,7 @@ pub fn unify(context: &Context, subs: &mut Substitutions, left: Type, right: Typ
         }
         (TypeVar(x1), TypeVar(x2)) => {
             // Todo: Consider variable age like haskell-compiler
-            bind_variable(context, subs, &x1, &TypeVar(x2.clone()), constraints)
+            bind_variable(context, subs, &x2, &TypeVar(x1.clone()), constraints)
         }
         (TypeVar(lab1), t2) => {
             //let t2 = Qualified(right_constraints, Box::new(t2));

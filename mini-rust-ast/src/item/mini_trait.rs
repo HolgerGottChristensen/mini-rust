@@ -82,7 +82,7 @@ fn parse_rest_of_trait(
         }
     }
 
-    generics.where_clause = input.parse()?;
+    generics.where_clause = input.parse().ok();
 
     let content;
     let brace_token = braced!(content in input);

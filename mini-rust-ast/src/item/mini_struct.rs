@@ -10,6 +10,7 @@ use syn::token::{Brace, Colon, Comma, Struct};
 use mini_ir::{BaseType, Kind, Term, Type as FType};
 
 use crate::{MiniEnum, MiniGenerics, MiniIdent, MiniType, ToMiniIrKind, ToMiniIrTerm, ToMiniIrType};
+use crate::mini_generics::MiniWhere;
 
 #[derive(PartialEq, Clone)]
 pub struct MiniStruct {
@@ -53,7 +54,7 @@ impl Parse for MiniStruct {
 
 pub fn data_struct(
     input: ParseStream,
-) -> syn::Result<(Option<WhereClause>, Brace, Punctuated<MiniStructField, Comma>)> {
+) -> syn::Result<(Option<MiniWhere>, Brace, Punctuated<MiniStructField, Comma>)> {
     let mut lookahead = input.lookahead1();
     let mut where_clause = None;
     if lookahead.peek(Token![where]) {
