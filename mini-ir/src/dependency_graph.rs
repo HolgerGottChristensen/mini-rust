@@ -12,7 +12,7 @@ pub struct Graph {
 /// Takes a list of terms as input and return a list of ordered terms by their interdependencies
 pub fn dependency_graph(terms: Vec<Term>) -> Result<Vec<Term>, String> {
 
-    //Graph with original nodes to build.
+    // Graph with original nodes to build.
     let mut graph = Graph {
         nodes: Vec::new(),
         edges: Vec::new(),
@@ -23,8 +23,8 @@ pub fn dependency_graph(terms: Vec<Term>) -> Result<Vec<Term>, String> {
     let mut id_counter: usize = 0;
     let mut id_to_term_map = HashMap::new();
 
-    //Adding nodes to the graph and mapping node ids to their respective terms.
-    //Using an auxiliary list of tuples of node id and respective term and bound variables.
+    // Adding nodes to the graph and mapping node ids to their respective terms.
+    // Using an auxiliary list of tuples of node id and respective term and bound variables.
     for t in &terms {
         aux_nodes.push((bound_variable_term(t.clone()), t.clone(), id_counter));
         graph.nodes.push(id_counter);
@@ -32,9 +32,9 @@ pub fn dependency_graph(terms: Vec<Term>) -> Result<Vec<Term>, String> {
         id_counter += 1;
     }
 
-    //Iterate over auxiliary list and find the free variables for each term.
-    //Find the node with the respective term that defines a given variable and add an edge from
-    //the defining term to the depending term.
+    // Iterate over auxiliary list and find the free variables for each term.
+    // Find the node with the respective term that defines a given variable and add an edge from
+    // the defining term to the depending term.
     for (_, t, id_1) in &aux_nodes {
         let free_vars = free_term_variables(t.clone());
 
@@ -49,7 +49,7 @@ pub fn dependency_graph(terms: Vec<Term>) -> Result<Vec<Term>, String> {
         }
     }
 
-    //Construct group graph.
+    // Construct group graph.
     let mut group_id_counter: usize = 0;
     let mut id_to_group_map = HashMap::new();
     let mut group_to_id_map = HashMap::new();
@@ -57,11 +57,11 @@ pub fn dependency_graph(terms: Vec<Term>) -> Result<Vec<Term>, String> {
     let mut group_nodes = Vec::new();
     let mut group_edges = BTreeSet::new();
 
-    //Find the groups within the graph of original nodes.
+    // Find the groups within the graph of original nodes.
     let connected_components = graph.strongly_connected_component();
 
-    //Create nodes for groups, assign ID, add them to the group graph.
-    //Map group ID to list of original node IDs.
+    // Create nodes for groups, assign ID, add them to the group graph.
+    // Map group ID to list of original node IDs.
     for group in &connected_components {
         for member in group {
             id_to_group_map.insert(member, group_id_counter);
@@ -71,7 +71,7 @@ pub fn dependency_graph(terms: Vec<Term>) -> Result<Vec<Term>, String> {
         group_id_counter += 1;
     }
 
-    //Create edges between group nodes.
+    // Create edges between group nodes.
     for (from, to) in &graph.edges {
         let from_group = id_to_group_map.get(from);
         let to_group = id_to_group_map.get(to);
@@ -87,8 +87,8 @@ pub fn dependency_graph(terms: Vec<Term>) -> Result<Vec<Term>, String> {
         edges: Vec::from_iter(group_edges)
     };
 
-    //Find the Topological sorting in the group graph and then extract a topological sorted list
-    //of the original nodes.
+    // Find the Topological sorting in the group graph and then extract a topological sorted list
+    // of the original nodes.
     let sorted_group_ids = group_graph.topological_sort();
     let mut unwrapped_sorted_group_ids = Vec::new();
     for group in &sorted_group_ids {
@@ -98,7 +98,7 @@ pub fn dependency_graph(terms: Vec<Term>) -> Result<Vec<Term>, String> {
     }
     let sorted_ids: Vec<usize> = unwrapped_sorted_group_ids.into_iter().flatten().collect();
 
-    //Return a list of the respective terms of the node IDs.
+    // Return a list of the respective terms of the node IDs.
     let mut sorted_terms = Vec::new();
     for id in &sorted_ids {
         if let Some(term) = id_to_term_map.get(id) {
@@ -148,13 +148,15 @@ impl Graph {
         None
     }
 
-    fn strongly_connected_components_util(&self,
-                                          u: usize,
-                                          low: &mut Vec<i64>,
-                                          disc: &mut Vec<i64>,
-                                          stack_member: &mut Vec<bool>,
-                                          stack: &mut Vec<usize>,
-                                          comps: &mut Vec<Vec<usize>>, time: &mut i64,
+    fn strongly_connected_components_util(
+        &self,
+        u: usize,
+        low: &mut Vec<i64>,
+        disc: &mut Vec<i64>,
+        stack_member: &mut Vec<bool>,
+        stack: &mut Vec<usize>,
+        comps: &mut Vec<Vec<usize>>,
+        time: &mut i64,
     ) {
         disc[u] = time.clone();
         low[u] = time.clone();
@@ -307,7 +309,7 @@ mod tests {
 
     #[test]
     fn dependency_graph_gives_correct_order_on_recursive_program() -> Result<(), String> {
-        //arrange
+        // Arrange
         let app_f = TermApp(
             Box::new(TermVar("f".to_string())),
             Box::new(Integer(3)),

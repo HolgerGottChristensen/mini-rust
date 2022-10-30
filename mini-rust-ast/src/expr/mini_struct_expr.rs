@@ -81,7 +81,6 @@ pub fn expr_struct_helper(input: ParseStream, path: Path) -> syn::Result<MiniExp
 impl ToMiniIrTerm for MiniExprStruct {
     fn convert_term(&self) -> Term {
         let fields = self.fields.iter().map(|f| {
-            // Todo: Handle paths with generics applied
             (f.name.0.to_string(), f.expr.convert_term())
         });
 

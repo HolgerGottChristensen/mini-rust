@@ -2,7 +2,6 @@ use std::collections::HashMap;
 use std::fmt::{Debug, Display, Formatter};
 
 use im_rc::{Vector, vector};
-use paris::formatter::colorize_string;
 use paris::log;
 
 use crate::binding::Binding;
@@ -112,7 +111,7 @@ impl Context {
                 Type::TypeApp(lvar, r),
                 Type::TypeApp(ltype, rtype)
             ) => {
-                if let Type::TypeVar(rvar) = &**r {
+                if let TypeVar(rvar) = &**r {
                     let all_upheld = constraints.iter()
                         // Look only at the constraints that includes the variable as the first constraint variable.
                         .filter(|constraint| constraint.vars[0].type_var() == *rvar)
@@ -147,7 +146,7 @@ impl Context {
                 }
             }
             (Type::TypeAbs(l, _, _), Type::TypeAbs(r, _, _)) if l == r => Ok(()),
-            (_, Type::TypeVar(_)) => Ok(()),
+            (_, TypeVar(_)) => Ok(()),
             (Type::Base(b1), Type::Base(b2)) => {
                 if b1 == b2 {
                     Ok(())

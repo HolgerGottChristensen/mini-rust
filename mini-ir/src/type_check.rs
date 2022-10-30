@@ -27,7 +27,7 @@ pub fn type_of(context: &Context, term: Term, substitutions: &mut Substitutions)
             let mut new_context = context.add_binding(Binding::VarBinding(x, t1.clone()));
 
             let t2 = type_of(&mut new_context, *term2, substitutions)?;
-            Ok(Type::TypeArrow(Box::new(t1), Box::new(t2)))
+            Ok(TypeArrow(Box::new(t1), Box::new(t2)))
         }
         // T-App
         Term::TermApp(term1, term2) => {
@@ -466,6 +466,17 @@ pub fn type_of(context: &Context, term: Term, substitutions: &mut Substitutions)
             let ty = type_of(context, *t, substitutions);
             ty.map(|a| Type::Qualified(c, Box::new(a)))
         }
-        Term::Replacement => Ok(Type::Base(BaseType::Unit))
+        Term::Replacement => Ok(Type::Base(BaseType::Unit)),
+        // T-Deref
+        Term::DeReference(r) => {
+            let t = type_of(context, *r, substitutions)?;
+
+            match simplify_type(context, t) {
+                Type::Reference(ty) => {
+                    Ok(*ty)
+                }
+                _ => Err(format!("Can only dereference Reference types"))
+            }
+        }
     }
 }

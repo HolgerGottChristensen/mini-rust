@@ -32,6 +32,8 @@ pub enum Term {
     Unit,
     /// & Term
     Reference(Box<Term>),
+    /// * Term
+    DeReference(Box<Term>),
     /// x = Term
     Assignment(String, Box<Term>),
     /// If Term then Term else Term
@@ -228,6 +230,7 @@ impl Term {
                 format!("case {}{}{} of {}", get_color(color, "("), term.to_string_term(context, color + 1), get_color(color, ")"), cases_string)
             }
             Term::Reference(b) => format!("&{}", b.to_string_term(context, color)),
+            Term::DeReference(b) => format!("*{}", b.to_string_term(context, color)),
             t => format!("{}{}{}", get_color(color, "("), t.to_string_term(context, color + 1), get_color(color, ")"))
         }
     }

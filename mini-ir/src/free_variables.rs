@@ -64,6 +64,7 @@ pub fn free_term_variables(term: Term) -> HashSet<String> {
                 &(&free_term_variables(*t2) |
                     &free_term_variables(*t3))
         }
+        Term::DeReference(r) => free_term_variables(*r),
     }
 }
 
