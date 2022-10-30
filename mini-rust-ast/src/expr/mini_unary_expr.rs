@@ -82,4 +82,88 @@ mod tests {
         // Assert
         assert!(matches!(converted_type, Ok(..)))
     }
+
+    #[test]
+    fn deref_double_reference() {
+        // Arrange
+        let mini: MiniBlock = parse_quote!(
+            {
+                *&&true
+            }
+        );
+        let context = Context::new();
+
+        log!("<blue>======== AST =======</>");
+        println!("{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+        log!("<blue>====== Lambda ======</>");
+        println!("{}", &converted);
+        log!("<blue>==== Type-Check ====</>");
+
+        let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new());
+        log!("<blue>======= Type =======</>");
+        println!("{}", &converted_type.as_ref().map(|r| r.to_string_type(&context, 0)).unwrap_or_else(|w| w.to_string()));
+
+        log!("<blue>====================</>\n");
+        // Assert
+        assert!(matches!(converted_type, Ok(..)))
+    }
+
+    #[test]
+    fn deref_double_reference2() {
+        // Arrange
+        let mini: MiniBlock = parse_quote!(
+            {
+                **&&true
+            }
+        );
+        let context = Context::new();
+
+        log!("<blue>======== AST =======</>");
+        println!("{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+        log!("<blue>====== Lambda ======</>");
+        println!("{}", &converted);
+        log!("<blue>==== Type-Check ====</>");
+
+        let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new());
+        log!("<blue>======= Type =======</>");
+        println!("{}", &converted_type.as_ref().map(|r| r.to_string_type(&context, 0)).unwrap_or_else(|w| w.to_string()));
+
+        log!("<blue>====================</>\n");
+        // Assert
+        assert!(matches!(converted_type, Ok(..)))
+    }
+
+    #[test]
+    fn deref_non_reference() {
+        // Arrange
+        let mini: MiniBlock = parse_quote!(
+            {
+                *true
+            }
+        );
+        let context = Context::new();
+
+        log!("<blue>======== AST =======</>");
+        println!("{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+        log!("<blue>====== Lambda ======</>");
+        println!("{}", &converted);
+        log!("<blue>==== Type-Check ====</>");
+
+        let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new());
+        log!("<blue>======= Type =======</>");
+        println!("{}", &converted_type.as_ref().map(|r| r.to_string_type(&context, 0)).unwrap_or_else(|w| w.to_string()));
+
+        log!("<blue>====================</>\n");
+        // Assert
+        assert!(matches!(converted_type, Err(..)))
+    }
 }
