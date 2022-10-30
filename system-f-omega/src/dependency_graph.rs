@@ -1,5 +1,5 @@
 use std::borrow::Borrow;
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::collections::{BTreeSet, HashMap, HashSet, VecDeque};
 use std::ops::Deref;
 use crate::free_variables::{bound_variable_term, free_term_variables};
 use crate::Term;
@@ -12,7 +12,7 @@ pub struct Graph {
 /// Takes a list of terms as input and return a list of ordered terms by their interdependencies
 pub fn dependency_graph(terms: Vec<Term>) -> Result<Vec<Term>, String> {
 
-    //graph to build
+    //Graph with original nodes to build.
     let mut graph = Graph {
         nodes: Vec::new(),
         edges: Vec::new(),
@@ -23,6 +23,8 @@ pub fn dependency_graph(terms: Vec<Term>) -> Result<Vec<Term>, String> {
     let mut id_counter: usize = 0;
     let mut id_to_term_map = HashMap::new();
 
+    //Adding nodes to the graph and mapping node ids to their respective terms.
+    //Using an auxiliary list of tuples of node id and respective term and bound variables.
     for t in &terms {
         aux_nodes.push((bound_variable_term(t.clone()), t.clone(), id_counter));
         graph.nodes.push(id_counter);
@@ -30,11 +32,14 @@ pub fn dependency_graph(terms: Vec<Term>) -> Result<Vec<Term>, String> {
         id_counter += 1;
     }
 
+    //Iterate over auxiliary list and find the free variables for each term.
+    //Find the node with the respective term that defines a given variable and add an edge from
+    //the defining term to the depending term.
     for (_, t, id_1) in &aux_nodes {
         let free_vars = free_term_variables(t.clone());
 
         for variable in &free_vars {
-            for (bound, t, id_2) in &aux_nodes {
+            for (bound, _, id_2) in &aux_nodes {
                 if let Some(res) = bound {
                     if res == variable {
                         graph.edges.push((id_2.clone(), id_1.clone()));
@@ -44,37 +49,37 @@ pub fn dependency_graph(terms: Vec<Term>) -> Result<Vec<Term>, String> {
         }
     }
 
-    /*
-    //TODO: make it work
-    //construct super (group) graph
+    //Construct group graph.
     let mut group_id_counter: usize = 0;
     let mut id_to_group_map = HashMap::new();
     let mut group_to_id_map = HashMap::new();
 
+    let mut group_nodes = Vec::new();
+    let mut group_edges = BTreeSet::new();
+
+    //Find the groups within the graph of original nodes.
     let connected_components = graph.strongly_connected_component();
 
+    //Create nodes for groups, assign ID, add them to the group graph.
+    //Map group ID to list of original node IDs.
     for group in &connected_components {
         for member in group {
             id_to_group_map.insert(member, group_id_counter);
         }
         group_to_id_map.insert(group_id_counter, group.clone());
+        group_nodes.push(group_id_counter);
         group_id_counter += 1;
     }
 
-    let group_edges = HashSet::new();
+    //Create edges between group nodes.
     for (from, to) in &graph.edges {
         let from_group = id_to_group_map.get(from);
         let to_group = id_to_group_map.get(to);
         if let (Some(f), Some(t)) = (from_group, to_group) {
             if f != t {
-                &group_edges | &HashSet::from([(f.clone(),t.clone())]);
+                group_edges.insert((f.clone(),t.clone()));
             }
         }
-    }
-
-    let mut group_nodes = Vec::new();
-    for key in group_to_id_map.keys() {
-        group_nodes.push(key.clone());
     }
 
     let group_graph = Graph {
@@ -82,6 +87,8 @@ pub fn dependency_graph(terms: Vec<Term>) -> Result<Vec<Term>, String> {
         edges: Vec::from_iter(group_edges)
     };
 
+    //Find the Topological sorting in the group graph and then extract a topological sorted list
+    //of the original nodes.
     let sorted_group_ids = group_graph.topological_sort();
     let mut unwrapped_sorted_group_ids = Vec::new();
     for group in &sorted_group_ids {
@@ -90,8 +97,8 @@ pub fn dependency_graph(terms: Vec<Term>) -> Result<Vec<Term>, String> {
         }
     }
     let sorted_ids: Vec<usize> = unwrapped_sorted_group_ids.into_iter().flatten().collect();
-    */
-    let sorted_ids = graph.topological_sort();
+
+    //Return a list of the respective terms of the node IDs.
     let mut sorted_terms = Vec::new();
     for id in &sorted_ids {
         if let Some(term) = id_to_term_map.get(id) {
@@ -183,6 +190,7 @@ impl Graph {
 
     }
 
+    /// Uses Tarjan's algorithm to return a list of strongly connected components
     pub fn strongly_connected_component(&self) -> Vec<Vec<usize>> {
         let mut low = vec![-1; self.nodes.len()];
         let mut disc = vec![-1; self.nodes.len()];
@@ -249,12 +257,12 @@ mod tests {
     #[test]
     fn dependency_graph_gives_correct_order_on_sequential_program() -> Result<(), String>{
         //arrange
-        let term_1 = TermApp(
+        let app_g = TermApp(
             Box::new(TermVar("g".to_string())),
             Box::new(Integer(64))
         );
 
-        let term_2 = Define(
+        let abs_g = Define(
             "g".to_string(),
             Type::TypeArrow(
                 Box::new(Type::Base(Int)),
@@ -272,7 +280,7 @@ mod tests {
             ))
         );
 
-        let term_3 = Define(
+        let abs_f = Define(
             "f".to_string(),
             Type::TypeArrow(
                 Box::new(Type::Base(Int)),
@@ -287,14 +295,14 @@ mod tests {
             ))
         );
 
-        let terms = vec![term_2.clone(), term_1.clone(), term_3.clone()];
+        let terms = vec![abs_g.clone(), app_g.clone(), abs_f.clone()];
 
         //act
         let sorted = dependency_graph(terms);
 
         //assert
         // expect the order y, y, some permutation of term 1 2 & 3
-        assert_eq!(sorted?, vec![term_3.clone(), term_2.clone(), term_1.clone()]);
+        assert_eq!(sorted?, vec![abs_f.clone(), abs_g.clone(), app_g.clone()]);
 
         Ok(())
     }
@@ -302,17 +310,17 @@ mod tests {
     #[test]
     fn dependency_graph_gives_correct_order_on_recursive_program() -> Result<(), String>{
         //arrange
-        let term_1 = TermApp(
+        let app_f = TermApp(
             Box::new(TermVar("f".to_string())),
             Box::new(Integer(3))
         );
 
-        let term_2 = TermApp(
+        let app_g = TermApp(
             Box::new(TermVar("g".to_string())),
             Box::new(Integer(3))
         );
 
-        let term_3 = Define(
+        let abs_g = Define(
             "g".to_string(),
             Type::TypeArrow(
                 Box::new(Type::Base(Int)),
@@ -330,7 +338,7 @@ mod tests {
             ))
         );
 
-        let term_4 = Define(
+        let abs_f = Define(
             "f".to_string(),
             Type::TypeArrow(
                 Box::new(Type::Base(Int)),
@@ -350,14 +358,14 @@ mod tests {
             ))
         );
 
-        let terms = vec![term_2.clone(), term_4.clone(), term_1.clone(), term_3.clone()];
+        let terms = vec![app_g.clone(), abs_f.clone(), app_f.clone(), abs_g.clone()];
 
         //act
         let sorted = dependency_graph(terms);
 
         //assert
         // expect the order y, y, some permutation of term 1 2 & 3
-        assert_eq!(sorted?, vec![term_4.clone(), term_3.clone(), term_1.clone(), term_2.clone()]);
+        assert_eq!(sorted?, vec![abs_f.clone(), abs_g.clone(), app_f.clone(), app_g.clone()]);
 
         Ok(())
     }
@@ -365,12 +373,12 @@ mod tests {
     #[test]
     fn dependency_graph_gives_correct_order_on_mutual_recursive_program() -> Result<(), String>{
         //arrange
-        let term_1 = TermApp(
+        let app_g = TermApp(
             Box::new(TermVar("g".to_string())),
             Box::new(Integer(64))
         );
 
-        let term_2 = Define(
+        let abs_g = Define(
             "g".to_string(),
             Type::TypeArrow(
                 Box::new(Type::Base(Int)),
@@ -390,7 +398,7 @@ mod tests {
             ))
         );
 
-        let term_3 = Define(
+        let abs_f = Define(
             "f".to_string(),
             Type::TypeArrow(
                 Box::new(Type::Base(Int)),
@@ -410,14 +418,14 @@ mod tests {
             ))
         );
 
-        let terms = vec![term_2.clone(), term_1.clone(), term_3.clone()];
+        let terms = vec![abs_g.clone(), app_g.clone(), abs_f.clone()];
 
         //act
         let sorted = dependency_graph(terms);
 
         //assert
         // expect the order y, y, some permutation of term 1 2 & 3
-        assert_eq!(sorted?, vec![term_3.clone(), term_2.clone(), term_1.clone()]);
+        assert_eq!(sorted?, vec![abs_f.clone(), abs_g.clone(), app_g.clone()]);
 
         Ok(())
     }
