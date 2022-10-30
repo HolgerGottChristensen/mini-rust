@@ -227,6 +227,13 @@ pub fn type_of(context: &Context, term: Term, substitutions: &mut Substitutions)
             let t = type_of(context, *term, substitutions)?;
             match simplify_type(context, t) {
                 Type::Variants(types) => {
+                    if types.len() > cases.len() {
+                        return Err("Not all cases are covered".to_string());
+                    }
+                    if types.len() < cases.len() {
+                        return Err("Too many cases for variant".to_string());
+                    }
+
                     let mut case_types = Vec::new();
 
                     for (label, (binding, inner_term)) in cases {

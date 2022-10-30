@@ -148,7 +148,11 @@ impl ToMiniIrTerm for MiniEnum {
                         tups.push(Term::TermVar(format!("arg{}", index)));
                     }
 
-                    let tup = Term::Tuple(tups);
+                    let tup = if tups.len() == 1 {
+                        tups.first().unwrap().clone()
+                    } else {
+                        Term::Tuple(tups)
+                    };
 
                     let mut function = Term::Tagging(field.ident.0.to_string(), Box::new(tup), variants);
 
@@ -184,7 +188,11 @@ impl ToMiniIrType for MiniEnum {
                 // If there are no items, we default to a unit type
                 None => FType::Base(BaseType::Unit),
                 Some(items) => {
-                    FType::Tuple(items.iter().map(|a| MiniType(a.clone()).convert_type()).collect::<Vec<_>>())
+                    if items.len() == 1 {
+                        MiniType(items.first().unwrap().clone()).convert_type()
+                    } else {
+                        FType::Tuple(items.iter().map(|a| MiniType(a.clone()).convert_type()).collect::<Vec<_>>())
+                    }
                 }
             };
             (variant.ident.0.to_string(), case)

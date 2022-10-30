@@ -1,10 +1,14 @@
+use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 
 use syn::{braced, Pat, Token, token};
 use syn::parse::{Parse, ParseStream};
+use mini_ir::Term;
 
 use crate::mini_expr::MiniExpr;
 use crate::mini_pat::{MiniPat, multi_pat_with_leading_vert};
+use crate::mini_path::MiniPath;
+use crate::ToMiniIrTerm;
 
 #[derive(PartialEq, Clone)]
 pub struct MiniExprMatch {
@@ -81,5 +85,231 @@ impl Parse for MiniArm {
                 }
             },
         })
+    }
+}
+
+impl ToMiniIrTerm for MiniExprMatch {
+    fn convert_term(&self) -> Term {
+        let mut cases = HashMap::new();
+
+        for arm in &self.arms {
+            match &arm.pat {
+                Pat::TupleStruct(t) => {
+                    assert_eq!(t.pat.elems.len(), 1);
+
+                    if let Some(s) = t.pat.elems.first() {
+                        match s {
+                            Pat::Ident(p) => {
+                                if cases.insert(MiniPath(t.path.clone()).as_ident(), (p.ident.to_string(), arm.body.convert_term())).is_some() {
+                                    panic!("You can not have the same label more than once");
+                                }
+                            }
+                            x => panic!("Expected ident, found: {:?}", x)
+                        }
+                    }
+                }
+                Pat::Ident(y) => {
+                    if cases.insert(y.ident.to_string(), ("_".to_string(), arm.body.convert_term())).is_some() {
+                        panic!("You can not have the same label more than once");
+                    }
+                }
+                x => panic!("Only tuple structs or idents are allowed, found: {:?}", x)
+            }
+        }
+
+        Term::Case(Box::new(self.expr.convert_term()), cases)
+    }
+}
+
+mod tests {
+    use paris::log;
+    use syn::parse_quote;
+    use mini_ir::{Context, Substitutions, type_of, Type as IRType};
+    use crate::mini_file::MiniFile;
+    use crate::stmt::MiniBlock;
+    use crate::ToMiniIrTerm;
+
+    #[test]
+    fn match_enum() {
+        // Arrange
+        let mini: MiniFile = parse_quote!(
+            enum Test {
+                T1(bool)
+            }
+
+            fn main() -> bool {
+                let v = Test::T1(true);
+
+                match v {
+                    T1(x) => x,
+                }
+            }
+        );
+        let context = Context::new();
+
+        log!("<blue>======== AST =======</>");
+        println!("{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+        log!("<blue>====== Lambda ======</>");
+        println!("{}", &converted);
+        log!("<blue>==== Type-Check ====</>");
+
+        let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new());
+        log!("<blue>======= Type =======</>");
+        println!("{}", &converted_type.as_ref().map(|r| r.to_string_type(&context, 0)).unwrap_or_else(|w| w.to_string()));
+
+        log!("<blue>====================</>\n");
+        // Assert
+        assert!(matches!(converted_type, Ok(..)))
+    }
+
+    #[test]
+    fn match_enum_empty() {
+        // Arrange
+        let mini: MiniFile = parse_quote!(
+            enum Test {
+                T1,
+            }
+
+            fn main() -> i64 {
+                let v = Test::T1;
+
+                match v {
+                    T1 => 1,
+                }
+            }
+        );
+        let context = Context::new();
+
+        log!("<blue>======== AST =======</>");
+        println!("{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+        log!("<blue>====== Lambda ======</>");
+        println!("{}", &converted);
+        log!("<blue>==== Type-Check ====</>");
+
+        let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new());
+        log!("<blue>======= Type =======</>");
+        println!("{}", &converted_type.as_ref().map(|r| r.to_string_type(&context, 0)).unwrap_or_else(|w| w.to_string()));
+
+        log!("<blue>====================</>\n");
+        // Assert
+        assert!(matches!(converted_type, Ok(..)))
+    }
+
+    #[test]
+    #[should_panic]
+    fn match_the_same_twice() {
+        // Arrange
+        let mini: MiniFile = parse_quote!(
+            enum Test {
+                T1,
+            }
+
+            fn main() -> i64 {
+                let v = Test::T1;
+
+                match v {
+                    T1 => 1,
+                    T1 => 2,
+                }
+            }
+        );
+        let context = Context::new();
+
+        log!("<blue>======== AST =======</>");
+        println!("{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+        log!("<blue>====== Lambda ======</>");
+        println!("{}", &converted);
+        log!("<blue>==== Type-Check ====</>");
+
+        let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new());
+        log!("<blue>======= Type =======</>");
+        println!("{}", &converted_type.as_ref().map(|r| r.to_string_type(&context, 0)).unwrap_or_else(|w| w.to_string()));
+
+        log!("<blue>====================</>\n");
+        // Assert
+        assert!(matches!(converted_type, Err(..)))
+    }
+
+    #[test]
+    fn match_enum_empty2() {
+        // Arrange
+        let mini: MiniFile = parse_quote!(
+            enum Test {
+                T0,
+                T1,
+            }
+
+            fn main() -> i64 {
+                let v = Test::T1;
+
+                match v {
+                    T1 => 1,
+                }
+            }
+        );
+        let context = Context::new();
+
+        log!("<blue>======== AST =======</>");
+        println!("{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+        log!("<blue>====== Lambda ======</>");
+        println!("{}", &converted);
+        log!("<blue>==== Type-Check ====</>");
+
+        let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new());
+        log!("<blue>======= Type =======</>");
+        println!("{}", &converted_type.as_ref().map(|r| r.to_string_type(&context, 0)).unwrap_or_else(|w| w.to_string()));
+
+        log!("<blue>====================</>\n");
+        // Assert
+        assert!(matches!(converted_type, Err(..)))
+    }
+
+    #[test]
+    fn match_enum_empty3() {
+        // Arrange
+        let mini: MiniFile = parse_quote!(
+            enum Test {
+                T0,
+            }
+
+            fn main() -> i64 {
+                let v = Test::T0;
+
+                match v {
+                    T0 => 0,
+                    T1 => 1,
+                }
+            }
+        );
+        let context = Context::new();
+
+        log!("<blue>======== AST =======</>");
+        println!("{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+        log!("<blue>====== Lambda ======</>");
+        println!("{}", &converted);
+        log!("<blue>==== Type-Check ====</>");
+
+        let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new());
+        log!("<blue>======= Type =======</>");
+        println!("{}", &converted_type.as_ref().map(|r| r.to_string_type(&context, 0)).unwrap_or_else(|w| w.to_string()));
+
+        log!("<blue>====================</>\n");
+        // Assert
+        assert!(matches!(converted_type, Err(..)))
     }
 }
