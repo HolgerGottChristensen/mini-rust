@@ -1,4 +1,4 @@
-use macros::mini_rust_ast;
+use mini_rust_ast::mini_rust_ast;
 
 fn main() {
     println!("{}", "Hello, world!");

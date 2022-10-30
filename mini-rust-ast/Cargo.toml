@@ -1,0 +1,17 @@
+[package]
+name = "mini-rust-ast"
+version = "0.0.0"
+authors = ["holgerchristensen <holger.gott@icloud.com>"]
+description = "A `cargo generate` template for quick-starting a procedural macro crate"
+keywords = ["template", "proc_macro", "procmacro"]
+edition = "2021"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+quote = "1"
+proc-macro2 = "1.0"
+syn = { version = "1.0", features = ["extra-traits", "full", "visit-mut"] }
+paris = "1.5"
+mini-ir = { path = "../mini-ir" }
