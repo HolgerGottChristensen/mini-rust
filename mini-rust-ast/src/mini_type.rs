@@ -82,7 +82,7 @@ impl ToMiniIrType for MiniType {
                     "Self" => FType::TypeVar("#Self".to_string()),
                     t => {
                         FType::TypeVar(t.to_string())
-                    } // Todo: We need to lookup the type of user defined structs and more.
+                    }
                 };
 
                 for generic in MiniPath(p.path.clone()).generics() {
@@ -96,7 +96,6 @@ impl ToMiniIrType for MiniType {
                 let new = MiniType(*r.elem.clone());
                 FType::Reference(Box::new(new.convert_type()))
             }
-            Type::Slice(_) => todo!(),
             Type::Tuple(t) => {
                 if t.elems.len() > 0 {
                     let mut types = vec![];
@@ -219,7 +218,6 @@ mod tests {
 
     #[test]
     fn convert_generic() {
-        // Todo: we need to take some kind of environment to look up the type of a generic parsed to a function, by the name of the generic?
         // Arrange
         let mini: MiniType = parse_quote!(
             T
@@ -239,7 +237,6 @@ mod tests {
 
     #[test]
     fn convert_enum_and_struct() {
-        // Todo: How do we handle types of enums and structs?
         // Arrange
         let mini: MiniType = parse_quote!(
             Option

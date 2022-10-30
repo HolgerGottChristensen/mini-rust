@@ -691,7 +691,7 @@ impl ToMiniIrTerm for MiniExpr {
             MiniExpr::Struct(l) => l.convert_term(),
             MiniExpr::Tuple(l) => l.convert_term(),
             MiniExpr::Unary(l) => l.convert_term(),
-            MiniExpr::While(_) => todo!(),
+            MiniExpr::While(l) => l.convert_term(),
         }
     }
 }

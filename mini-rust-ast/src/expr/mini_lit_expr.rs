@@ -34,10 +34,6 @@ impl Parse for MiniLitExpr {
 impl ToMiniIrTerm for MiniLitExpr {
     fn convert_term(&self) -> Term {
         match &self.lit {
-            Lit::Str(_) => todo!(),
-            Lit::ByteStr(_) => todo!(),
-            Lit::Byte(_) => todo!(),
-            Lit::Char(_) => todo!(),
             Lit::Int(i) => {
                 Term::Integer(i.base10_parse::<i64>().unwrap())
             }
@@ -51,7 +47,7 @@ impl ToMiniIrTerm for MiniLitExpr {
                     Term::False
                 }
             }
-            Lit::Verbatim(_) => todo!(),
+            _ => panic!("We currently only handle int, float and bool"),
         }
     }
 }

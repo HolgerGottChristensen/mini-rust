@@ -34,6 +34,9 @@ pub fn replace_inner(term: Term, with: Term) -> Result<Term, String> {
                 continuation: Box::new(replace_inner(*continuation, with)?)
             })
         }
+        Term::While(t1, t2, t3) => {
+            Ok(Term::While(t1, t2, Box::new(replace_inner(*t3, with)?)))
+        }
         Term::Instance {
             constraints,
             class_name,

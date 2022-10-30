@@ -108,6 +108,24 @@ pub fn type_of(context: &Context, term: Term, substitutions: &mut Substitutions)
 
             Ok(t2)
         }
+        // T-While
+        Term::While(term1, term2, term3) => {
+            let t1 = type_of(context, *term1, substitutions)?;
+
+            if !type_equivalence(context, t1, Type::Base(BaseType::Bool)) {
+                return Err(format!("The type of the guard needs to be a Bool"));
+            }
+
+            let t2 = type_of(context, *term2, substitutions)?;
+
+            if !type_equivalence(context, t2.clone(), Type::Base(BaseType::Unit)) {
+                return Err(format!("The type of the body should be unit"));
+            }
+
+            let t3 = type_of(context, *term3, substitutions)?;
+
+            Ok(t3)
+        }
         // T-True, T-False
         Term::True | Term::False => Ok(Type::Base(BaseType::Bool)),
         // T-Integer

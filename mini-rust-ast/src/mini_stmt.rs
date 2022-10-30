@@ -142,7 +142,7 @@ impl ToMiniIrTerm for MiniStmt {
                         Term::Let(f.ident.0.to_string(), Box::new(f.convert_term()), Box::new(Term::Replacement))
                     }
                     MiniItem::Impl(i) => i.convert_term(),
-                    _ => todo!()
+                    MiniItem::Trait(t) => t.convert_term(),
                 }
             }
             MiniStmt::Expr(e) => e.convert_term(),

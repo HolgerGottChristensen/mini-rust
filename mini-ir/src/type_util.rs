@@ -60,15 +60,15 @@ pub fn type_equivalence(context: &Context, tys: Type, tyt: Type) -> bool {
         (Type::TypeArrow(s1, s2), Type::TypeArrow(t1, t2)) => {
             type_equivalence(context, *s1, *t1) && type_equivalence(context, *s2, *t2)
         }
-        (Type::TypeVar(i), Type::TypeVar(j)) => {
+        (TypeVar(i), TypeVar(j)) => {
             match (context.get_type(&i), context.get_type(&j)) {
                 (Ok(ti), Ok(tj)) => type_equivalence(context, ti, tj),
-                (Ok(ti), Err(_)) => type_equivalence(context, ti, Type::TypeVar(j)),
-                (Err(_), Ok(tj)) => type_equivalence(context, Type::TypeVar(i), tj),
+                (Ok(ti), Err(_)) => type_equivalence(context, ti, TypeVar(j)),
+                (Err(_), Ok(tj)) => type_equivalence(context, TypeVar(i), tj),
                 (Err(_), Err(_)) => i == j, // Todo: This is only correct if all binding names are unique
             }
         }
-        (ty, Type::TypeVar(i)) | (Type::TypeVar(i), ty) => {
+        (ty, TypeVar(i)) | (TypeVar(i), ty) => {
             println!("{}", context);
             println!("{:?}", ty);
             println!("{:?}", i);
