@@ -137,7 +137,7 @@ impl ToMiniIrType for MiniStruct {
 mod tests {
     use syn::parse_quote;
 
-    use mini_ir::{BaseType, Binding, Context, kind_of, Substitutions, type_of};
+    use mini_ir::{BaseType, Binding, Context, kind_of, type_of};
 
     use crate::{MiniStruct, ToMiniIrTerm, ToMiniIrType};
     use crate::mini_expr::MiniExpr;
@@ -334,7 +334,7 @@ mod tests {
 
         // Act
         let converted = mini.convert_term();
-        let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new()).unwrap();
+        let converted_type = type_of(&context, converted.clone()).unwrap();
         //let converted_kind = kind_of(&context, converted_type.clone());
 
         println!("Lambda: {}", &converted);
@@ -370,7 +370,7 @@ mod tests {
 
         // Act
         let converted = mini.convert_term();
-        let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new()).unwrap();
+        let converted_type = type_of(&context, converted.clone()).unwrap();
         //let converted_kind = kind_of(&context, converted_type.clone());
 
         println!("Lambda: {}", &converted);

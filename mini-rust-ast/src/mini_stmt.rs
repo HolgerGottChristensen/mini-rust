@@ -164,7 +164,7 @@ impl ToMiniIrTerm for MiniStmt {
 mod tests {
     use syn::parse_quote;
 
-    use mini_ir::{Context, Substitutions, type_of};
+    use mini_ir::{Context, type_of};
 
     use crate::{MiniStmt, ToMiniIrTerm};
 
@@ -181,7 +181,7 @@ mod tests {
         let converted = mini.convert_term();
 
         println!("\nLambda:\n{}", &converted);
-        println!("\nType:\n{}", type_of(&Context::new(), converted, &mut Substitutions::new()).unwrap());
+        println!("\nType:\n{}", type_of(&Context::new(), converted).unwrap());
 
         // Assert
         //assert!(matches!(actual, CarbideExpr::Lit(LitExpr {lit: Lit::Int(_)})))

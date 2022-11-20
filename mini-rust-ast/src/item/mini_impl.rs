@@ -5,7 +5,7 @@ use syn::{braced, Path, Token, Type, TypePath};
 use syn::parse::{Parse, ParseStream};
 use syn::token::{Brace, For, Impl};
 
-use mini_ir::{Constraint, Kind, Term};
+use mini_ir::{Kind, Term};
 use mini_ir::Type::{TypeApp, TypeVar};
 
 use crate::{MiniFn, MiniGenerics, MiniType, ToMiniIrKind, ToMiniIrTerm, ToMiniIrType};
@@ -122,27 +122,7 @@ fn parse_impl(input: ParseStream, allow_verbatim_impl: bool) -> syn::Result<Opti
 impl ToMiniIrTerm for MiniImpl {
     fn convert_term(&self) -> Term {
         if let Some((p, _)) = &self.trait_ {
-
-            let class_name = MiniPath(p.clone()).as_ident();
-
-            let constraints = self.generics.where_clause.as_ref().map_or(vec![], |w| {
-                w.predicates.iter().map(|p| {
-                    p.bounds.iter().map(|b| {
-                        Constraint { ident: MiniPath(b.path.clone()).as_ident(), vars: vec![TypeVar(p.ident.to_string())] }
-                    }).collect::<Vec<_>>()
-                }).flatten().collect::<Vec<_>>()
-            });
-
-            Term::Instance {
-                constraints,
-                class_name: class_name.clone(),
-                ty: vec![MiniType(*self.self_ty.clone()).convert_type()].into_iter()
-                    .chain(MiniPath(p.clone()).generics()).collect(),
-                implementations: HashMap::from_iter(self.items.iter().map(|item| {
-                    (format!("{}::{}", class_name, item.ident.to_string()), item.convert_term())
-                })),
-                continuation: Box::new(Term::Replacement)
-            }
+            todo!("This requires type classes and is out of bounds.")
         } else {
             let name = MiniType(*self.self_ty.clone()).path().as_ident();
             let generics = MiniType(*self.self_ty.clone()).path().generics();
@@ -180,7 +160,7 @@ mod tests {
         use paris::log;
         use syn::parse_quote;
 
-        use mini_ir::{Context, kind_of, Substitutions, type_of};
+        use mini_ir::{Context, kind_of, type_of};
 
         use crate::item::MiniImpl;
         use crate::mini_item::MiniItem;
@@ -204,7 +184,7 @@ mod tests {
             let converted = mini.convert_term();
             println!("Lambda: {}", &converted);
 
-            let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new()).unwrap();
+            let converted_type = type_of(&context, converted.clone()).unwrap();
             println!("Type: {}", &converted_type);
 
             let converted_kind = kind_of(&Context::new(), converted_type.clone()).unwrap();;
@@ -231,7 +211,7 @@ mod tests {
             let converted = mini.convert_term();
             println!("Lambda: {}", &converted);
 
-            let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new()).unwrap();
+            let converted_type = type_of(&context, converted.clone()).unwrap();
             println!("Type: {}", &converted_type);
 
             let converted_kind = kind_of(&Context::new(), converted_type.clone()).unwrap();;
@@ -258,7 +238,7 @@ mod tests {
             let converted = mini.convert_term();
             println!("Lambda: {}", &converted);
 
-            let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new()).unwrap();
+            let converted_type = type_of(&context, converted.clone()).unwrap();
             println!("Type: {}", &converted_type);
 
             let converted_kind = kind_of(&Context::new(), converted_type.clone()).unwrap();;
@@ -287,7 +267,7 @@ mod tests {
             let converted = mini.convert_term();
             println!("Lambda: {}", &converted);
 
-            let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new()).unwrap();
+            let converted_type = type_of(&context, converted.clone()).unwrap();
             println!("Type: {}", &converted_type);
 
             let converted_kind = kind_of(&Context::new(), converted_type.clone()).unwrap();;
@@ -316,7 +296,7 @@ mod tests {
             let converted = mini.convert_term();
             println!("Lambda: {}", &converted);
 
-            let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new()).unwrap();
+            let converted_type = type_of(&context, converted.clone()).unwrap();
             println!("Type: {}", &converted_type);
 
             let converted_kind = kind_of(&Context::new(), converted_type.clone()).unwrap();;
@@ -353,7 +333,7 @@ mod tests {
             let converted = mini.convert_term();
             println!("Lambda: {}", &converted);
 
-            let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new()).unwrap();
+            let converted_type = type_of(&context, converted.clone()).unwrap();
             println!("Type: {}", &converted_type);
 
             let converted_kind = kind_of(&Context::new(), converted_type.clone()).unwrap();;
@@ -391,7 +371,7 @@ mod tests {
             let converted = mini.convert_term();
             println!("Lambda: {}", &converted);
 
-            let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new()).unwrap();
+            let converted_type = type_of(&context, converted.clone()).unwrap();
             println!("Type: {}", &converted_type);
 
             let converted_kind = kind_of(&Context::new(), converted_type.clone()).unwrap();;
@@ -405,7 +385,7 @@ mod tests {
     mod traits {
         use paris::log;
         use syn::parse_quote;
-        use mini_ir::{Context, Substitutions, type_of};
+        use mini_ir::{Context, type_of};
         use crate::mini_item::MiniItem;
         use crate::ToMiniIrTerm;
         use mini_ir::Type as IRType;
@@ -442,7 +422,7 @@ mod tests {
             println!("{}", &converted);
             log!("<blue>==== Type-Check ====</>");
 
-            let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new());
+            let converted_type = type_of(&context, converted.clone());
             log!("<blue>======= Type =======</>");
             println!("{}", &converted_type.as_ref().map(|r| r.to_string_type(&context, 0)).unwrap_or_else(|w| w.to_string()));
 
@@ -492,7 +472,7 @@ mod tests {
             println!("{}", &converted);
             log!("<blue>==== Type-Check ====</>");
 
-            let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new());
+            let converted_type = type_of(&context, converted.clone());
             log!("<blue>======= Type =======</>");
             println!("{}", &converted_type.as_ref().map(|r| r.to_string_type(&context, 0)).unwrap_or_else(|w| w.to_string()));
 
@@ -531,7 +511,7 @@ mod tests {
             println!("{}", &converted);
             log!("<blue>==== Type-Check ====</>");
 
-            let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new());
+            let converted_type = type_of(&context, converted.clone());
             log!("<blue>======= Type =======</>");
             println!("{}", &converted_type.as_ref().map(|r| r.to_string_type(&context, 0)).unwrap_or_else(|w| w.to_string()));
 
@@ -563,7 +543,7 @@ mod tests {
             println!("{}", &converted);
             log!("<blue>==== Type-Check ====</>");
 
-            let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new());
+            let converted_type = type_of(&context, converted.clone());
             log!("<blue>======= Type =======</>");
             println!("{}", &converted_type.as_ref().map(|r| r.to_string_type(&context, 0)).unwrap_or_else(|w| w.to_string()));
 
@@ -602,7 +582,7 @@ mod tests {
             println!("{}", &converted);
             log!("<blue>==== Type-Check ====</>");
 
-            let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new());
+            let converted_type = type_of(&context, converted.clone());
             log!("<blue>======= Type =======</>");
             println!("{}", &converted_type.as_ref().map(|r| r.to_string_type(&context, 0)).unwrap_or_else(|w| w.to_string()));
 

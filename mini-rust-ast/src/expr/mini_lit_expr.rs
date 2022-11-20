@@ -55,7 +55,7 @@ impl ToMiniIrTerm for MiniLitExpr {
 mod tests {
     use syn::parse_quote;
 
-    use mini_ir::{Context, kind_of, Substitutions, Term, type_of};
+    use mini_ir::{Context, kind_of, Term, type_of};
 
     use crate::{MiniLitExpr, ToMiniIrTerm};
 
@@ -70,7 +70,7 @@ mod tests {
 
         // Act
         let converted = mini.convert_term();
-        let converted_type = type_of(&Context::new(), converted.clone(), &mut Substitutions::new()).unwrap();
+        let converted_type = type_of(&Context::new(), converted.clone()).unwrap();
         let converted_kind = kind_of(&Context::new(), converted_type.clone()).unwrap();;
 
         println!("Lambda: {}", &converted);
@@ -92,7 +92,7 @@ mod tests {
 
         // Act
         let converted = mini.convert_term();
-        let converted_type = type_of(&Context::new(), converted.clone(), &mut Substitutions::new()).unwrap();
+        let converted_type = type_of(&Context::new(), converted.clone()).unwrap();
         let converted_kind = kind_of(&Context::new(), converted_type.clone()).unwrap();;
 
         println!("Lambda: {}", &converted);
@@ -114,7 +114,7 @@ mod tests {
 
         // Act
         let converted = mini.convert_term();
-        let converted_type = type_of(&Context::new(), converted.clone(), &mut Substitutions::new()).unwrap();
+        let converted_type = type_of(&Context::new(), converted.clone()).unwrap();
         let converted_kind = kind_of(&Context::new(), converted_type.clone()).unwrap();;
 
         println!("Lambda: {}", &converted);
@@ -136,7 +136,7 @@ mod tests {
 
         // Act
         let converted = mini.convert_term();
-        let converted_type = type_of(&Context::new(), converted.clone(), &mut Substitutions::new()).unwrap();
+        let converted_type = type_of(&Context::new(), converted.clone()).unwrap();
         let converted_kind = kind_of(&Context::new(), converted_type.clone()).unwrap();;
 
         println!("Lambda: {}", &converted);

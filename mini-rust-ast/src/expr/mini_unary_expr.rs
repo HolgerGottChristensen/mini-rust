@@ -51,7 +51,7 @@ impl ToMiniIrTerm for MiniExprUnary {
 mod tests {
     use paris::log;
     use syn::parse_quote;
-    use mini_ir::{Context, Substitutions, type_of, Type as IRType};
+    use mini_ir::{Context, type_of, Type as IRType};
     use crate::stmt::MiniBlock;
     use crate::ToMiniIrTerm;
 
@@ -74,7 +74,7 @@ mod tests {
         println!("{}", &converted);
         log!("<blue>==== Type-Check ====</>");
 
-        let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new());
+        let converted_type = type_of(&context, converted.clone());
         log!("<blue>======= Type =======</>");
         println!("{}", &converted_type.as_ref().map(|r| r.to_string_type(&context, 0)).unwrap_or_else(|w| w.to_string()));
 
@@ -102,7 +102,7 @@ mod tests {
         println!("{}", &converted);
         log!("<blue>==== Type-Check ====</>");
 
-        let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new());
+        let converted_type = type_of(&context, converted.clone());
         log!("<blue>======= Type =======</>");
         println!("{}", &converted_type.as_ref().map(|r| r.to_string_type(&context, 0)).unwrap_or_else(|w| w.to_string()));
 
@@ -130,7 +130,7 @@ mod tests {
         println!("{}", &converted);
         log!("<blue>==== Type-Check ====</>");
 
-        let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new());
+        let converted_type = type_of(&context, converted.clone());
         log!("<blue>======= Type =======</>");
         println!("{}", &converted_type.as_ref().map(|r| r.to_string_type(&context, 0)).unwrap_or_else(|w| w.to_string()));
 
@@ -158,7 +158,7 @@ mod tests {
         println!("{}", &converted);
         log!("<blue>==== Type-Check ====</>");
 
-        let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new());
+        let converted_type = type_of(&context, converted.clone());
         log!("<blue>======= Type =======</>");
         println!("{}", &converted_type.as_ref().map(|r| r.to_string_type(&context, 0)).unwrap_or_else(|w| w.to_string()));
 
