@@ -4,7 +4,6 @@ use std::sync::atomic::{AtomicU32, Ordering};
 
 use crate::{Context, get_color, TypeVar};
 use crate::base_type::BaseType;
-use crate::constraint::Constraint;
 use crate::kind::Kind;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -29,12 +28,6 @@ pub enum Type {
     Record(HashMap<String, Type>),
     /// <l1=Type, l2=Type, ...>
     Variants(HashMap<String, Type>),
-    /// μ X::Kind. Type
-    Recursive(String, Kind, Box<Type>),
-    /// {∃X::Kind, Type}
-    Existential(String, Kind, Box<Type>),
-    /// Eq a, Ord b => Type
-    Qualified(Vec<Constraint>, Box<Type>),
 }
 
 impl Display for Type {
@@ -44,9 +37,6 @@ impl Display for Type {
 }
 
 impl Type {
-    pub fn qualified(constraints: impl Into<Vec<Constraint>>, ty: impl Into<Type>) -> Type {
-        Type::Qualified(constraints.into(), Box::new(ty.into()))
-    }
 
     pub fn arrow(t1: impl Into<Type>, t2: impl Into<Type>) -> Type {
         Type::TypeArrow(Box::new(t1.into()), Box::new(t2.into()))
@@ -99,33 +89,6 @@ impl Type {
                 let (new_context, name) = context.pick_fresh_name(tyX);
 
                 format!("∀{}::{}. {}", name, knK1, tyT2.to_string_type(&new_context, color))
-            }
-            Type::Qualified(constraints, rest) => {
-                //let (new_context, name) = pick_fresh_name(context, tyX.clone());
-
-                let formatted = constraints.iter().map(|constraint| {
-                    let vars = constraint.vars.iter().map(|a| {
-                        a.to_string_type(context, color)
-                    }).collect::<Vec<_>>().join(" ");
-
-                    format!("{} {}", constraint.ident, vars)
-                }).collect::<Vec<_>>().join(", ");
-
-                if constraints.len() > 0 {
-                    format!("{} => {}", formatted, rest.to_string_type(&context, color))
-                } else {
-                    format!("_ => {}", rest.to_string_type(&context, color))
-                }
-            }
-            Type::Recursive(tyX, knK1, tyT2) => {
-                let (new_context, name) = context.pick_fresh_name(tyX);
-
-                format!("μ{}::{}. {}", name, knK1, tyT2.to_string_type(&new_context, color))
-            }
-            Type::Existential(x, knK1, tyT2) => {
-                let (new_context, name) = context.pick_fresh_name(x);
-
-                format!("{}∃{}::{}, {}{}", get_color(color, "{"), name, knK1, tyT2.to_string_type(&new_context, color + 1), get_color(color, "}"))
             }
             t => t.to_string_arrow(context, color),
         }

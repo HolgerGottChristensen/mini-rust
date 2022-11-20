@@ -2,7 +2,6 @@ use std::collections::HashMap;
 use std::fmt::{Debug, Display, Formatter};
 use paris::formatter::colorize_string;
 
-use crate::constraint::Constraint;
 use crate::kind::Kind;
 use crate::{Context, Term};
 use crate::types::Type;
@@ -12,28 +11,6 @@ pub enum Binding {
     NameBinding(String), // Todo: Is this even used anymore???
     VarBinding(String, Type),
     TyVarBinding(String, Kind),
-    ClassBinding {
-        /// The constraints required for implementors of this class
-        constraints: Vec<Constraint>,
-        /// The name of the class
-        name: String,
-        /// The type variables for the type
-        vars: Vec<Type>,
-        /// The implementation type declarations for the class.
-        declarations: HashMap<String, Type>,
-        /// The default implementations of this class. We also know them as bindings
-        default_implementations: HashMap<String, Term>,
-    },
-    InstanceBinding {
-        /// The constraints required for a type to be able to use this implementation
-        constraints: Vec<Constraint>,
-        /// The name of the class
-        class_name: String,
-        /// The implementation is for this type
-        ty: Vec<Type>,
-        /// Implementations of this instance
-        implementations: HashMap<String, (Term, Type)>,
-    },
 }
 
 
@@ -43,7 +20,6 @@ impl PartialEq<Binding> for &String {
             Binding::NameBinding(s) |
             Binding::VarBinding(s, _) |
             Binding::TyVarBinding(s, _) => s == *self,
-            Binding::ClassBinding { name, .. } => name == *self,
             _ => false,
         }
     }
@@ -55,7 +31,6 @@ impl PartialEq<Binding> for String {
             Binding::NameBinding(s) |
             Binding::VarBinding(s, _) |
             Binding::TyVarBinding(s, _) => s == self,
-            Binding::ClassBinding { name, .. } => name == self,
             _ => false,
         }
     }

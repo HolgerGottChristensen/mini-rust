@@ -3,14 +3,11 @@ use std::collections::HashMap;
 pub use base_type::BaseType::*;
 pub use base_type::*;
 pub use context::*;
-pub use constraint::*;
 pub use kind_check::*;
 pub use kind::*;
-pub use substitutions::Substitutions;
 pub use term::*;
 pub use type_check::type_of;
 pub use types::*;
-pub use unify::*;
 pub use util::*;
 pub use binding::*;
 
@@ -19,49 +16,17 @@ use crate::types::Type::TypeVar;
 mod term;
 mod context;
 mod kind_check;
-mod free_variables;
-mod dependency_graph;
-mod unify;
 mod util;
 mod binding;
-mod substitutions;
 mod kind;
 mod base_type;
-mod constraint;
 mod types;
 mod type_check;
 mod type_util;
 
 #[test]
-fn overload() {
-    let mut context = Context::new();
+fn main() {
 
-    let mut body = Term::TermApp(Box::new(Term::TermVar("test".to_string())), Box::new(Term::Integer(1)));
-
-    body = Term::Instance {
-        constraints: vec![],
-        class_name: "Test".to_string(),
-        ty: vec![Type::Base(Int)],
-        implementations: HashMap::from([
-            ("test".to_string(), Term::TermAbs("x".to_string(), TypeVar("a".to_string()), Box::new(Term::Integer(10))))
-        ]),
-        continuation: Box::new(body),
-    };
-
-    body = Term::Class {
-        constraints: vec![],
-        name: "Test".to_string(),
-        vars: vec![TypeVar("a".to_string())],
-        declarations: HashMap::from([
-            ("test".to_string(), Type::arrow("a", Int))
-        ]),
-        default_implementations: Default::default(),
-        continuation: Box::new(body),
-    };
-
-    println!("{}", &body);
-    println!("{}", type_of(&mut context, body, &mut Substitutions::new()).unwrap());
-    println!();
 }
 //
 // #[test]

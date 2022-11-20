@@ -52,15 +52,6 @@ pub fn kind_of(context: &Context, t: Type) -> Result<Kind, String> {
             Ok(Kind::KindStar)
         }
         Type::Base(_) => Ok(Kind::KindStar),
-        Type::Recursive(x, k1, t2) => {
-            let new_context = context.add_binding(Binding::TyVarBinding(x, k1.clone()));
-
-            if kind_of(&new_context, *t2)? != Kind::KindStar {
-                return Err("Kind * expected".to_string());
-            }
-
-            Ok(Kind::KindStar)
-        }
         Type::Reference(t1) => {
             if kind_of(context, *t1)? != Kind::KindStar {
                 return Err("Star kind expected".to_string());
@@ -88,18 +79,6 @@ pub fn kind_of(context: &Context, t: Type) -> Result<Kind, String> {
             }
 
             Ok(Kind::KindStar)
-        }
-        Type::Existential(x, k1, t2) => {
-            let new_context = context.add_binding(Binding::TyVarBinding(x, k1.clone()));
-
-            if kind_of(&new_context, *t2)? != Kind::KindStar {
-                return Err("Kind * expected".to_string());
-            }
-
-            Ok(Kind::KindStar)
-        }
-        Type::Qualified(_, ty) => {
-            kind_of(context, *ty)
         }
     }
 }

@@ -4,7 +4,6 @@ use std::fmt::{Debug, Display, Formatter};
 use paris::formatter::colorize_string;
 
 use crate::{Context, get_color};
-use crate::constraint::Constraint;
 use crate::kind::Kind;
 use crate::types::Type;
 
@@ -54,18 +53,8 @@ pub enum Term {
     Tagging(String, Box<Term>, Type),
     /// case Term of <label=x> => Term | <label2=x2> => Term | ...
     Case(Box<Term>, HashMap<String, (String, Term)>),
-    /// fold \[Type\]
-    Fold(Type),
-    /// unfold \[Type\]
-    UnFold(Type),
-    /// {* Type,Term} as Type
-    Pack(Type, Box<Term>, Type),
-    /// let {X, x} = Term in Term
-    UnPack(String, String, Box<Term>, Box<Term>),
     /// Term as Type
     Ascribe(Box<Term>, Type),
-    /// fix Term
-    Fix(Box<Term>),
     /// Term; Term
     Seq(Box<Term>, Box<Term>),
     /// The below is a bit special so I will try to explain a bit.
@@ -94,37 +83,7 @@ pub enum Term {
     /// This can be considered sugar syntax for writing "let x = Term in x" where x is a
     /// new unique variable that can not be accessed anywhere.
     Scope(Box<Term>),
-
-    /// ????
-    Class {
-        /// The constraints required for implementors of this class
-        constraints: Vec<Constraint>,
-        /// The name of the class
-        name: String,
-        /// The type variables for the type
-        vars: Vec<Type>,
-        /// The implementation type declarations for the class.
-        declarations: HashMap<String, Type>,
-        /// The default implementations of this class. We also know them as bindings
-        default_implementations: HashMap<String, Term>,
-        /// The Term after the "in"
-        continuation: Box<Term>,
-    },
-    /// ????
-    Instance {
-        /// The constraints required for a type to be able to use this implementation
-        constraints: Vec<Constraint>,
-        /// The name of the class
-        class_name: String,
-        /// The implementation is for this type
-        ty: Vec<Type>,
-        /// Implementations of this instance
-        implementations: HashMap<String, Term>,
-        /// The Term after the "in"
-        continuation: Box<Term>,
-    },
-    /// require ... in Term
-    Qualified(Vec<Constraint>, Box<Term>),
+    /// Replacement marker term. Only used for mapping and should never exist in complete programs.
     Replacement,
 }
 
@@ -156,44 +115,12 @@ impl Term {
 
             Term::Ascribe(t, ty) => format!("{}{}{} as {}", get_color(color, "("), t.to_string_term(context, color + 1), get_color(color, ")"), ty.to_string_type(context, color)),
 
-            Term::Qualified(constraints, term) => {
-                format!("require {:?} in\n{}", constraints, term.to_string_term(context, color))
-            },
             Term::Define(x, ty, term) => format!("define {}{} = {}{} in\n{}", get_color(color, "("), x, ty.to_string_type(context, color + 1), get_color(color, ")"), term.to_string_term(context, color)),
             Term::Scope(term) => format!("{}{}{}{}", get_color(color, "<b>scope"), get_color(color, "<b>("), term.to_string_term(context, color + 1), get_color(color, "<b>)")),
             Term::Seq(term1, term2) => format!("{}; {}", term1.to_string_term(context, color), term2.to_string_term(context, color)),
             Term::Assignment(x, term) => {
                 format!("{} = {}{}{}", x, get_color(color, "("), term.to_string_term(context, color + 1), get_color(color, ")"))
             }
-            Term::Class {
-                constraints, name, vars, declarations, default_implementations, continuation
-            } => {
-                let vars_string = vars.iter().map(|t| t.to_string_type(context, color)).collect::<Vec<_>>().join(" ");
-                if declarations.len() > 0 {
-                    let declarations = declarations.iter().map(|(name, t)| format!("\t{} = {}", name, t.to_string_type(context, color))).collect::<Vec<_>>().join(",\n");
-                    format!("class {} {} where\n{} in\n{}", name, vars_string, declarations, continuation.to_string_term(context, color))
-                } else {
-                    format!("class {} {} in\n{}", name, vars_string, continuation.to_string_term(context, color))
-                }
-            }
-            Term::Instance { constraints, class_name, ty, implementations, continuation } => {
-                let tys_string = ty.iter().map(|t| t.to_string_type(context, color)).collect::<Vec<_>>().join(" ");
-
-                if implementations.len() > 0 {
-                    let implementations = implementations.iter().map(|(name, t)| format!("\t{} = {}", name, t.to_string_term(context, color))).collect::<Vec<_>>().join(",\n");
-                    format!("instance {} {} where\n{} in\n{}", class_name, tys_string, implementations, continuation.to_string_term(context, color))
-                } else {
-                    format!("instance {} {} in\n{}", class_name, tys_string, continuation.to_string_term(context, color))
-
-                }
-            }
-            Term::Fix(t) => format!("fix {}", t.to_string_term(context, color)),
-            Term::Fold(t) => format!("fold {}{}{}", get_color(color, "["), t.to_string_type(context, color + 1), get_color(color, "]")),
-            Term::UnFold(t) => format!("unfold {}{}{}", get_color(color, "["), t.to_string_type(context, color + 1), get_color(color, "]")),
-            Term::Pack(t1, term1, t2) =>
-                format!("{}{}* {}, {}{} as {}{}", get_color(color, "("), get_color(color + 1, "{"), t1.to_string_type(context, color + 2), term1.to_string_term(context, color + 2), get_color(color + 1, "}"), t2.to_string_type(context, color + 1), get_color(color, ")")),
-            Term::UnPack(x1, x2, term1, term2) =>
-                format!("let {} {}, {} {} = {} in {}", get_color(color, "{"), x1, x2, get_color(color, "}"), term1.to_string_term(context, color), term2.to_string_term(context, color)),
             Term::If(t1, t2, t3) =>
                 format!("if {} then {} else {}", t1.to_string_term(context, color), t2.to_string_term(context, color), t3.to_string_term(context, color)),
             Term::While(t1, t2, t3) =>
