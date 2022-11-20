@@ -73,10 +73,19 @@ impl Type {
 
     pub fn type_var(&self) -> String {
         match self {
-            Type::TypeVar(x) => x.clone(),
+            TypeVar(x) => x.clone(),
             _ => panic!("Not a type var")
         }
     }
+
+    pub fn new_unique_var() -> Type {
+        static COUNTER: AtomicU32 = AtomicU32::new(0);
+        TypeVar(format!("#NEW{}", COUNTER.fetch_add(1, Ordering::Relaxed)))
+    }
+}
+
+/// Pretty printing types
+impl Type {
 
     pub fn to_string_type(&self, context: &Context, color: u32) -> String {
         match self {
@@ -142,7 +151,7 @@ impl Type {
 
     fn to_string_atomic(&self, context: &Context, color: u32) -> String {
         match self {
-            Type::TypeVar(x) => {
+            TypeVar(x) => {
                 format!("{}", x)
             }
             Type::Tuple(types) => {
@@ -172,16 +181,11 @@ impl Type {
             t => format!("{}{}{}", get_color(color, "("), t.to_string_type(context, color + 1), get_color(color, ")"))
         }
     }
-
-    pub fn new_unique_var() -> Type {
-        static COUNTER: AtomicU32 = AtomicU32::new(0);
-        TypeVar(format!("#NEW{}", COUNTER.fetch_add(1, Ordering::Relaxed)))
-    }
 }
 
 impl From<&str> for Type {
     fn from(s: &str) -> Self {
-        Type::TypeVar(s.to_string())
+        TypeVar(s.to_string())
     }
 }
 

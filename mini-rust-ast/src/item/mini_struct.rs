@@ -153,7 +153,7 @@ mod tests {
 
         // Act
         let converted = mini.convert_type();
-        let converted_kind = kind_of(&Context::new(), converted.clone());
+        let converted_kind = kind_of(&Context::new(), converted.clone()).unwrap();;
 
         println!("Type: {}", &converted);
         println!("Kind: {}", &converted_kind);
@@ -175,7 +175,7 @@ mod tests {
 
         // Act
         let converted = mini.convert_type();
-        let converted_kind = kind_of(&Context::new(), converted.clone());
+        let converted_kind = kind_of(&Context::new(), converted.clone()).unwrap();;
 
         println!("Type: {}", &converted);
         println!("Kind: {}", &converted_kind);
@@ -198,7 +198,7 @@ mod tests {
 
         // Act
         let converted = mini.convert_type();
-        let converted_kind = kind_of(&Context::new(), converted.clone());
+        let converted_kind = kind_of(&Context::new(), converted.clone()).unwrap();;
 
         println!("Type: {}", &converted);
         println!("Kind: {}", &converted_kind);
@@ -220,7 +220,7 @@ mod tests {
 
         // Act
         let converted = mini.convert_type();
-        let converted_kind = kind_of(&Context::new(), converted.clone());
+        let converted_kind = kind_of(&Context::new(), converted.clone()).unwrap();;
 
         println!("Type: {}", &converted);
         println!("Kind: {}", &converted_kind);
@@ -242,7 +242,7 @@ mod tests {
 
         // Act
         let converted = mini.convert_type();
-        let converted_kind = kind_of(&Context::new(), converted.clone());
+        let converted_kind = kind_of(&Context::new(), converted.clone()).unwrap();;
 
         println!("Type: {}", &converted);
         println!("Kind: {}", &converted_kind);
@@ -264,7 +264,7 @@ mod tests {
 
         // Act
         let converted = mini.convert_type();
-        let converted_kind = kind_of(&Context::new(), converted.clone());
+        let converted_kind = kind_of(&Context::new(), converted.clone()).unwrap();;
 
         println!("Type: {}", &converted);
         println!("Kind: {}", &converted_kind);

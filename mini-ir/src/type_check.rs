@@ -62,7 +62,7 @@ pub fn type_of(context: &Context, term: Term, substitutions: &mut Substitutions)
         }
         // T-TApp
         Term::TermTypeApp(term1, t2) => {
-            let k2 = kind_of(context, t2.clone());
+            let k2 = kind_of(context, t2.clone())?;
             let t1 = type_of(context, *term1, substitutions)?;
 
             fn extract_all(context: &Context, ty: Type, k2: Kind, t2: Type, substitutions: &mut Substitutions) -> Result<Type, String> {
@@ -287,7 +287,7 @@ pub fn type_of(context: &Context, term: Term, substitutions: &mut Substitutions)
 
             match simplify_type(context, tyT.clone()) {
                 Type::Existential(tyY, k, tyT2) => {
-                    if crate::kind_of(context, tyT1.clone()) != k {
+                    if kind_of(context, tyT1.clone())? != k {
                         return Err(format!("The type component does not have the correct kind"));
                     }
 

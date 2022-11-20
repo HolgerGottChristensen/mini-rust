@@ -14,7 +14,7 @@ pub fn compute_type(context: &Context, tyt: Type) -> Result<Type, Type> {
                 Type::TypeAbs(name, _, tyT12) => {
                     return Ok(type_substitution(&name, *tyT2, *tyT12));
                 }
-                Type::TypeVar(name) => {
+                TypeVar(name) => {
                     match context.get_type(&name) {
                         Ok(t) => return compute_type(context, Type::TypeApp(Box::new(t), tyT2)),
                         Err(_) => return Err(Type::TypeApp(Box::new(Type::TypeVar(name)), tyT2))
@@ -23,7 +23,7 @@ pub fn compute_type(context: &Context, tyt: Type) -> Result<Type, Type> {
                 _ => ()
             }
         }
-        Type::TypeVar(x) => return context.get_type(&x).map_err(|_| TypeVar(x)),
+        TypeVar(x) => return context.get_type(&x).map_err(|_| TypeVar(x)),
         _ => ()
     }
 

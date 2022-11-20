@@ -9,7 +9,7 @@ use crate::types::Type;
 
 #[derive(Clone, Debug)]
 pub enum Binding {
-    NameBinding(String),
+    NameBinding(String), // Todo: Is this even used anymore???
     VarBinding(String, Type),
     TyVarBinding(String, Kind),
     ClassBinding {

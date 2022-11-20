@@ -166,6 +166,44 @@ mod tests {
     }
 
     #[test]
+    fn match_enum2() {
+        // Arrange
+        let mini: MiniFile = parse_quote!(
+            enum Test {
+                Case1(i64),
+                Case2
+            }
+
+            fn main() -> bool {
+                let v = Test::Case1(42);
+
+                match v {
+                    Case1(x) => true,
+                    Case2 => false,
+                }
+            }
+        );
+        let context = Context::new();
+
+        log!("<blue>======== AST =======</>");
+        println!("{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+        log!("<blue>====== Lambda ======</>");
+        println!("{}", &converted);
+        log!("<blue>==== Type-Check ====</>");
+
+        let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new());
+        log!("<blue>======= Type =======</>");
+        println!("{}", &converted_type.as_ref().map(|r| r.to_string_type(&context, 0)).unwrap_or_else(|w| w.to_string()));
+
+        log!("<blue>====================</>\n");
+        // Assert
+        assert!(matches!(converted_type, Ok(..)))
+    }
+
+    #[test]
     fn match_enum_empty() {
         // Arrange
         let mini: MiniFile = parse_quote!(

@@ -207,7 +207,61 @@ mod tests {
             let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new()).unwrap();
             println!("Type: {}", &converted_type);
 
-            let converted_kind = kind_of(&context, converted_type.clone());
+            let converted_kind = kind_of(&Context::new(), converted_type.clone()).unwrap();;
+            println!("Kind: {}", &converted_kind);
+
+            // Assert
+            //assert_eq!(converted, Term::Reference(Box::new(Term::Integer(0))))
+        }
+
+        #[test]
+        fn simple_impl_no_self() {
+            // Arrange
+            let mini: MiniImpl = parse_quote!(
+                impl Test {
+                    fn hello(arg1: bool) {}
+                }
+            );
+
+            let context = Context::new();
+
+            println!("\n{:#?}", &mini);
+
+            // Act
+            let converted = mini.convert_term();
+            println!("Lambda: {}", &converted);
+
+            let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new()).unwrap();
+            println!("Type: {}", &converted_type);
+
+            let converted_kind = kind_of(&Context::new(), converted_type.clone()).unwrap();;
+            println!("Kind: {}", &converted_kind);
+
+            // Assert
+            //assert_eq!(converted, Term::Reference(Box::new(Term::Integer(0))))
+        }
+
+        #[test]
+        fn simple_impl_no_self_generic() {
+            // Arrange
+            let mini: MiniImpl = parse_quote!(
+                impl<T> Test {
+                    fn hello(arg1: T) {}
+                }
+            );
+
+            let context = Context::new();
+
+            println!("\n{:#?}", &mini);
+
+            // Act
+            let converted = mini.convert_term();
+            println!("Lambda: {}", &converted);
+
+            let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new()).unwrap();
+            println!("Type: {}", &converted_type);
+
+            let converted_kind = kind_of(&Context::new(), converted_type.clone()).unwrap();;
             println!("Kind: {}", &converted_kind);
 
             // Assert
@@ -236,7 +290,7 @@ mod tests {
             let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new()).unwrap();
             println!("Type: {}", &converted_type);
 
-            let converted_kind = kind_of(&context, converted_type.clone());
+            let converted_kind = kind_of(&Context::new(), converted_type.clone()).unwrap();;
             println!("Kind: {}", &converted_kind);
 
             // Assert
@@ -265,7 +319,7 @@ mod tests {
             let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new()).unwrap();
             println!("Type: {}", &converted_type);
 
-            let converted_kind = kind_of(&context, converted_type.clone());
+            let converted_kind = kind_of(&Context::new(), converted_type.clone()).unwrap();;
             println!("Kind: {}", &converted_kind);
 
             // Assert
@@ -302,7 +356,7 @@ mod tests {
             let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new()).unwrap();
             println!("Type: {}", &converted_type);
 
-            let converted_kind = kind_of(&context, converted_type.clone());
+            let converted_kind = kind_of(&Context::new(), converted_type.clone()).unwrap();;
             println!("Kind: {}", &converted_kind);
 
             // Assert
@@ -340,7 +394,7 @@ mod tests {
             let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new()).unwrap();
             println!("Type: {}", &converted_type);
 
-            let converted_kind = kind_of(&context, converted_type.clone());
+            let converted_kind = kind_of(&Context::new(), converted_type.clone()).unwrap();;
             println!("Kind: {}", &converted_kind);
 
             // Assert

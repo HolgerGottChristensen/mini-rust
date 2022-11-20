@@ -134,7 +134,7 @@ mod tests {
         let converted = mini.convert_type();
 
         println!("Type: {}", &converted);
-        println!("Kind: {}", kind_of(&Context::new(), converted.clone()));
+        println!("Kind: {}", kind_of(&Context::new(), converted.clone()).unwrap());
 
         // Assert
         assert_eq!(converted, FType::Base(BaseType::Unit));
@@ -153,7 +153,7 @@ mod tests {
         let converted = mini.convert_type();
 
         println!("Type: {}", &converted);
-        println!("Kind: {}", kind_of(&Context::new(), converted.clone()));
+        println!("Kind: {}", kind_of(&Context::new(), converted.clone()).unwrap());
 
         // Assert
         assert_eq!(converted, FType::Base(BaseType::Float));
@@ -172,7 +172,7 @@ mod tests {
         let converted = mini.convert_type();
 
         println!("Type: {}", &converted);
-        println!("Kind: {}", kind_of(&Context::new(), converted.clone()));
+        println!("Kind: {}", kind_of(&Context::new(), converted.clone()).unwrap());
 
         // Assert
         assert_eq!(converted, FType::Base(BaseType::Int));
@@ -191,7 +191,7 @@ mod tests {
         let converted = mini.convert_type();
 
         println!("Type: {}", &converted);
-        println!("Kind: {}", kind_of(&Context::new(), converted.clone()));
+        println!("Kind: {}", kind_of(&Context::new(), converted.clone()).unwrap());
 
         // Assert
         assert_eq!(converted, FType::Base(BaseType::Bool));
@@ -210,7 +210,7 @@ mod tests {
         let converted = mini.convert_type();
 
         println!("Type: {}", &converted);
-        println!("Kind: {}", kind_of(&Context::new(), converted.clone()));
+        println!("Kind: {}", kind_of(&Context::new(), converted.clone()).unwrap());
 
         // Assert
         assert_eq!(converted, FType::Reference(Box::new(FType::Base(BaseType::Bool))));
@@ -267,7 +267,7 @@ mod tests {
         let converted = mini.convert_type();
 
         println!("Type: {}", &converted);
-        println!("Kind: {}", kind_of(&Context::new(), converted.clone()));
+        println!("Kind: {}", kind_of(&Context::new(), converted.clone()).unwrap());
 
         // Assert
         assert_eq!(converted, FType::Tuple(vec![
@@ -290,7 +290,7 @@ mod tests {
         let converted = mini.convert_type();
 
         println!("Type: {}", &converted);
-        println!("Kind: {}", kind_of(&Context::new(), converted.clone()));
+        println!("Kind: {}", kind_of(&Context::new(), converted.clone()).unwrap());
 
         // Assert
         assert_eq!(converted, FType::TypeArrow(
@@ -312,7 +312,7 @@ mod tests {
         let converted = mini.convert_type();
 
         println!("Type: {}", &converted);
-        println!("Kind: {}", kind_of(&Context::new(), converted.clone()));
+        println!("Kind: {}", kind_of(&Context::new(), converted.clone()).unwrap());
 
         // Assert
         assert_eq!(converted, FType::TypeArrow(
@@ -337,7 +337,7 @@ mod tests {
         let converted = mini.convert_type();
 
         println!("Type: {}", &converted);
-        println!("Kind: {}", kind_of(&Context::new(), converted.clone()));
+        println!("Kind: {}", kind_of(&Context::new(), converted.clone()).unwrap());
 
         // Assert
         assert_eq!(converted, FType::TypeArrow(

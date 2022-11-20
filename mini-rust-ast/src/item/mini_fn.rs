@@ -944,4 +944,40 @@ mod tests {
         // Assert
         //assert!(matches!(actual, CarbideExpr::Lit(LitExpr {lit: Lit::Int(_)})))
     }
+
+    #[test]
+    fn endrit_test() {
+        // Arrange
+        let mini: MiniBlock = parse_quote!(
+            {
+                fn f<T>(p: T) -> T {
+                    p
+                }
+
+                let x = 32;
+                let y = f::<i64>(x);
+
+                let x = true;
+                let y2 = f::<bool>(x);
+            }
+        );
+        let context = Context::new();
+
+        log!("<blue>======== AST =======</>");
+        println!("{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+        log!("<blue>====== Lambda ======</>");
+        println!("{}", &converted);
+        log!("<blue>==== Type-Check ====</>");
+
+        let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new());
+        log!("<blue>======= Type =======</>");
+        println!("{}", &converted_type.as_ref().map(|r| r.to_string_type(&context, 0)).unwrap_or_else(|w| w.to_string()));
+
+        log!("<blue>====================</>\n");
+        // Assert
+        assert!(matches!(converted_type, Ok(..)))
+    }
 }

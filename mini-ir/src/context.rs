@@ -176,6 +176,10 @@ impl Context {
         };
     }
 
+    pub fn class_exists(&self, name: &String) -> bool {
+        self.get_binding(name).is_some()
+    }
+
     pub fn get_binding(&self, name: &String) -> Option<Binding> {
         self.0.clone().into_iter().find(|e| name == e)
     }
@@ -185,10 +189,6 @@ impl Context {
             Some(Binding::VarBinding(_, ty)) => Ok(ty),
             _ => Err(format!("Binding with ident '{}' is not a VarBinding in the current Context: {:#?}", name, self))
         }
-    }
-
-    pub fn class_exists(&self, name: &String) -> bool {
-        self.get_binding(name).is_some()
     }
 
     pub fn get_kind(&self, name: &String) -> Result<Kind, String> {

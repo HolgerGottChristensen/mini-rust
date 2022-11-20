@@ -718,7 +718,7 @@ mod tests {
         // Act
         let converted = mini.convert_term();
         let converted_type = type_of(&Context::new(), converted.clone(), &mut Substitutions::new()).unwrap();
-        let converted_kind = kind_of(&Context::new(), converted_type.clone());
+        let converted_kind = kind_of(&Context::new(), converted_type.clone()).unwrap();
 
         println!("Lambda: {}", &converted);
         println!("Type: {}", &converted_type);
@@ -740,7 +740,7 @@ mod tests {
         // Act
         let converted = mini.convert_term();
         let converted_type = type_of(&Context::new(), converted.clone(), &mut Substitutions::new()).unwrap();
-        let converted_kind = kind_of(&Context::new(), converted_type.clone());
+        let converted_kind = kind_of(&Context::new(), converted_type.clone()).unwrap();;
 
         println!("Lambda: {}", &converted);
         println!("Type: {}", &converted_type);
@@ -762,7 +762,7 @@ mod tests {
         // Act
         let converted = mini.convert_term();
         let converted_type = type_of(&Context::new(), converted.clone(), &mut Substitutions::new()).unwrap();
-        let converted_kind = kind_of(&Context::new(), converted_type.clone());
+        let converted_kind = kind_of(&Context::new(), converted_type.clone()).unwrap();;
 
         println!("Lambda: {}", &converted);
         println!("Type: {}", &converted_type);
@@ -790,7 +790,7 @@ mod tests {
         // Act
         let converted = mini.convert_term();
         let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new()).unwrap();
-        let converted_kind = kind_of(&context, converted_type.clone());
+        let converted_kind = kind_of(&context, converted_type.clone()).unwrap();;
 
         println!("Lambda: {}", &converted);
         println!("Type: {}", &converted_type);
@@ -818,7 +818,7 @@ mod tests {
         // Act
         let converted = mini.convert_term();
         let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new()).unwrap();
-        let converted_kind = kind_of(&context, converted_type.clone());
+        let converted_kind = kind_of(&context, converted_type.clone()).unwrap();;
 
         println!("Lambda: {}", &converted);
         println!("Type: {}", &converted_type);
@@ -843,7 +843,7 @@ mod tests {
         // Act
         let converted = mini.convert_term();
         let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new()).unwrap();
-        let converted_kind = kind_of(&context, converted_type.clone());
+        let converted_kind = kind_of(&context, converted_type.clone()).unwrap();;
 
         println!("Lambda: {}", &converted);
         println!("Type: {}", &converted_type);
@@ -872,7 +872,7 @@ mod tests {
         let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new());
         println!("Type: {}", &converted_type.as_ref().map(|r| r.to_string_type(&context, 0)).unwrap_or_else(|w| w.to_string()));
 
-        /*let converted_kind = kind_of(&context, converted_type.clone());
+        /*let converted_kind = kind_of(&context, converted_type.clone()).unwrap();;
         println!("Kind: {}", &converted_kind);*/
 
         // Assert
@@ -895,7 +895,7 @@ mod tests {
         // Act
         let converted = mini.convert_term();
         let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new()).unwrap();
-        let converted_kind = kind_of(&context, converted_type.clone());
+        let converted_kind = kind_of(&context, converted_type.clone()).unwrap();;
 
         println!("Lambda: {}", &converted);
         println!("Type: {}", &converted_type);
@@ -922,7 +922,7 @@ mod tests {
         // Act
         let converted = mini.convert_term();
         let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new()).unwrap();
-        let converted_kind = kind_of(&context, converted_type.clone());
+        let converted_kind = kind_of(&context, converted_type.clone()).unwrap();;
 
         println!("Lambda: {}", &converted);
         println!("Type: {}", &converted_type);
@@ -952,7 +952,7 @@ mod tests {
         // Act
         let converted = mini.convert_term();
         let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new()).unwrap();
-        let converted_kind = kind_of(&context, converted_type.clone());
+        let converted_kind = kind_of(&context, converted_type.clone()).unwrap();;
 
         println!("Lambda: {}", &converted);
         println!("Type: {}", &converted_type);
@@ -980,7 +980,7 @@ mod tests {
         // Act
         let converted = mini.convert_term();
         let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new()).unwrap();
-        let converted_kind = kind_of(&context, converted_type.clone());
+        let converted_kind = kind_of(&context, converted_type.clone()).unwrap();;
 
         println!("Lambda: {}", &converted);
         println!("Type: {}", &converted_type);
@@ -1010,7 +1010,35 @@ mod tests {
         // Act
         let converted = mini.convert_term();
         let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new()).unwrap();
-        let converted_kind = kind_of(&context, converted_type.clone());
+        let converted_kind = kind_of(&context, converted_type.clone()).unwrap();;
+
+        println!("Lambda: {}", &converted);
+        println!("Type: {}", &converted_type);
+        println!("Kind: {}", &converted_kind);
+
+        // Assert
+        //assert_eq!(converted, Term::Reference(Box::new(Term::Integer(0))))
+    }
+
+    #[test]
+    fn parse_function_call_0_args() {
+        // Arrange
+        let mini: MiniExpr = parse_quote!(
+            hello_world()
+        );
+
+        let context = Context::new();
+        let context = context.add_binding(Binding::VarBinding("hello_world".to_string(), Type::TypeArrow(
+            Box::new(Type::Base(BaseType::Unit)),
+            Box::new(Type::Base(BaseType::Bool)),
+        )));
+
+        println!("\n{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+        let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new()).unwrap();
+        let converted_kind = kind_of(&context, converted_type.clone()).unwrap();;
 
         println!("Lambda: {}", &converted);
         println!("Type: {}", &converted_type);
@@ -1041,7 +1069,7 @@ mod tests {
         // Act
         let converted = mini.convert_term();
         let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new()).unwrap();
-        let converted_kind = kind_of(&context, converted_type.clone());
+        let converted_kind = kind_of(&context, converted_type.clone()).unwrap();;
 
         println!("Lambda: {}", &converted);
         println!("Type: {}", &converted_type);
@@ -1075,11 +1103,42 @@ mod tests {
         // Act
         let converted = mini.convert_term();
         let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new()).unwrap();
-        let converted_kind = kind_of(&context, converted_type.clone());
+        let converted_kind = kind_of(&context, converted_type.clone()).unwrap();;
 
         println!("Lambda: {}", &converted);
         println!("Type: {}", &converted_type);
         println!("Kind: {}", &converted_kind);
+
+        // Assert
+        //assert_eq!(converted, Term::Reference(Box::new(Term::Integer(0))))
+    }
+
+    #[test]
+    fn parse_function_call_generic() {
+        // Arrange
+        let mini: MiniExpr = parse_quote!(
+            function::<i64>(3)
+        );
+
+        /*let context = Context::new();
+        let context = context.add_binding(Binding::VarBinding("function".to_string(), Type::TypeArrow(
+            Box::new(Type::Base(BaseType::Unit)),
+            Box::new(Type::TypeArrow(
+                Box::new(Type::Base(BaseType::Int)),
+                Box::new(Type::Base(BaseType::Bool)),
+            )),
+        )));*/
+
+        println!("\n{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+        //let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new()).unwrap();
+        //let converted_kind = kind_of(&context, converted_type.clone()).unwrap();;
+
+        println!("Lambda: {}", &converted);
+        //println!("Type: {}", &converted_type);
+        //println!("Kind: {}", &converted_kind);
 
         // Assert
         //assert_eq!(converted, Term::Reference(Box::new(Term::Integer(0))))
@@ -1099,7 +1158,7 @@ mod tests {
         // Act
         let converted = mini.convert_term();
         let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new()).unwrap();
-        let converted_kind = kind_of(&context, converted_type.clone());
+        let converted_kind = kind_of(&context, converted_type.clone()).unwrap();;
 
         println!("Lambda: {}", &converted);
         println!("Type: {}", &converted_type);
@@ -1127,7 +1186,7 @@ mod tests {
         let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new()).unwrap();
         println!("Type: {}", &converted_type);
 
-        let converted_kind = kind_of(&context, converted_type.clone());
+        let converted_kind = kind_of(&context, converted_type.clone()).unwrap();;
         println!("Kind: {}", &converted_kind);
 
         // Assert
@@ -1159,7 +1218,7 @@ mod tests {
         let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new()).unwrap();
         println!("Type: {}", &converted_type);
 
-        let converted_kind = kind_of(&context, converted_type.clone());
+        let converted_kind = kind_of(&context, converted_type.clone()).unwrap();;
         println!("Kind: {}", &converted_kind);
 
         // Assert
@@ -1188,7 +1247,7 @@ mod tests {
         let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new()).unwrap();
         println!("Type: {}", &converted_type);
 
-        let converted_kind = kind_of(&context, converted_type.clone());
+        let converted_kind = kind_of(&context, converted_type.clone()).unwrap();;
         println!("Kind: {}", &converted_kind);
 
         // Assert
@@ -1219,7 +1278,7 @@ mod tests {
         let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new()).unwrap();
         println!("Type: {}", &converted_type);
 
-        let converted_kind = kind_of(&context, converted_type.clone());
+        let converted_kind = kind_of(&context, converted_type.clone()).unwrap();;
         println!("Kind: {}", &converted_kind);
 
         // Assert
@@ -1250,7 +1309,7 @@ mod tests {
         let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new()).unwrap();
         println!("Type: {}", &converted_type);
 
-        let converted_kind = kind_of(&context, converted_type.clone());
+        let converted_kind = kind_of(&context, converted_type.clone()).unwrap();;
         println!("Kind: {}", &converted_kind);
 
 
@@ -1287,7 +1346,7 @@ mod tests {
         let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new()).unwrap();
         println!("Type: {}", &converted_type);
 
-        let converted_kind = kind_of(&context, converted_type.clone());
+        let converted_kind = kind_of(&context, converted_type.clone()).unwrap();;
         println!("Kind: {}", &converted_kind);
 
         // Assert
@@ -1319,7 +1378,7 @@ mod tests {
         let converted_type = type_of(&context, converted.clone(), &mut Substitutions::new()).unwrap();
         println!("Type: {}", &converted_type);
 
-        let converted_kind = kind_of(&context, converted_type.clone());
+        let converted_kind = kind_of(&context, converted_type.clone()).unwrap();;
         println!("Kind: {}", &converted_kind);
 
         // Assert
