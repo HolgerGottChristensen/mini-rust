@@ -116,14 +116,6 @@ impl ToMiniIrType for MiniStruct {
         let hash = HashMap::from_iter(map);
         let mut body = FType::Record(hash);
 
-        // Todo: How will we handle generic bounds?
-        /*for generic in self.generics.params.iter().rev() {
-            for bound in &generic.bounds {
-                body = FType::Predicate("€".to_string(), Box::new(FType::TypeVar(
-                    MiniPath(bound.path.clone()).as_ident() // Todo: what about generics in bounds?
-                )), Box::new(body))
-            }
-        }*/
         // Add generics as TypeAbs
         for generic in self.generics.params.iter().rev() {
             body = FType::TypeAbs(generic.ident.to_string(), generic.ident.convert_kind(), Box::new(body));

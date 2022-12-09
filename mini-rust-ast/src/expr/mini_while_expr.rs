@@ -32,7 +32,10 @@ impl Parse for MiniExprWhile {
 
 impl ToMiniIrTerm for MiniExprWhile {
     fn convert_term(&self) -> Term {
-        Term::While(Box::new(self.cond.convert_term()), Box::new(self.body.convert_term()), Box::new(Term::Replacement))
+        Term::Seq(
+            Box::new(Term::While(Box::new(self.cond.convert_term()), Box::new(self.body.convert_term()))),
+            Box::new(Term::Replacement),
+        )
     }
 }
 

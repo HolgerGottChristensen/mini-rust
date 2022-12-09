@@ -58,7 +58,7 @@ mod tests {
         let converted_type = type_of(&Context::new(), converted.clone()).unwrap();
         println!("Type: {}", &converted_type);
 
-        let converted_kind = kind_of(&Context::new(), converted_type.clone()).unwrap();;
+        let converted_kind = kind_of(&Context::new(), converted_type.clone()).unwrap();
         println!("Kind: {}", &converted_kind);
 
         // Assert
@@ -85,7 +85,7 @@ mod tests {
         let converted_type = type_of(&Context::new(), converted.clone()).unwrap();
         println!("Type: {}", &converted_type);
 
-        let converted_kind = kind_of(&Context::new(), converted_type.clone()).unwrap();;
+        let converted_kind = kind_of(&Context::new(), converted_type.clone()).unwrap();
         println!("Kind: {}", &converted_kind);
 
         // Assert
@@ -113,7 +113,7 @@ mod tests {
         let converted_type = type_of(&Context::new(), converted.clone()).unwrap();
         println!("Type: {}", &converted_type);
 
-        let converted_kind = kind_of(&Context::new(), converted_type.clone()).unwrap();;
+        let converted_kind = kind_of(&Context::new(), converted_type.clone()).unwrap();
         println!("Kind: {}", &converted_kind);
 
         // Assert
@@ -143,7 +143,7 @@ mod tests {
         let converted_type = type_of(&Context::new(), converted.clone()).unwrap();
         println!("Type: {}", &converted_type);
 
-        let converted_kind = kind_of(&Context::new(), converted_type.clone()).unwrap();;
+        let converted_kind = kind_of(&Context::new(), converted_type.clone()).unwrap();
         println!("Kind: {}", &converted_kind);
 
         // Assert
@@ -173,7 +173,7 @@ mod tests {
         let converted_type = type_of(&Context::new(), converted.clone()).unwrap();
         println!("Type: {}", &converted_type);
 
-        let converted_kind = kind_of(&Context::new(), converted_type.clone()).unwrap();;
+        let converted_kind = kind_of(&Context::new(), converted_type.clone()).unwrap();
         println!("Kind: {}", &converted_kind);
 
         // Assert
@@ -202,7 +202,7 @@ mod tests {
         let converted_type = type_of(&Context::new(), converted.clone()).unwrap();
         println!("Type: {}", &converted_type);
 
-        let converted_kind = kind_of(&Context::new(), converted_type.clone()).unwrap();;
+        let converted_kind = kind_of(&Context::new(), converted_type.clone()).unwrap();
         println!("Kind: {}", &converted_kind);
 
         // Assert
@@ -230,7 +230,7 @@ mod tests {
         let converted_type = type_of(&Context::new(), converted.clone()).unwrap();
         println!("Type: {}", &converted_type);
 
-        let converted_kind = kind_of(&Context::new(), converted_type.clone()).unwrap();;
+        let converted_kind = kind_of(&Context::new(), converted_type.clone()).unwrap();
         println!("Kind: {}", &converted_kind);
 
         // Assert

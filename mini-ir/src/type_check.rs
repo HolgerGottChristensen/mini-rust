@@ -88,7 +88,7 @@ pub fn type_of(context: &Context, term: Term) -> Result<Type, String> {
             Ok(t2)
         }
         // T-While
-        Term::While(term1, term2, term3) => {
+        Term::While(term1, term2) => {
             let t1 = type_of(context, *term1)?;
 
             if !type_equivalence(context, t1, Type::Base(BaseType::Bool)) {
@@ -101,9 +101,7 @@ pub fn type_of(context: &Context, term: Term) -> Result<Type, String> {
                 return Err(format!("The type of the body should be unit"));
             }
 
-            let t3 = type_of(context, *term3)?;
-
-            Ok(t3)
+            Ok(Type::Base(BaseType::Unit))
         }
         // T-True, T-False
         Term::True | Term::False => Ok(Type::Base(BaseType::Bool)),

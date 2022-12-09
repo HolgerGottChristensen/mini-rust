@@ -17,9 +17,6 @@ pub fn replace_inner(term: Term, with: Term) -> Result<Term, String> {
         Term::TermTypeAbs(s, k, inner) => {
             Ok(Term::TermTypeAbs(s, k, Box::new(replace_inner(*inner, with)?)))
         }
-        Term::While(t1, t2, t3) => {
-            Ok(Term::While(t1, t2, Box::new(replace_inner(*t3, with)?)))
-        }
         a => Err("Expressions need to be the last in the block".to_string())
     }
 }

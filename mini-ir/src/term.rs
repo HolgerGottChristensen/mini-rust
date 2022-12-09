@@ -37,8 +37,8 @@ pub enum Term {
     Assignment(String, Box<Term>),
     /// If Term then Term else Term
     If(Box<Term>, Box<Term>, Box<Term>),
-    /// while Term then Term in Term
-    While(Box<Term>, Box<Term>, Box<Term>),
+    /// while Term do Term
+    While(Box<Term>, Box<Term>),
     /// let x = Term in Term
     Let(String, Box<Term>, Box<Term>),
     /// {Term, Term, ...}
@@ -123,8 +123,8 @@ impl Term {
             }
             Term::If(t1, t2, t3) =>
                 format!("if {} then {} else {}", t1.to_string_term(context, color), t2.to_string_term(context, color), t3.to_string_term(context, color)),
-            Term::While(t1, t2, t3) =>
-                format!("while {} then {} in {}", t1.to_string_term(context, color), t2.to_string_term(context, color), t3.to_string_term(context, color)),
+            Term::While(t1, t2) =>
+                format!("while {} do {}", t1.to_string_term(context, color), t2.to_string_term(context, color)),
             Term::Let(x, t1, t2) =>
                 format!("let {} = {}{}{} in {}{}{}", x, get_color(color, "("), t1.to_string_term(context, color + 1), get_color(color, ")"), get_color(color, "("), t2.to_string_term(context, color + 1), get_color(color, ")")),
             Term::Tuple(terms) => {
