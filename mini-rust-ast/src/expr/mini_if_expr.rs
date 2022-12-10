@@ -196,4 +196,34 @@ mod tests {
         // Assert
         assert!(matches!(converted_type, Ok(..)))
     }
+
+    #[test]
+    fn empty_if_true_no_else_nested() {
+        // Arrange
+        let mini: MiniExprIf = parse_quote!(
+            if true {
+                if true {
+                    1;
+                }
+            }
+        );
+        let context = Context::new();
+
+        log!("<blue>======== AST =======</>");
+        println!("{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+        log!("<blue>====== Lambda ======</>");
+        println!("{}", &converted);
+        log!("<blue>==== Type-Check ====</>");
+
+        let converted_type = type_of(&context, converted.clone());
+        log!("<blue>======= Type =======</>");
+        println!("{}", &converted_type.as_ref().map(|r| r.to_string_type(&context, 0)).unwrap_or_else(|w| w.to_string()));
+
+        log!("<blue>====================</>\n");
+        // Assert
+        assert!(matches!(converted_type, Ok(..)))
+    }
 }

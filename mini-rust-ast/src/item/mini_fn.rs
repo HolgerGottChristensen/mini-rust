@@ -695,6 +695,25 @@ mod tests {
     }
 
     #[test]
+    fn parse_fn_hkt_bounds2() {
+        // Arrange
+        let mini: MiniFn = parse_quote!(
+             fn hello<T<U: Hash>: Clone>() {}
+        );
+
+        println!("\n{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+
+        println!("\nLambda:\n{}", &converted);
+        println!("\nType:\n{}", type_of(&Context::new(), converted).unwrap());
+
+        // Assert
+        //assert!(matches!(actual, CarbideExpr::Lit(LitExpr {lit: Lit::Int(_)})))
+    }
+
+    #[test]
     fn parse_fn_hkt_nested() {
         // Arrange
         let mini: MiniFn = parse_quote!(
@@ -714,10 +733,48 @@ mod tests {
     }
 
     #[test]
+    fn parse_fn_hkt_nested2() {
+        // Arrange
+        let mini: MiniFn = parse_quote!(
+             fn hello<T<U<I: Ord>: Hash + Eq>: Hash>() {}
+        );
+
+        println!("\n{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+
+        println!("\nLambda:\n{}", &converted);
+        println!("\nType:\n{}", type_of(&Context::new(), converted).unwrap());
+
+        // Assert
+        //assert!(matches!(actual, CarbideExpr::Lit(LitExpr {lit: Lit::Int(_)})))
+    }
+
+    #[test]
     fn parse_fn_hkt_multiple() {
         // Arrange
         let mini: MiniFn = parse_quote!(
              fn hello<T<U, I>>() {}
+        );
+
+        println!("\n{:#?}", &mini);
+
+        // Act
+        let converted = mini.convert_term();
+
+        println!("\nLambda:\n{}", &converted);
+        println!("\nType:\n{}", type_of(&Context::new(), converted).unwrap());
+
+        // Assert
+        //assert!(matches!(actual, CarbideExpr::Lit(LitExpr {lit: Lit::Int(_)})))
+    }
+
+    #[test]
+    fn parse_fn_hkt_multiple2() {
+        // Arrange
+        let mini: MiniFn = parse_quote!(
+             fn hello<T<U: Hash, I: Ord>: Collection<T>>() {}
         );
 
         println!("\n{:#?}", &mini);

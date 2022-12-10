@@ -10,6 +10,7 @@ use mini_ir::Kind;
 use mini_ir::Kind::{KindArrow, KindStar};
 
 use crate::{IDENT_COLOR, ToMiniIrKind, ToMiniIrType};
+use crate::mini_generics::MiniTypeParam;
 
 #[derive(PartialEq, Clone)]
 pub struct MiniIdent(pub Ident);
@@ -20,7 +21,7 @@ pub enum MiniRecIdent {
     RecIdent {
         ident: MiniIdent,
         lt_token: Token![<],
-        inner: Punctuated<MiniRecIdent, Token![,]>,
+        inner: Punctuated<MiniTypeParam, Token![,]>,
         gt_token: Token![>]
     }
 }
@@ -56,7 +57,13 @@ impl MiniRecIdent {
         MiniRecIdent::RecIdent {
             ident: MiniIdent::new(s),
             lt_token: Default::default(),
-            inner: Punctuated::from_iter(vec.into_iter()),
+            inner: Punctuated::from_iter(vec.into_iter().map(|a| {
+                MiniTypeParam {
+                    ident: a,
+                    colon_token: None,
+                    bounds: Default::default()
+                }
+            })),
             gt_token: Default::default()
         }
     }
@@ -71,7 +78,7 @@ impl ToMiniIrKind for MiniRecIdent {
             MiniRecIdent::RecIdent { inner, .. } => {
                 let mut res = KindStar;
                 for ident in inner.iter().rev() {
-                    res = KindArrow(Box::new(ident.convert_kind()), Box::new(res));
+                    res = KindArrow(Box::new(ident.ident.convert_kind()), Box::new(res));
                 }
                 res
             }
@@ -102,7 +109,7 @@ impl Parse for MiniRecIdent {
                 break;
             }
 
-            let inner = MiniRecIdent::parse(input)?;
+            let inner = MiniTypeParam::parse(input)?;
             params.push_value(inner);
 
             if input.peek(Token![>]) {

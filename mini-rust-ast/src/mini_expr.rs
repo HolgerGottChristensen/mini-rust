@@ -346,6 +346,8 @@ impl MiniExpr {
     pub fn parse_expr_early(input: ParseStream) -> syn::Result<MiniExpr> {
         let mut expr = if input.peek(Token![while]) {
             MiniExpr::While(input.parse()?)
+        } else if input.peek(Token![if]) {
+            MiniExpr::If(input.parse()?)
         } else if input.peek(Token![match]) {
             MiniExpr::Match(input.parse()?)
         } else if input.peek(token::Brace) {
