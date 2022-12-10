@@ -141,7 +141,7 @@ impl Term {
                     s.push_str(&term.to_string_term(context, color + 1));
                     s
                 }).collect::<Vec<_>>().join(", ");
-                format!("{}{}{}", get_color(color, "{"), r, get_color(color, "}"))
+                format!("{}{}{}", get_color(color, "⟨"), r, get_color(color, "⟩"))
             }
             Term::TupleProjection(t1, index) => {
                 format!("{}.{}", t1.to_string_term(context, color), index)

@@ -24,7 +24,7 @@ pub enum Type {
     Reference(Box<Type>),
     /// {Type, Type, ...}
     Tuple(Vec<Type>),
-    /// {l1=Type, l2=Type, ...}
+    /// ⟨l1=Type, l2=Type, ...⟩
     Record(HashMap<String, Type>),
     /// <l1=Type, l2=Type, ...>
     Variants(HashMap<String, Type>),
