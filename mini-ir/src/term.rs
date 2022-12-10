@@ -36,7 +36,8 @@ pub enum Term {
     /// x = Term
     Assignment(String, Box<Term>),
     /// If Term then Term else Term
-    If(Box<Term>, Box<Term>, Box<Term>),
+    IfElse(Box<Term>, Box<Term>, Box<Term>),
+    If(Box<Term>, Box<Term>),
     /// while Term do Term
     While(Box<Term>, Box<Term>),
     /// let x = Term in Term
@@ -121,8 +122,10 @@ impl Term {
             Term::Assignment(x, term) => {
                 format!("{} = {}{}{}", x, get_color(color, "("), term.to_string_term(context, color + 1), get_color(color, ")"))
             }
-            Term::If(t1, t2, t3) =>
+            Term::IfElse(t1, t2, t3) =>
                 format!("if {} then {} else {}", t1.to_string_term(context, color), t2.to_string_term(context, color), t3.to_string_term(context, color)),
+            Term::If(t1, t2) =>
+                format!("if {} then {}", t1.to_string_term(context, color), t2.to_string_term(context, color)),
             Term::While(t1, t2) =>
                 format!("while {} do {}", t1.to_string_term(context, color), t2.to_string_term(context, color)),
             Term::Let(x, t1, t2) =>

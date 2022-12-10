@@ -15,6 +15,7 @@ pub use mini_struct_expr::*;
 pub use mini_tuple_expr::*;
 pub use mini_unary_expr::*;
 pub use mini_while_expr::*;
+pub use mini_if_expr::*;
 
 mod mini_lit_expr;
 mod mini_assign_expr;
@@ -33,4 +34,5 @@ mod mini_struct_expr;
 mod mini_tuple_expr;
 mod mini_unary_expr;
 mod mini_while_expr;
+mod mini_if_expr;
 

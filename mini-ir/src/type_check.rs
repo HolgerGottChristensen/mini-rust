@@ -71,7 +71,22 @@ pub fn type_of(context: &Context, term: Term) -> Result<Type, String> {
             }
         }
         // T-If
-        Term::If(term1, term2, term3) => {
+        Term::If(term1, term2) => {
+            let t1 = type_of(context, *term1)?;
+            let t2 = type_of(context, *term2)?;
+
+            if !type_equivalence(context, t1, Type::Base(BaseType::Bool)) {
+                return Err(format!("The type of the guard needs to be a Bool"));
+            }
+
+            if !type_equivalence(context, t2, Type::Base(BaseType::Unit)) {
+                return Err(format!("The type of the block needs to be Unit"));
+            }
+
+
+            Ok(Type::Base(BaseType::Unit))
+        }
+        Term::IfElse(term1, term2, term3) => {
             let t1 = type_of(context, *term1)?;
 
             if !type_equivalence(context, t1, Type::Base(BaseType::Bool)) {

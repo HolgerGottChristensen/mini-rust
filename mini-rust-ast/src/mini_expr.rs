@@ -1,4 +1,4 @@
-use std::fmt::{Debug, Formatter};
+use std::fmt::{Debug, Formatter, Pointer};
 use std::mem;
 
 use paris::formatter::colorize_string;
@@ -10,7 +10,7 @@ use syn::punctuated::Punctuated;
 use mini_ir::Term;
 
 use crate::{expr_ret, expr_struct_helper, MiniExprAssign, MiniExprBinary, MiniExprBlock, MiniExprBox, MiniExprCall, MiniExprField, MiniExprMatch, MiniExprMethodCall, MiniExprParen, MiniExprPath, MiniExprReference, MiniExprReturn, MiniExprStruct, MiniExprTuple, MiniExprUnary, MiniExprWhile, MiniIdent, parse_expr_box, parse_expr_unary, ToMiniIrTerm};
-use crate::expr::MiniLitExpr;
+use crate::expr::{MiniExprIf, MiniLitExpr};
 
 #[derive(PartialEq, Clone)]
 pub enum MiniExpr {
@@ -20,6 +20,7 @@ pub enum MiniExpr {
     Box(MiniExprBox),
     Call(MiniExprCall),
     Field(MiniExprField),
+    If(MiniExprIf),
     Lit(MiniLitExpr),
     Match(MiniExprMatch),
     MethodCall(MiniExprMethodCall),
@@ -257,6 +258,7 @@ impl Debug for MiniExpr {
             MiniExpr::Tuple(s) => s.fmt(f),
             MiniExpr::Unary(s) => s.fmt(f),
             MiniExpr::While(s) => s.fmt(f),
+            MiniExpr::If(s) => s.fmt(f),
         }
     }
 }
@@ -691,6 +693,7 @@ impl ToMiniIrTerm for MiniExpr {
             MiniExpr::Tuple(l) => l.convert_term(),
             MiniExpr::Unary(l) => l.convert_term(),
             MiniExpr::While(l) => l.convert_term(),
+            MiniExpr::If(l) => l.convert_term(),
         }
     }
 }
@@ -860,7 +863,7 @@ mod tests {
         );
 
         let context = Context::new();
-        let context = context.add_binding(Binding::VarBinding("PartialEq::eq".to_string(), Type::arrow(Unit, Type::arrow(Int, Type::arrow(Int, Bool)))));
+        let context = context.add_binding(Binding::VarBinding("eq".to_string(), Type::arrow(Unit, Type::arrow(Int, Type::arrow(Int, Bool)))));
 
         println!("\n{:#?}", &mini);
 
