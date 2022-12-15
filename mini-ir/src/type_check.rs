@@ -285,7 +285,7 @@ pub fn type_of(context: &Context, term: Term) -> Result<Type, String> {
         }
         // T-Seq
         Term::Seq(term1, term2) => {
-            let t1 = type_of(context, *term1)?; // Todo: If we convert to result, we need to handle that here.
+            let t1 = type_of(context, *term1)?;
 
             let t2 = type_of(context, *term2)?;
             Ok(t2)

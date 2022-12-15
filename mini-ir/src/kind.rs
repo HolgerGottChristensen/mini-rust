@@ -1,6 +1,7 @@
 use std::fmt::{Display, Formatter};
 
 use paris::formatter::colorize_string;
+use crate::Kind::KindArrow;
 
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Debug, Hash)]
 pub enum Kind {
@@ -11,6 +12,11 @@ pub enum Kind {
 }
 
 impl Kind {
+
+    pub fn arrow(k1: Kind, k2: Kind) -> Kind {
+        KindArrow(Box::new(k1), Box::new(k2))
+    }
+
     pub fn to_string_kind(&self) -> String {
         match self {
             Kind::KindStar => self.to_string_atomic(),

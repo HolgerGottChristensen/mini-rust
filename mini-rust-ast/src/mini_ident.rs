@@ -67,6 +67,17 @@ impl MiniRecIdent {
             gt_token: Default::default()
         }
     }
+
+    pub fn print(&self) -> String {
+        match self {
+            MiniRecIdent::Ident(i) => {
+                i.to_string()
+            }
+            MiniRecIdent::RecIdent { ident, inner, ..} => {
+                format!("{}<{}>", ident.to_string(), inner.iter().map(|a| a.ident.print()).collect::<Vec<_>>().join(", "))
+            }
+        }
+    }
 }
 
 impl ToMiniIrKind for MiniRecIdent {
